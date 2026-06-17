@@ -1,0 +1,21 @@
+{
+  "name": "kite-marketplace",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Marketplace web (PWA) de equipamento de kitesurf — Cumbuco. Ver docs/.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/api & npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "db:up": "docker compose up -d",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:studio": "npm run db:studio --workspace=apps/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
