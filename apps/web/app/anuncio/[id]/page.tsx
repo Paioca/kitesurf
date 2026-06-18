@@ -102,6 +102,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '6px 11px', borderRadius: 999 }}>Instagram conectado</span>
               )}
             </div>
+            <a href={`/perfil/${l.user?.id}`} style={{ display: 'inline-block', marginTop: 15, fontSize: 13.5, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Ver perfil do vendedor ›</a>
           </div>
         </div>
       </main>

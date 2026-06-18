@@ -122,10 +122,23 @@ body {
   grid-template-columns: 1fr;
   gap: 28px;
 }
+.two-col,
+.perfil-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
 @media (min-width: 900px) {
   .detail-grid {
     grid-template-columns: 1.45fr 1fr;
     gap: 44px;
     align-items: start;
+  }
+  .two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+  .perfil-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
   }
 }

@@ -17,6 +17,9 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +71,18 @@ export default function Chat() {
   function openConvo(id: string) {
     setActiveId(id);
     setThread(null);
+    setRating(0);
+    setReviewText('');
     setMobileView('thread');
+  }
+
+  async function dealAction(url: string, body?: any) {
+    setBusy(true);
+    try {
+      const res = await fetch(url, { method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+      if (res.ok && activeId) { await loadThread(activeId); loadList(); }
+      else if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.message ?? 'Erro.'); }
+    } finally { setBusy(false); }
   }
 
   const showList = isDesktop || mobileView === 'list';
@@ -131,6 +145,18 @@ export default function Chat() {
                     </div>
                   </a>
                 </div>
+
+                <DealBar
+                  thread={thread}
+                  busy={busy}
+                  rating={rating}
+                  setRating={setRating}
+                  reviewText={reviewText}
+                  setReviewText={setReviewText}
+                  onConfirmSale={() => dealAction(`/api/conversations/${thread.id}/deal`)}
+                  onConfirmPurchase={() => dealAction(`/api/deals/${thread.deal.id}/confirm`)}
+                  onSubmitReview={() => dealAction(`/api/deals/${thread.deal.id}/review`, { rating, comment: reviewText })}
+                />
 
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ alignSelf: 'center', fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '6px 14px', borderRadius: 999, textAlign: 'center' }}>Conversa sobre <strong style={{ color: '#6b5d3f' }}>{thread.listing.title}</strong></div>
@@ -202,4 +228,58 @@ function RoleChip({ role, active }: { role: string; active?: boolean }) {
 
 function Hint({ children }: { children: React.ReactNode }) {
   return <div style={{ padding: 22, fontSize: 13, color: color.inkFaint2, textAlign: 'center' }}>{children}</div>;
+}
+
+// Confirmação de venda/compra + avaliação — o "aperto de mão" Fase 0 (sem dinheiro).
+function DealBar({ thread, busy, rating, setRating, reviewText, setReviewText, onConfirmSale, onConfirmPurchase, onSubmitReview }: any) {
+  const deal = thread.deal;
+  const box: React.CSSProperties = { flex: 'none', background: '#fff', borderBottom: `1px solid ${color.line}`, padding: '14px 22px' };
+  const btn: React.CSSProperties = { background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '11px 20px', fontFamily: font.sans, fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer' };
+
+  if (!deal) {
+    if (thread.role === 'selling') {
+      return (
+        <div style={box}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13.5, color: color.inkMute }}>Fechou negócio com este comprador?</span>
+            <button onClick={onConfirmSale} disabled={busy} style={btn}>Marcar como vendido</button>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  if (deal.status === 'seller_confirmed') {
+    if (deal.iAmBuyer) {
+      return (
+        <div style={box}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13.5, color: color.ink, fontWeight: 600 }}>O vendedor marcou como vendido. Confirma a compra?</span>
+            <button onClick={onConfirmPurchase} disabled={busy} style={btn}>Confirmar compra</button>
+          </div>
+        </div>
+      );
+    }
+    return <div style={box}><span style={{ fontSize: 13.5, color: color.inkMute }}>Você marcou como vendido — aguardando o comprador confirmar.</span></div>;
+  }
+
+  // completed
+  if (deal.myReviewDone) {
+    return <div style={box}><span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, color: color.primary }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />Negócio fechado · avaliação enviada</span></div>;
+  }
+  return (
+    <div style={box}>
+      <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>Negócio fechado! Como foi a negociação?</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 26, lineHeight: 1, padding: 0, color: n <= rating ? color.accent : color.lineInput }}>★</button>
+          ))}
+        </div>
+        <input value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Comentário (opcional)" style={{ flex: 1, minWidth: 180, fontFamily: font.sans, fontSize: 14, border: `1.5px solid ${color.lineInput}`, borderRadius: 10, padding: '10px 13px', outline: 'none' }} />
+        <button onClick={onSubmitReview} disabled={busy || rating === 0} style={{ ...btn, background: rating ? color.primary : '#cdd8d1' }}>Avaliar</button>
+      </div>
+    </div>
+  );
 }

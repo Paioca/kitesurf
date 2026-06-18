@@ -1,5 +1,6 @@
 import 'server-only';
 import { db } from './db';
+import { dealForConversation } from './deals';
 
 export class ChatError extends Error {
   constructor(message: string, public status = 400) {
@@ -71,13 +72,16 @@ export async function getConversation(userId: string, id: string) {
   const role = c.buyerId === userId ? 'buying' : 'selling';
   const counterpart = role === 'buying' ? c.seller : c.buyer;
   const a = (c.listing.attributes ?? {}) as Record<string, any>;
+  const deal = await dealForConversation(userId, id);
 
   return {
     id: c.id,
     role,
+    counterpartId: counterpart.id,
     counterpart: { name: counterpart.name, avatarUrl: counterpart.avatarUrl, instagramHandle: counterpart.instagramHandle, phoneVerified: counterpart.phoneVerified },
     listing: { id: c.listing.id, title: c.listing.title, price: c.listing.price, thumb: c.listing.images[0]?.url ?? null, sizeM2: a.size_m2 != null ? String(a.size_m2) : null, shippable: c.listing.shippable },
     messages: messages.map((m) => ({ id: m.id, mine: m.senderId === userId, body: m.body, imageUrl: m.imageUrl, createdAt: m.createdAt })),
+    deal,
   };
 }
 

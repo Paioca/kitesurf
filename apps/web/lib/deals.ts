@@ -1,0 +1,65 @@
+import 'server-only';
+import { db } from './db';
+
+export class DealError extends Error {
+  constructor(message: string, public status = 400) {
+    super(message);
+  }
+}
+
+// Vendedor confirma a venda (a partir da conversa) → cria o Deal.
+export async function confirmSale(userId: string, conversationId: string) {
+  const convo = await db.conversation.findUnique({ where: { id: conversationId } });
+  if (!convo) throw new DealError('Conversa não encontrada.', 404);
+  if (convo.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
+
+  const deal = await db.deal.upsert({
+    where: { conversationId },
+    update: {},
+    create: { conversationId, listingId: convo.listingId, sellerId: convo.sellerId, buyerId: convo.buyerId, status: 'seller_confirmed', sellerConfirmedAt: new Date() },
+  });
+  return deal.id;
+}
+
+// Comprador confirma a compra → completa o negócio + marca anúncio vendido.
+export async function confirmPurchase(userId: string, dealId: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.buyerId !== userId) throw new DealError('Só o comprador confirma a compra.', 403);
+  if (deal.status !== 'seller_confirmed') throw new DealError('Negócio não está aguardando confirmação.', 400);
+
+  await db.$transaction([
+    db.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } }),
+    db.listing.update({ where: { id: deal.listingId }, data: { status: 'sold', soldToUserId: deal.buyerId } }),
+  ]);
+}
+
+// Avaliação — só após Deal completed; 1 por avaliador por deal.
+export async function createReview(userId: string, dealId: string, rating: number, comment?: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.status !== 'completed') throw new DealError('Confirme a compra antes de avaliar.', 400);
+  if (deal.buyerId !== userId && deal.sellerId !== userId) throw new DealError('Sem acesso.', 403);
+  if (rating < 1 || rating > 5) throw new DealError('Nota inválida.', 400);
+
+  const reviewedId = userId === deal.buyerId ? deal.sellerId : deal.buyerId;
+  await db.review.upsert({
+    where: { dealId_reviewerId: { dealId, reviewerId: userId } },
+    update: { rating, comment: comment ?? null },
+    create: { dealId, reviewerId: userId, reviewedId, rating, comment: comment ?? null },
+  });
+}
+
+// Estado do deal para mostrar a ação certa no chat.
+export async function dealForConversation(userId: string, conversationId: string) {
+  const deal = await db.deal.findUnique({ where: { conversationId }, include: { reviews: true } });
+  if (!deal) return null;
+  const iAmSeller = deal.sellerId === userId;
+  return {
+    id: deal.id,
+    status: deal.status,
+    iAmSeller,
+    iAmBuyer: deal.buyerId === userId,
+    myReviewDone: deal.reviews.some((r) => r.reviewerId === userId),
+  };
+}

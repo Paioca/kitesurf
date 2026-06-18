@@ -60,6 +60,11 @@ model User {
   sellerConversations Conversation[] @relation("sellerConvos")
   messages            Message[]
 
+  sellerDeals     Deal[]   @relation("sellerDeals")
+  buyerDeals      Deal[]   @relation("buyerDeals")
+  reviewsGiven    Review[] @relation("reviewsGiven")
+  reviewsReceived Review[] @relation("reviewsReceived")
+
   @@index([phone])
 }
 
@@ -139,6 +144,7 @@ model Listing {
   model         Model?         @relation(fields: [modelId], references: [id])
   images        ListingImage[]
   conversations Conversation[]
+  deals         Deal[]
 
   @@index([categoryId])
   @@index([city])
@@ -178,6 +184,7 @@ model Conversation {
   buyer    User      @relation("buyerConvos", fields: [buyerId], references: [id])
   seller   User      @relation("sellerConvos", fields: [sellerId], references: [id])
   messages Message[]
+  deal     Deal?
 
   @@unique([listingId, buyerId]) // 1 conversa por comprador por anúncio
   @@index([buyerId])
@@ -197,4 +204,53 @@ model Message {
   sender       User         @relation(fields: [senderId], references: [id])
 
   @@index([conversationId])
+}
+
+enum DealStatus {
+  seller_confirmed
+  completed
+  cancelled
+}
+
+// "Aperto de mão" sem dinheiro (Fase 0): vendedor confirma a venda escolhendo
+// o comprador → comprador confirma a compra → vira `completed`, anúncio `sold`,
+// e habilita avaliação dos dois lados.
+model Deal {
+  id                String     @id @default(uuid())
+  listingId         String
+  conversationId    String?    @unique
+  sellerId          String
+  buyerId           String
+  status            DealStatus @default(seller_confirmed)
+  sellerConfirmedAt DateTime?
+  buyerConfirmedAt  DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  listing      Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  seller       User          @relation("sellerDeals", fields: [sellerId], references: [id])
+  buyer        User          @relation("buyerDeals", fields: [buyerId], references: [id])
+  reviews      Review[]
+
+  @@index([sellerId])
+  @@index([buyerId])
+}
+
+// Avaliação atrelada a um Deal `completed`. 1 review por avaliador por deal.
+model Review {
+  id         String   @id @default(uuid())
+  dealId     String
+  reviewerId String
+  reviewedId String
+  rating     Int // 1-5
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  deal     Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  reviewer User @relation("reviewsGiven", fields: [reviewerId], references: [id])
+  reviewed User @relation("reviewsReceived", fields: [reviewedId], references: [id])
+
+  @@unique([dealId, reviewerId])
+  @@index([reviewedId])
 }
