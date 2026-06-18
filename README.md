@@ -1,4 +1,8 @@
-# Kite Marketplace — Documentação do MVP
+# Kite Life — Marketplace de kitesurf
+
+> 🚀 **Fase 0 construído e no ar:** https://kitesurf-web.vercel.app
+> 👉 **Para continuar o trabalho, leia primeiro [docs/ESTADO-ATUAL.md](docs/ESTADO-ATUAL.md)** —
+> estado, stack, deploy, env vars e pendências.
 
 Marketplace web (mobile-first) especializado em compra e venda de equipamento de kitesurf,
 focado nos hubs brasileiros, começando por **Cumbuco**.
