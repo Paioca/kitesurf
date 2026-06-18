@@ -2,10 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design system Kite Life (handoff) */
 :root {
   color-scheme: light;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  @apply bg-sand-50 text-ocean-900 antialiased;
+  margin: 0;
+  padding: 0;
+  font-family: 'Archivo', system-ui, -apple-system, sans-serif;
+  color: #23332e;
+  background: #f6f3ec;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #d9a86b;
+  color: #23332e;
+}
+
+.kl-scroll {
+  scrollbar-width: none;
+}
+.kl-scroll::-webkit-scrollbar {
+  display: none;
 }
