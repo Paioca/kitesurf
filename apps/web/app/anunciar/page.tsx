@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { API, authHeader, type Brand, type Category } from '../../lib/api';
+import { API, type Brand, type Category } from '../../lib/api';
 
 const CONDITION_LABEL: Record<string, string> = {
   novo: 'Novo',
@@ -55,7 +55,7 @@ export default function AnunciarPage() {
         fd.append('file', file);
         const res = await fetch(`${API}/api/uploads/image`, {
           method: 'POST',
-          headers: { ...authHeader() },
+          // cookie de sessão vai junto (mesma origem)
           body: fd,
         });
         if (!res.ok) throw new Error('Falha no upload. Você está logado?');
@@ -75,7 +75,7 @@ export default function AnunciarPage() {
     try {
       const res = await fetch(`${API}/api/listings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           categoryId,
           brandId: brandId || undefined,

@@ -85,13 +85,11 @@ export function useBrowse() {
       .then((r) => r.json())
       .then((cs: any[]) => setCats(['Todos', ...cs.map((c) => c.namePt)]))
       .catch(() => {});
-    const token = typeof window !== 'undefined' ? localStorage.getItem('kite_token') : null;
-    if (token) {
-      fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((u) => u && setMe({ name: u.name }))
-        .catch(() => {});
-    }
+    // Sessão via cookie httpOnly — enviado automaticamente (mesma origem).
+    fetch(`${API}/api/auth/me`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => u && u.name && setMe({ name: u.name }))
+      .catch(() => {});
   }, []);
 
   const toggle = (setter: React.Dispatch<React.SetStateAction<string[]>>, key: string) =>

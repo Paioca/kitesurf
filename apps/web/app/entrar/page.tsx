@@ -60,8 +60,9 @@ export default function EntrarPage() {
         return;
       }
       if (!res.ok) throw new Error(data.message ?? 'Código inválido.');
-      localStorage.setItem('kite_token', data.token);
+      // Sessão setada em cookie httpOnly pelo servidor. Volta pra home.
       setStep('done');
+      window.location.href = '/';
     } catch (e: any) {
       setError(e.message);
     } finally {

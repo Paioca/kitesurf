@@ -1,4 +1,5 @@
-import { getListing, formatBRL } from '../../../lib/api';
+import { getListing } from '../../../lib/queries';
+import { formatBRL } from '../../../lib/api';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -13,9 +14,9 @@ const CONDITION_LABEL: Record<string, string> = {
 
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
   const l = await getListing(params.id);
-  if (!l || l.statusCode === 404) notFound();
+  if (!l) notFound();
 
-  const attrs: Record<string, any> = l.attributes ?? {};
+  const attrs = (l.attributes ?? {}) as Record<string, any>;
   const memberSince = l.user?.createdAt
     ? new Date(l.user.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
     : null;
