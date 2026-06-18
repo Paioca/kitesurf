@@ -17,7 +17,6 @@ export default function Entrar() {
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
   const [rawPhone, setRawPhone] = useState('');
   const [code, setCode] = useState('');
-  const [devCode, setDevCode] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -44,10 +43,8 @@ export default function Entrar() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Falha ao enviar código.');
-      if (data.devCode) {
-        setDevCode(String(data.devCode));
-        setCode(String(data.devCode));
-      }
+      // No modo mock o código volta aqui e preenche silenciosamente (sem afordância visível).
+      if (data.devCode) setCode(String(data.devCode));
       setStep('otp');
     } catch (e: any) {
       setError(e.message);
@@ -151,7 +148,7 @@ export default function Entrar() {
                     <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#8a948d', marginBottom: 24 }}>
-                    🌎 Aceita número internacional — comece com + pro DDI.
+                    🌎 Aceita número internacional — gringo também entra.
                   </div>
                   <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                     {loading ? '...' : 'Enviar código'}
@@ -171,7 +168,6 @@ export default function Entrar() {
               <button onClick={() => setStep('phone')} style={backBtn}>‹ Voltar</button>
               <h1 style={h1}>Digite o código</h1>
               <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{phone}</strong>.</p>
-              {devCode && <div style={devBox}>🔧 Modo teste — código <strong>{devCode}</strong> (já preenchido).</div>}
               <OtpCells value={code} onChange={setCode} />
               <div style={{ fontSize: 13, color: '#8a948d', margin: '6px 0 26px' }}>
                 Não recebeu? <button onClick={requestOtp} style={linkInline}>Reenviar</button>
@@ -295,7 +291,6 @@ const terms: React.CSSProperties = { fontSize: 12, lineHeight: 1.5, color: '#9aa
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', fontSize: 13.5, color: '#6b7a73', cursor: 'pointer', padding: 0, marginBottom: 20, fontFamily: "'Archivo',sans-serif" };
 const linkInline: React.CSSProperties = { background: 'none', border: 'none', color: '#1f6b5c', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: "'Archivo',sans-serif" };
 const errorBox: React.CSSProperties = { background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 };
-const devBox: React.CSSProperties = { background: '#f2f8f5', color: '#1f6b5c', padding: 10, borderRadius: 10, fontSize: 13, marginBottom: 16 };
 const avatarBtn: React.CSSProperties = { width: 74, height: 74, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '2px dashed #cbc3b2' };
 const segOn: React.CSSProperties = { background: '#1f6b5c', color: '#fff', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 12.5, fontWeight: 700 };
 const segOff: React.CSSProperties = { background: 'transparent', color: '#6b7a73', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 12.5, fontWeight: 600 };
