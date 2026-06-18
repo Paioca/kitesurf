@@ -22,19 +22,22 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
   const dto = parsed.data;
 
-  const valid = await verifyOtp(dto.phone, dto.code);
-  if (!valid) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
+  const existing = await db.user.findUnique({ where: { phone: dto.phone } });
+  let user = existing;
 
-  let user = await db.user.findUnique({ where: { phone: dto.phone } });
-
-  if (!user) {
-    // Onboarding — foto obrigatória (sinal de confiança).
+  if (!existing) {
+    // Conta nova sem onboarding completo: só "espia" o código (não queima),
+    // pra ele continuar válido até a criação efetiva.
     if (!dto.name || !dto.email || !dto.avatarUrl) {
+      const ok = await verifyOtp(dto.phone, dto.code, false);
+      if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
       return NextResponse.json(
         { needsOnboarding: true, message: 'Conta nova: nome, email e foto de perfil são obrigatórios.' },
         { status: 400 },
       );
     }
+    const ok = await verifyOtp(dto.phone, dto.code, true);
+    if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
     if (await db.user.findUnique({ where: { email: dto.email } })) {
       return NextResponse.json({ message: 'Email já cadastrado.' }, { status: 409 });
     }
@@ -50,10 +53,16 @@ export async function POST(req: Request) {
         locale: dto.locale ?? 'pt',
       },
     });
-  } else if (!user.phoneVerified) {
-    user = await db.user.update({ where: { id: user.id }, data: { phoneVerified: true } });
+  } else {
+    // Login de conta existente: valida e queima o código.
+    const ok = await verifyOtp(dto.phone, dto.code, true);
+    if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
+    if (!existing.phoneVerified) {
+      user = await db.user.update({ where: { id: existing.id }, data: { phoneVerified: true } });
+    }
   }
 
+  if (!user) return NextResponse.json({ message: 'Erro.' }, { status: 500 });
   if (user.status === 'blocked') return NextResponse.json({ message: 'Conta bloqueada.' }, { status: 401 });
 
   setSession(user.id);

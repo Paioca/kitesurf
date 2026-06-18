@@ -24,7 +24,9 @@ export async function generateOtp(phone: string): Promise<string | null> {
   return null;
 }
 
-export async function verifyOtp(phone: string, code: string): Promise<boolean> {
+// consume=false só "espia" (valida sem queimar o código) — usado quando a conta
+// é nova e ainda falta o onboarding; o código é queimado só na criação (consume=true).
+export async function verifyOtp(phone: string, code: string, consume = true): Promise<boolean> {
   const otp = await db.otpCode.findFirst({
     where: { phone, consumed: false, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: 'desc' },
@@ -33,7 +35,7 @@ export async function verifyOtp(phone: string, code: string): Promise<boolean> {
   const ok = await bcrypt.compare(code, otp.codeHash);
   await db.otpCode.update({
     where: { id: otp.id },
-    data: { attempts: { increment: 1 }, consumed: ok ? true : undefined },
+    data: { attempts: { increment: 1 }, consumed: ok && consume ? true : undefined },
   });
   return ok;
 }
