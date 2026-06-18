@@ -32,3 +32,16 @@ body {
 .kl-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* Responsivo: mobile feed < 900px, layout web >= 900px */
+.only-desktop {
+  display: none;
+}
+@media (min-width: 900px) {
+  .only-mobile {
+    display: none;
+  }
+  .only-desktop {
+    display: block;
+  }
+}
