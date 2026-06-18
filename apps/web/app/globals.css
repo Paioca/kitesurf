@@ -33,6 +33,76 @@ body {
   display: none;
 }
 
+/* Campos do design (Criar) */
+.kl-select,
+.kl-input,
+.kl-textarea {
+  font-family: 'Archivo', sans-serif;
+  font-size: 15px;
+  color: #23332e;
+  background: #fff;
+  border: 1.5px solid #e0d9c9;
+  border-radius: 11px;
+  padding: 13px 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.kl-select {
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23bcccc4' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.kl-textarea {
+  resize: vertical;
+}
+
+/* Grids responsivos do Criar */
+.criar-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+.criar-cats {
+  grid-template-columns: repeat(2, 1fr);
+}
+.criar-fields,
+.criar-delivery,
+.criar-loc {
+  grid-template-columns: 1fr;
+}
+.criar-photos {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 900px) {
+  .criar-grid {
+    grid-template-columns: 230px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .criar-cats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .criar-fields,
+  .criar-delivery,
+  .criar-loc {
+    grid-template-columns: 1fr 1fr;
+  }
+  .criar-photos {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.kl-select:focus,
+.kl-input:focus,
+.kl-textarea:focus {
+  outline: none;
+  border-color: #1f6b5c;
+  box-shadow: 0 0 0 3px rgba(31, 107, 92, 0.1);
+}
+
 /* Responsivo: mobile feed < 900px, layout web >= 900px */
 .only-desktop {
   display: none;
@@ -43,5 +113,19 @@ body {
   }
   .only-desktop {
     display: block;
+  }
+}
+
+/* Grid de detalhe: empilha no mobile, 2 colunas no desktop */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+@media (min-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1.45fr 1fr;
+    gap: 44px;
+    align-items: start;
   }
 }

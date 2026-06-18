@@ -1,130 +1,132 @@
+// Detalhe do anúncio — design Kite Life (handoff Anuncio.dc.html). Server-rendered.
+// Adaptação Fase 0: sem escrow/checkout. CTA = conversar. Sem rating falso.
+import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
 import { formatBRL } from '../../../lib/api';
-import { notFound } from 'next/navigation';
+import { color, font } from '../../../lib/tokens';
+import { SiteHeader } from '../../../components/SiteHeader';
+import { Footer } from '../../../components/Footer';
+import { Gallery } from '../../../components/Gallery';
 
 export const dynamic = 'force-dynamic';
 
-const CONDITION_LABEL: Record<string, string> = {
-  novo: 'Novo',
-  seminovo: 'Seminovo',
-  bom: 'Bom',
-  usado: 'Usado',
-  com_reparos: 'Com reparos',
-};
+const CONDITION: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
 
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
   const l = await getListing(params.id);
   if (!l) notFound();
 
-  const attrs = (l.attributes ?? {}) as Record<string, any>;
-  const memberSince = l.user?.createdAt
-    ? new Date(l.user.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
-    : null;
+  const a = (l.attributes ?? {}) as Record<string, any>;
+  const photos = (l.images ?? []).map((i: any) => i.url);
+  const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
+  const title = `${l.model?.name ?? l.title}${sizeM2 ? ` ${sizeM2}` : ''}`;
+  const memberSince = l.user?.createdAt ? new Date(l.user.createdAt).getFullYear() : null;
+  const initials = (l.user?.name ?? '?').slice(0, 2).toUpperCase();
+
+  const attrs: { k: string; v: string }[] = [];
+  if (sizeM2) attrs.push({ k: 'Tamanho', v: sizeM2 });
+  if (a.condition) attrs.push({ k: 'Estado', v: CONDITION[a.condition] ?? a.condition });
+  if (l.year) attrs.push({ k: 'Ano', v: String(l.year) });
+  if (l.brand?.name) attrs.push({ k: 'Marca', v: l.brand.name });
+  if (a.repairs_count != null) attrs.push({ k: 'Reparos', v: Number(a.repairs_count) > 0 ? String(a.repairs_count) : 'Nenhum' });
+  if (a.usage_time) attrs.push({ k: 'Tempo de uso', v: String(a.usage_time) });
+  if (a.harness_size) attrs.push({ k: 'Tamanho', v: String(a.harness_size) });
+  if (a.bar_size) attrs.push({ k: 'Barra', v: String(a.bar_size) });
+
+  const summary: { k: string; v: string }[] = [
+    { k: 'Categoria', v: l.category?.namePt ?? '—' },
+    { k: 'Local', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` },
+    { k: 'Entrega', v: l.shippable ? 'Enviável' : 'Retirada local' },
+  ];
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
-      {/* Galeria */}
-      <div className="space-y-2">
-        <div className="aspect-square overflow-hidden rounded-2xl bg-sand-100">
-          {l.images?.[0]?.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={l.images[0].url} alt={l.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-5xl">🪁</div>
-          )}
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {(l.images ?? []).slice(1, 5).map((img: any) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={img.url}
-              src={img.url}
-              alt=""
-              className="aspect-square rounded-lg object-cover ring-1 ring-ocean-100"
-            />
-          ))}
+    <>
+      <SiteHeader />
+
+      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
+        <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <a href="/" style={{ color: color.inkFaint, textDecoration: 'none' }}>Comprar</a><span>›</span>
+          <a href={`/?cat=${l.category?.slug ?? ''}`} style={{ color: color.inkFaint, textDecoration: 'none' }}>{l.category?.namePt}</a><span>›</span>
+          <span style={{ color: color.ink, fontWeight: 600 }}>{title}</span>
         </div>
       </div>
 
-      {/* Info */}
-      <div className="space-y-4">
+      <main className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
+        <Gallery photos={photos} />
+
         <div>
-          <span className="text-xs uppercase tracking-wide text-ocean-900/40">
-            {l.category?.namePt}
-          </span>
-          <h1 className="text-2xl font-bold">{l.title}</h1>
-          <p className="text-sm text-ocean-900/60">
-            {l.brand?.name} {l.model?.name} {l.year ? `· ${l.year}` : ''}
-          </p>
-          <p className="mt-2 text-3xl font-bold text-ocean-700">{formatBRL(l.price)}</p>
-          <p className="text-sm text-ocean-900/50">
-            📍 {l.city}
-            {l.spot ? ` · ${l.spot}` : ''} {l.shippable ? '· 📦 envia' : '· 🤝 presencial'}
-          </p>
-        </div>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 8 }}>
+            {l.brand?.name}{l.year ? ` · ${l.year}` : ''}
+          </div>
+          <h1 style={{ fontFamily: font.serif, fontSize: 36, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '0 0 12px' }}>{title}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14.5, color: color.inkMute, marginBottom: 22 }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
+            {l.city}{l.spot ? ` · ${l.spot}` : ''} — {l.shippable ? 'enviável' : 'retirada local'}
+          </div>
+          <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
 
-        {/* Atributos padronizados */}
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-ocean-900/60">Especificações</h2>
-          <dl className="grid grid-cols-2 gap-y-1 text-sm">
-            {Object.entries(attrs).map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-ocean-900/50">{label(k)}</dt>
-                <dd className="font-medium">{display(k, v)}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        {l.description && (
-          <p className="whitespace-pre-line text-sm text-ocean-900/80">{l.description}</p>
-        )}
-
-        {/* Vendedor — sinais de confiança */}
-        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
-          {l.user?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={l.user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-sand-100" />
+          {attrs.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: color.line, border: `1px solid ${color.line}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
+              {attrs.map((at) => (
+                <div key={at.k + at.v} style={{ background: '#fff', padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 4 }}>{at.k}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: color.ink }}>{at.v}</div>
+                </div>
+              ))}
+            </div>
           )}
-          <div className="text-sm">
-            <p className="font-semibold">{l.user?.name}</p>
-            <p className="text-ocean-900/50">
-              {l.user?.phoneVerified && '✅ Telefone verificado'}
-              {l.user?.instagramHandle ? ` · @${l.user.instagramHandle}` : ''}
-            </p>
-            {memberSince && <p className="text-xs text-ocean-900/40">membro desde {memberSince}</p>}
+
+          <a href="/entrar" style={{ display: 'block', background: color.primary, color: '#fff', textDecoration: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, marginBottom: 26 }}>
+            Conversar com o vendedor
+          </a>
+
+          {/* SELLER */}
+          <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: l.user?.avatarUrl ? `center/cover url("${l.user.avatarUrl}")` : color.primary, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                {!l.user?.avatarUrl && initials}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.15 }}>{l.user?.name}</div>
+                <div style={{ fontSize: 13, color: color.inkFaint2 }}>
+                  {l.user?.instagramHandle ? `@${l.user.instagramHandle} · ` : ''}membro desde {memberSince}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 14 }}>
+              {l.user?.phoneVerified && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: color.primary, background: '#e8f1ec', padding: '6px 11px', borderRadius: 999 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: color.primary }} />Telefone verificado
+                </span>
+              )}
+              {l.user?.instagramHandle && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '6px 11px', borderRadius: 999 }}>Instagram conectado</span>
+              )}
+            </div>
           </div>
         </div>
+      </main>
 
-        <button className="w-full rounded-lg bg-ocean-600 py-3 font-semibold text-white">
-          {l.shippable ? 'Comprar com escrow' : 'Conversar com vendedor'}
-        </button>
-        <p className="text-center text-xs text-ocean-900/40">
-          Chat e pagamento chegam nos Blocos 2 e 3.
-        </p>
-      </div>
-    </div>
+      {/* DESCRIPTION + SUMMARY */}
+      <section className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '56px 24px' }}>
+        <div>
+          <h2 style={{ fontFamily: font.serif, fontSize: 28, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 16px' }}>Descrição</h2>
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: color.inkSoft, margin: 0, whiteSpace: 'pre-line' }}>
+            {l.description || 'Sem descrição adicional.'}
+          </p>
+        </div>
+        <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 20, alignSelf: 'start' }}>
+          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 14 }}>Resumo</div>
+          {summary.map((r, i) => (
+            <div key={r.k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: i < summary.length - 1 ? '1px solid #f0ebde' : 'none' }}>
+              <span style={{ fontSize: 14, color: color.inkFaint }}>{r.k}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: color.ink, textAlign: 'right' }}>{r.v}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Footer />
+    </>
   );
-}
-
-function label(k: string) {
-  const map: Record<string, string> = {
-    size_m2: 'Tamanho',
-    condition: 'Estado',
-    repairs_count: 'Reparos',
-    usage_time: 'Tempo de uso',
-    bar_size: 'Tamanho da barra',
-    harness_size: 'Tamanho',
-    subtype: 'Tipo',
-  };
-  return map[k] ?? k;
-}
-
-function display(k: string, v: any) {
-  if (k === 'condition') return CONDITION_LABEL[v] ?? v;
-  if (k === 'size_m2') return `${v} m²`;
-  if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
-  return String(v);
 }
