@@ -1,6 +1,10 @@
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import { db } from './db';
 import { parseFilters, PRICE_RANGES, type SP } from './filters';
+
+// Tag pra invalidar o cache quando um anúncio é criado/muda (revalidateTag).
+export const LISTINGS_TAG = 'listings';
 
 // Dados da busca — server-side. Para a escala de 1 hub, busca o conjunto ativo
 // (cap 500) e calcula facetas + aplica filtros em memória no servidor (HTML
@@ -77,16 +81,29 @@ function facetCount<T>(items: Card[], pick: (c: Card) => T | null, labelOf: (v: 
   return Array.from(map.entries()).map(([value, { label, count }]) => ({ value, label, count }));
 }
 
+// Conjunto ativo (cap 500) como cards já mapeados — serializável e cacheável.
+// relationLoadStrategy:'join' = 1 LATERAL JOIN em vez de ~5 round-trips ao banco.
+// unstable_cache (revalidate 60s) tira o banco do caminho da maioria dos loads;
+// invalidado na hora quando alguém publica (revalidateTag(LISTINGS_TAG)).
+const loadActiveCards = unstable_cache(
+  async (): Promise<Card[]> => {
+    const raw = await db.listing.findMany({
+      where: { status: 'active', deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+      relationLoadStrategy: 'join',
+      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
+    });
+    return raw.map(toCard);
+  },
+  ['browse:active-cards'],
+  { revalidate: 60, tags: [LISTINGS_TAG] },
+);
+
 export async function getBrowseData(sp: SP) {
   const f = parseFilters(sp);
 
-  const raw = await db.listing.findMany({
-    where: { status: 'active', deletedAt: null },
-    orderBy: { createdAt: 'desc' },
-    take: 500,
-    include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
-  });
-  const all = raw.map(toCard);
+  const all = await loadActiveCards();
 
   // facetas (sobre o conjunto todo)
   const facets: Facets = {

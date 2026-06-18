@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
+import { LISTINGS_TAG } from '../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
       },
       include: { images: true },
     });
+    revalidateTag(LISTINGS_TAG); // anúncio novo aparece na busca na hora
     return NextResponse.json(listing, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

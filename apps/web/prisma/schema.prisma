@@ -6,6 +6,10 @@ generator client {
   provider      = "prisma-client-js"
   // native = dev local; rhel = runtime serverless da Vercel.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // relationJoins: carrega relações via LATERAL JOIN (1 query) em vez de N
+  // round-trips — crítico com o banco em outra região. Ativa por query com
+  // relationLoadStrategy: 'join'.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
