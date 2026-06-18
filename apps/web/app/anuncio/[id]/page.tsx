@@ -7,6 +7,7 @@ import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
+import { ContactSellerButton } from '../../../components/ContactSellerButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,9 +77,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             </div>
           )}
 
-          <a href="/entrar" style={{ display: 'block', background: color.primary, color: '#fff', textDecoration: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, marginBottom: 26 }}>
-            Conversar com o vendedor
-          </a>
+          <ContactSellerButton listingId={l.id} />
 
           {/* SELLER */}
           <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18 }}>

@@ -56,6 +56,10 @@ model User {
 
   listings Listing[]
 
+  buyerConversations  Conversation[] @relation("buyerConvos")
+  sellerConversations Conversation[] @relation("sellerConvos")
+  messages            Message[]
+
   @@index([phone])
 }
 
@@ -129,11 +133,12 @@ model Listing {
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
-  user     User           @relation(fields: [userId], references: [id])
-  category Category       @relation(fields: [categoryId], references: [id])
-  brand    Brand?         @relation(fields: [brandId], references: [id])
-  model    Model?         @relation(fields: [modelId], references: [id])
-  images   ListingImage[]
+  user          User           @relation(fields: [userId], references: [id])
+  category      Category       @relation(fields: [categoryId], references: [id])
+  brand         Brand?         @relation(fields: [brandId], references: [id])
+  model         Model?         @relation(fields: [modelId], references: [id])
+  images        ListingImage[]
+  conversations Conversation[]
 
   @@index([categoryId])
   @@index([city])
@@ -151,4 +156,45 @@ model ListingImage {
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId])
+}
+
+enum ConversationStatus {
+  open
+  archived
+  blocked
+}
+
+// Conversa atrelada a um anúncio: 1 comprador + 1 vendedor.
+model Conversation {
+  id        String             @id @default(uuid())
+  listingId String
+  buyerId   String
+  sellerId  String
+  status    ConversationStatus @default(open)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer    User      @relation("buyerConvos", fields: [buyerId], references: [id])
+  seller   User      @relation("sellerConvos", fields: [sellerId], references: [id])
+  messages Message[]
+
+  @@unique([listingId, buyerId]) // 1 conversa por comprador por anúncio
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  body           String
+  imageUrl       String?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
 }

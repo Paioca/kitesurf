@@ -19,7 +19,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
       <a href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </a>
-      <span style={{ ...tab(false), opacity: 0.5 }} title="Em breve"><span style={{ fontSize: 18 }}>✉</span><span style={lbl(false)}>Mensagens</span></span>
+      <a href="/chat" style={tab(active === 'msg')}><span style={{ fontSize: 18 }}>✉</span><span style={lbl(active === 'msg')}>Mensagens</span></a>
       <span style={{ ...tab(false), opacity: 0.5 }} title="Em breve"><span style={{ width: 19, height: 19, borderRadius: 999, background: '#cfd8d2', display: 'block' }} /><span style={lbl(false)}>Perfil</span></span>
     </nav>
   );
