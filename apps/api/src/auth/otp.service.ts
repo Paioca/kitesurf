@@ -10,15 +10,22 @@ export class OtpService {
   private readonly ttl = Number(process.env.OTP_TTL_SECONDS ?? 300);
   private readonly mock = (process.env.OTP_MOCK ?? 'true') === 'true';
 
+  get isMock(): boolean {
+    return this.mock;
+  }
+
   constructor(private prisma: PrismaService) {}
 
-  async generate(phone: string): Promise<void> {
+  // Retorna o código em texto puro APENAS no modo mock (pra facilitar teste
+  // sem SMS real). Em produção com SMS real, retorna null.
+  async generate(phone: string): Promise<string | null> {
     const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 dígitos
     const codeHash = await bcrypt.hash(code, 8);
     const expiresAt = new Date(Date.now() + this.ttl * 1000);
 
     await this.prisma.otpCode.create({ data: { phone, codeHash, expiresAt } });
     await this.send(phone, code);
+    return this.mock ? code : null;
   }
 
   // Retorna true se o código confere e não expirou; consome o código.

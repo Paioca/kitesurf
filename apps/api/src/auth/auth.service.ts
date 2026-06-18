@@ -18,8 +18,13 @@ export class AuthService {
   ) {}
 
   async requestOtp(dto: RequestOtpDto) {
-    await this.otp.generate(dto.phone);
-    return { ok: true, message: 'Código enviado por SMS.' };
+    const devCode = await this.otp.generate(dto.phone);
+    // devCode só é preenchido no modo mock (OTP_MOCK=true) — facilita teste sem SMS.
+    return {
+      ok: true,
+      message: 'Código enviado por SMS.',
+      ...(devCode ? { devCode } : {}),
+    };
   }
 
   // Verifica OTP. Telefone novo -> cria conta (exige onboarding completo).

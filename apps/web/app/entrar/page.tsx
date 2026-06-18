@@ -15,6 +15,7 @@ export default function EntrarPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [instagram, setInstagram] = useState('');
   const [error, setError] = useState('');
+  const [devCode, setDevCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function requestOtp() {
@@ -26,7 +27,12 @@ export default function EntrarPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error('Falha ao enviar código.');
+      if (data.devCode) {
+        setDevCode(String(data.devCode));
+        setCode(String(data.devCode)); // pré-preenche no modo teste
+      }
       setStep('code');
     } catch (e: any) {
       setError(e.message);
@@ -92,9 +98,15 @@ export default function EntrarPage() {
 
       {step === 'code' && (
         <div className="mt-5 space-y-3">
-          <p className="text-xs text-ocean-900/50">
-            No modo dev, o código aparece no log da API.
-          </p>
+          {devCode ? (
+            <p className="rounded-lg bg-ocean-50 p-2 text-sm text-ocean-700">
+              🔧 Modo teste — seu código é <strong>{devCode}</strong> (já preenchido).
+            </p>
+          ) : (
+            <p className="text-xs text-ocean-900/50">
+              No modo dev, o código aparece no log da API.
+            </p>
+          )}
           <Field label="Código (6 dígitos)">
             <input
               value={code}
