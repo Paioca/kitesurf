@@ -4,6 +4,7 @@ import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
+import { rateLimit, tooMany } from '../../../lib/ratelimit';
 import { Prisma } from '@prisma/client';
 
 export const runtime = 'nodejs';
@@ -47,6 +48,7 @@ const createSchema = z.object({
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`listing:${user.id}`, 20, 3600))) return tooMany();
     const parsed = createSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;

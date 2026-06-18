@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../../../../../lib/db';
 import { verifyOtp } from '../../../../../lib/otp';
 import { setSession } from '../../../../../lib/session';
+import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +22,9 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
   const dto = parsed.data;
+
+  // anti brute-force do código (além do limite de 5 tentativas por código)
+  if (!(await rateLimit(`otp:verify:${clientIp(req)}`, 20, 3600))) return tooMany();
 
   const existing = await db.user.findUnique({ where: { phone: dto.phone } });
   let user = existing;

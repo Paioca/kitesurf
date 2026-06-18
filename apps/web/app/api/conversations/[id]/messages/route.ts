@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 import { sendMessage, ChatError } from '../../../../../lib/chat';
+import { rateLimit, tooMany } from '../../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,7 @@ const schema = z.object({ body: z.string().max(2000).optional(), imageUrl: z.str
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`msg:${user.id}`, 60, 300))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const msg = await sendMessage(user.id, params.id, parsed.data.body ?? '', parsed.data.imageUrl);

@@ -8,6 +8,7 @@ import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
 import { ContactSellerButton } from '../../../components/ContactSellerButton';
+import { ReportButton } from '../../../components/ReportButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,9 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
               )}
             </div>
             <a href={`/perfil/${l.user?.id}`} style={{ display: 'inline-block', marginTop: 15, fontSize: 13.5, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Ver perfil do vendedor ›</a>
+          </div>
+          <div style={{ marginTop: 14, textAlign: 'center' }}>
+            <ReportButton targetType="listing" targetId={l.id} label="Denunciar anúncio" />
           </div>
         </div>
       </main>

@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { processImage } from '../../../../lib/storage';
+import { rateLimit, clientIp, tooMany } from '../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
-// Upload de foto de perfil — PÚBLICO, porque acontece no onboarding (antes da conta existir).
-// Rate limiting entra no P2. Retorna { url }.
+// Upload de foto de perfil — PÚBLICO (onboarding, antes da conta existir).
+// Rate-limited por IP pra evitar abuso de storage.
 export async function POST(req: Request) {
   try {
+    if (!(await rateLimit(`avatar:${clientIp(req)}`, 15, 3600))) return tooMany();
     const form = await req.formData();
     const file = form.get('file');
     if (!(file instanceof File)) return NextResponse.json({ message: 'Arquivo ausente.' }, { status: 400 });

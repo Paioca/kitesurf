@@ -64,6 +64,7 @@ model User {
   buyerDeals      Deal[]   @relation("buyerDeals")
   reviewsGiven    Review[] @relation("reviewsGiven")
   reviewsReceived Review[] @relation("reviewsReceived")
+  reportsMade     Report[] @relation("reportsMade")
 
   @@index([phone])
 }
@@ -253,4 +254,34 @@ model Review {
 
   @@unique([dealId, reviewerId])
   @@index([reviewedId])
+}
+
+// Rate limiting via banco (janela fixa). Sem infra nova; cron de limpeza no P2.
+model RateHit {
+  id        String   @id @default(uuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+enum ReportStatus {
+  open
+  reviewed
+  actioned
+}
+
+// Denúncia → fila manual (admin via SQL no MVP). T&S essencial e barato.
+model Report {
+  id         String       @id @default(uuid())
+  reporterId String
+  targetType String // user | listing | message
+  targetId   String
+  reason     String
+  status     ReportStatus @default(open)
+  createdAt  DateTime     @default(now())
+
+  reporter User @relation("reportsMade", fields: [reporterId], references: [id])
+
+  @@index([status])
 }
