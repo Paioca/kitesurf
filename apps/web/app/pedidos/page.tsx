@@ -27,7 +27,7 @@ function Thumb({ src }: { src: string | null }) {
 
 export default async function Pedidos() {
   const user = await getCurrentUser();
-  if (!user) redirect('/entrar');
+  if (!user) redirect('/entrar?next=%2Fpedidos');
   const { incoming, outgoing } = await getRequestsForUser(user.id);
   const novos = incoming.filter((r) => r.status === 'pending').length;
 

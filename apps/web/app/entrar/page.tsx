@@ -158,7 +158,7 @@ export default function Entrar() {
               <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                 {loading ? '...' : 'Enviar código'}
               </button>
-              <p style={terms}>Ao continuar, você concorda com os Termos e a Política de Privacidade da Vaya.</p>
+              <p style={terms}>Ao continuar, você concorda com os <a href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</a> e a <a href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</a> da Vaya.</p>
             </>
           )}
 

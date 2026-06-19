@@ -38,14 +38,18 @@ export function HomeIntro({ compact = false }: { compact?: boolean }) {
     return (
       <div style={{ padding: '14px 18px 4px' }}>
         {label}
-        <div className="kl-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
-          {STEPS.map((s, i) => (
-            <div key={s.t} style={{ flex: 'none', width: 208, background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: radius.input, padding: 14 }}>
-              <Num n={i + 1} />
-              <div style={{ fontFamily: font.serif, fontSize: 15.5, fontWeight: 600, margin: '10px 0 4px' }}>{s.t}</div>
-              <div style={{ fontSize: 12.5, color: color.inkMute, lineHeight: 1.45 }}>{s.d}</div>
-            </div>
-          ))}
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <div className="kl-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+            {STEPS.map((s, i) => (
+              <div key={s.t} style={{ flex: 'none', width: 186, background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: radius.input, padding: 14 }}>
+                <Num n={i + 1} />
+                <div style={{ fontFamily: font.serif, fontSize: 15.5, fontWeight: 600, margin: '10px 0 4px' }}>{s.t}</div>
+                <div style={{ fontSize: 12.5, color: color.inkMute, lineHeight: 1.45 }}>{s.d}</div>
+              </div>
+            ))}
+          </div>
+          {/* fade na borda direita = sinaliza que rola pro lado */}
+          <div aria-hidden style={{ position: 'absolute', top: 0, right: 0, bottom: 4, width: 36, pointerEvents: 'none', background: `linear-gradient(90deg, transparent, ${color.bg})` }} />
         </div>
         <Trust />
       </div>

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Favoritos() {
   const user = await getCurrentUser();
-  if (!user) redirect('/entrar');
+  if (!user) redirect('/entrar?next=%2Ffavoritos');
   const items = await getFavorites(user.id);
 
   const empty = (

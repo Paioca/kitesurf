@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Conta() {
   const user = await getCurrentUser();
-  if (!user) redirect('/entrar');
+  if (!user) redirect('/entrar?next=%2Fconta');
 
   const memberSince = user.createdAt ? new Date(user.createdAt).getFullYear() : null;
   const initials = (user.name ?? '?').slice(0, 2).toUpperCase();

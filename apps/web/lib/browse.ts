@@ -79,7 +79,7 @@ function toCard(l: any, persp: Perspective): Card {
       ship: !!l.shippable,
       city: l.city,
       sizeM2: null,
-      sizeLabel: len ? `${len} m` : 'Barra',
+      sizeLabel: len ? `linhas ${len} m` : 'Barra',
       repair: false,
       includesBar: false,
       partOfKit: kit,

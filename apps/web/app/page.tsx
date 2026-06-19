@@ -27,7 +27,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
-          <div style={{ position: 'relative', height: 188, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', height: 148, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: heroGradient }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.2),rgba(12,37,32,0.75))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>

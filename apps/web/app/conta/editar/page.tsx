@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditarPerfil() {
   const user = await getCurrentUser();
-  if (!user) redirect('/entrar');
+  if (!user) redirect('/entrar?next=%2Fconta%2Feditar');
 
   const initial = {
     name: user.name ?? '',

@@ -33,7 +33,7 @@ export function FavoriteButton({ listingId, initial = false, variant = 'overlay'
   }
 
   return (
-    <button onClick={toggle} aria-label={fav ? 'Remover dos favoritos' : 'Favoritar'} aria-pressed={fav} style={{ position: 'absolute', bottom: 12, right: 12, width: 34, height: 34, borderRadius: 999, border: 'none', background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 4px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, lineHeight: 1, color: fav ? '#d14b4b' : '#7c857c', cursor: 'pointer', zIndex: 3 }}>
+    <button onClick={toggle} aria-label={fav ? 'Remover dos favoritos' : 'Favoritar'} aria-pressed={fav} style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 999, border: 'none', background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 4px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, lineHeight: 1, color: fav ? '#d14b4b' : '#7c857c', cursor: 'pointer', zIndex: 3 }}>
       {heart}
     </button>
   );

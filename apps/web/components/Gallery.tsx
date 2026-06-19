@@ -26,6 +26,8 @@ export function Gallery({ photos }: { photos: string[] }) {
             <button
               key={p}
               onClick={() => setSel(i)}
+              aria-label={`Ver foto ${i + 1}`}
+              aria-current={i === sel}
               style={{ border: 'none', cursor: 'pointer', height: 104, borderRadius: 12, backgroundImage: `url("${p}")`, backgroundSize: 'cover', backgroundPosition: 'center', outlineOffset: -2, outline: i === sel ? `3px solid ${color.primary}` : `1px solid ${color.line}`, opacity: i === sel ? 1 : 0.82 }}
             />
           ))}

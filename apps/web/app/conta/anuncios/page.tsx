@@ -22,7 +22,7 @@ const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
 
 export default async function MeusAnuncios() {
   const user = await getCurrentUser();
-  if (!user) redirect('/entrar');
+  if (!user) redirect('/entrar?next=%2Fconta%2Fanuncios');
   const items = await getMyListings(user.id);
 
   const body = (
