@@ -3,6 +3,7 @@
 // Cadastro / Entrar — design Kite Life (handoff Entrar.dc.html).
 // Fluxo: telefone -> OTP -> perfil (foto obrigatória) -> pronto. Sessão em cookie.
 import { useRef, useState } from 'react';
+import { downscaleImage } from '../../lib/resizeImage';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 
@@ -83,8 +84,9 @@ export default function Entrar() {
     setUploading(true);
     setError('');
     try {
+      const small = await downscaleImage(file, 512); // foto de perfil — 512px basta
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', small);
       const res = await fetch('/api/uploads/avatar', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Falha no upload.');

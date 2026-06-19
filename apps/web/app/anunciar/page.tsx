@@ -5,6 +5,7 @@
 // Adaptação Fase 0: "Enviável" sem a palavra escrow.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { color, font } from '../../lib/tokens';
+import { downscaleImage } from '../../lib/resizeImage';
 import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 
@@ -62,7 +63,8 @@ export default function Criar() {
     setUploading(true); setError('');
     try {
       for (const file of Array.from(files).slice(0, 20 - images.length)) {
-        const fd = new FormData(); fd.append('file', file);
+        const small = await downscaleImage(file, 1600); // reduz no cliente: upload rápido, sem estourar 4,5MB
+        const fd = new FormData(); fd.append('file', small);
         const res = await fetch('/api/uploads/image', { method: 'POST', body: fd });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message ?? 'Falha no upload.');
