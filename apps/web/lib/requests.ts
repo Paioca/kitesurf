@@ -22,12 +22,14 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   if (!listing) throw new RequestError('Anúncio não encontrado.', 404);
   if (listing.userId === userId) throw new RequestError('Você é o dono deste anúncio.', 400);
   if (type === 'offer' && (!amount || amount < 100)) throw new RequestError('Informe um valor válido.', 400);
+  const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
   const r = await db.request.upsert({
     where: { listingId_buyerId_type: { listingId, buyerId: userId, type } },
     update: { amount: type === 'offer' ? amount! : null, status: 'pending' },
     create: { listingId, buyerId: userId, sellerId: listing.userId, type, amount: type === 'offer' ? amount! : null },
   });
-  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: listing.title }); // no-op se Twilio não configurado
+  // avisa o vendedor já com o contato do comprador (pode chamar direto). no-op se Twilio off.
+  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: listing.title, buyerName: buyer?.name ?? 'Um comprador', buyerPhone: buyer?.phone ?? '' });
   return r;
 }
 
@@ -48,7 +50,7 @@ function listingShape(l: any) {
 // vendedor só vem nos enviados que foram aceitos.
 export async function getRequestsForUser(userId: string) {
   const [incoming, outgoing, deals] = await Promise.all([
-    db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true } } } }),
+    db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } }),
     db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
     db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } } } }),
   ]);
@@ -60,7 +62,7 @@ export async function getRequestsForUser(userId: string) {
     return { id: d.id, status: d.status, iAmSeller: d.sellerId === userId, iAmBuyer: d.buyerId === userId, myReviewDone: d.reviews.some((rv) => rv.reviewerId === userId) };
   };
   return {
-    incoming: incoming.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl }, deal: dealState(r), createdAt: r.createdAt.toISOString() })),
+    incoming: incoming.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: waLink(r.buyer.phone) }, deal: dealState(r), createdAt: r.createdAt.toISOString() })),
     outgoing: outgoing.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null, deal: dealState(r), createdAt: r.createdAt.toISOString() })),
   };
 }

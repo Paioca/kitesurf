@@ -47,8 +47,8 @@ export default async function Pedidos() {
               <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name} · {ST[r.status]}</div>
             </div>
           </a>
+          {r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
           {r.status === 'pending' && <RequestActions id={r.id} />}
-          {r.status === 'accepted' && <div style={okTag}>WhatsApp liberado pro comprador</div>}
           {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
         </Row>
       ))}

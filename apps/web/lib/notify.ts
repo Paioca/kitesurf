@@ -6,20 +6,22 @@ import 'server-only';
 //   APP_URL (default: prod)
 // Nota: canal SMS provisório. Quando houver sender de WhatsApp aprovado, trocar
 // o From por `whatsapp:+...` e (fora da janela de 24h) usar ContentSid de template.
-export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string }) {
+export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string; buyerName?: string; buyerPhone?: string }) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_SMS_FROM;
   if (!sid || !token || !from || !opts.sellerPhone) return; // não configurado → silencioso
 
   const what = opts.type === 'offer' ? 'uma oferta' : 'um pedido de visita';
+  const who = opts.buyerName ? `${opts.buyerName} fez` : 'Você recebeu';
+  const contato = opts.buyerPhone ? ` Fale com o comprador: https://wa.me/${opts.buyerPhone.replace(/\D/g, '')}.` : '';
   const url = `${process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'}/pedidos`;
   const to = opts.sellerPhone.replace(/[^\d+]/g, '');
 
   const body = new URLSearchParams({
     From: from,
     To: to,
-    Body: `Vaya: você recebeu ${what} no anúncio "${opts.listingTitle}". Veja em ${url}`,
+    Body: `Vaya: ${who} ${what} no anúncio "${opts.listingTitle}".${contato} Veja em ${url}`,
   });
 
   try {

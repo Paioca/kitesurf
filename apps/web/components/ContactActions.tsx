@@ -63,7 +63,7 @@ export function ContactActions({ listingId, initial }: { listingId: string; init
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>
-        <strong style={{ color: color.ink }}>O que acontece:</strong> o vendedor é avisado na hora por SMS com o seu interesse. Se ele aceitar, o WhatsApp dele aparece aqui pra vocês combinarem o resto.
+        <strong style={{ color: color.ink }}>O que acontece:</strong> o vendedor é avisado na hora por SMS com o seu interesse e o seu contato — ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
       </div>
     </div>
   );
