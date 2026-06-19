@@ -17,13 +17,16 @@ export default async function Conta() {
   const memberSince = user.createdAt ? new Date(user.createdAt).getFullYear() : null;
   const initials = (user.name ?? '?').slice(0, 2).toUpperCase();
 
+  // Conta = administrativo. Marketplace (Pedidos, Anúncios, Favoritos) fica no header/abas.
+  const contact: { k: string; v: string; verified?: boolean; muted?: boolean }[] = [
+    { k: 'Telefone / WhatsApp', v: user.phone, verified: user.phoneVerified },
+    { k: 'E-mail', v: user.email || 'não informado', muted: !user.email },
+    { k: 'Instagram', v: user.instagramHandle ? `@${user.instagramHandle}` : 'não informado', muted: !user.instagramHandle },
+  ];
   const links: { href: string; label: string; desc: string }[] = [
+    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, e-mail, Instagram, idioma' },
     { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar — editar, pausar, excluir (inclui pausados)' },
-    { href: '/favoritos', label: 'Favoritos', desc: 'Anúncios que você salvou' },
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
-    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, Instagram, idioma — e excluir conta' },
-    { href: '/anunciar', label: 'Anunciar', desc: 'Publicar um novo item' },
-    { href: '/pedidos', label: 'Pedidos', desc: 'Ofertas e visitas — enviadas e recebidas' },
   ];
 
   const body = (
@@ -42,6 +45,21 @@ export default async function Conta() {
         </div>
       </div>
 
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>Dados da conta</div>
+      <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
+        {contact.map((c, i) => (
+          <div key={c.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', borderTop: i ? `1px solid ${color.line}` : 'none' }}>
+            <span style={{ fontSize: 13.5, color: color.inkFaint }}>{c.k}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: c.muted ? color.inkFaint2 : color.ink, textAlign: 'right' }}>
+              {c.v}
+              {c.verified && <span style={{ fontSize: 11, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 8px', borderRadius: 999 }}>verificado</span>}
+            </span>
+          </div>
+        ))}
+        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login e não muda. E-mail e Instagram você ajusta em Editar perfil.</div>
+      </div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>Conta</div>
       <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
         {links.map((l, i) => (
           <a key={l.href} href={l.href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 18px', textDecoration: 'none', color: color.ink, borderTop: i ? `1px solid ${color.line}` : 'none' }}>
