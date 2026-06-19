@@ -9,9 +9,10 @@ type State = { offer: { status: string; amount: number | null } | null; visit: {
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const STATUS_TXT: Record<string, string> = { pending: 'aguardando o vendedor', accepted: 'aceita', declined: 'recusada' };
 
-export function ContactActions({ listingId, initial }: { listingId: string; initial: State }) {
+export function ContactActions({ listingId, initial, visitSummary = '', itemNoun = 'o item' }: { listingId: string; initial: State; visitSummary?: string; itemNoun?: string }) {
   const [state, setState] = useState<State>(initial);
   const [showOffer, setShowOffer] = useState(false);
+  const [confirmVisit, setConfirmVisit] = useState(false);
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -25,7 +26,7 @@ export function ContactActions({ listingId, initial }: { listingId: string; init
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
       if (type === 'offer') setState((s) => ({ ...s, offer: { status: 'pending', amount: amountCents ?? null } }));
       else setState((s) => ({ ...s, visit: { status: 'pending' } }));
-      setShowOffer(false); setAmount('');
+      setShowOffer(false); setConfirmVisit(false); setAmount('');
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }
 
@@ -58,7 +59,22 @@ export function ContactActions({ listingId, initial }: { listingId: string; init
       )}
       {offerLabel && <div style={statusLine}>{offerLabel}</div>}
 
-      <button onClick={() => send('visit')} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
+      {!confirmVisit ? (
+        <button onClick={() => setConfirmVisit(true)} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
+      ) : (
+        <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
+            Estou ciente de que {itemNoun} é: <strong>{visitSummary}</strong>. E estou solicitando um agendamento para ir ver {itemNoun} pessoalmente.
+          </div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#8a5a1f', background: '#fdf0e1', borderRadius: 9, padding: '9px 12px', marginTop: 11 }}>
+            Evite chamar só pra perguntar o que já está no anúncio. Se for reportado como spam, você pode ser banido.
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
+            <button onClick={() => setConfirmVisit(false)} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
+            <button onClick={() => send('visit')} disabled={busy === 'visit'} style={{ ...btnPrimary, flex: 1 }}>{busy === 'visit' ? '…' : 'Confirmar agendamento'}</button>
+          </div>
+        </div>
+      )}
       {visitLabel && <div style={statusLine}>{visitLabel}</div>}
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}

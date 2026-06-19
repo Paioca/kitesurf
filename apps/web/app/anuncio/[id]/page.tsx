@@ -17,7 +17,14 @@ import { ReportButton } from '../../../components/ReportButton';
 
 export const dynamic = 'force-dynamic';
 
-const CONDITION: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
+// Labels das opções de enum da ficha (condição kite/barra, bladder, mangueiras).
+const CONDITION: Record<string, string> = {
+  novo_lacrado: 'Novo (lacrado)', novo_10x: 'Novo (menos de 10x velejo)',
+  semi_otimo: 'Semi novo (tecido em ótimo estado)', semi_desgaste: 'Semi novo (tecido com início de desgaste)',
+  usado_desgaste: 'Usado (tecido com bastante desgaste)',
+  novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos',
+  zero: 'Zero', microfuro_adesivado: 'Microfuro adesivado', original: 'Original', ja_trocadas: 'Já trocadas',
+};
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
 
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
@@ -49,15 +56,31 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   if (a.condition) attrs.push({ k: 'Estado', v: CONDITION[a.condition] ?? a.condition });
   if (l.year) attrs.push({ k: 'Ano', v: String(l.year) });
   if (l.brand?.name) attrs.push({ k: 'Marca', v: l.brand.name });
+  if (a.bladder) attrs.push({ k: 'Bladder', v: CONDITION[a.bladder] ?? a.bladder });
+  if (a.mangueiras) attrs.push({ k: 'Mangueiras', v: CONDITION[a.mangueiras] ?? a.mangueiras });
+  if (a.microfuros != null) attrs.push({ k: 'Micro furos', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
   if (a.repairs_count != null) attrs.push({ k: 'Reparos', v: Number(a.repairs_count) > 0 ? String(a.repairs_count) : 'Nenhum' });
-  if (a.usage_time) attrs.push({ k: 'Tempo de uso', v: String(a.usage_time) });
   if (a.harness_size) attrs.push({ k: 'Tamanho', v: String(a.harness_size) });
   if (a.bar_size) attrs.push({ k: 'Barra', v: String(a.bar_size) });
+
+  // resumo pra confirmação de visita (o comprador declara que leu a ficha)
+  const itemNoun = isKit ? 'o kit' : l.category?.slug === 'barra' ? 'a barra' : 'o kite';
+  const summaryParts: string[] = [];
+  const bm = [l.brand?.name, l.model?.name].filter(Boolean).join(' ');
+  if (bm) summaryParts.push(bm);
+  if (l.year) summaryParts.push(String(l.year));
+  if (sizeM2) summaryParts.push(sizeM2);
+  if (a.condition) summaryParts.push(CONDITION[a.condition] ?? a.condition);
+  if (a.bladder) summaryParts.push(`bladder ${(CONDITION[a.bladder] ?? a.bladder).toLowerCase()}`);
+  if (a.mangueiras) summaryParts.push(`mangueiras ${(CONDITION[a.mangueiras] ?? a.mangueiras).toLowerCase()}`);
+  if (a.microfuros != null) summaryParts.push(Number(a.microfuros) > 0 ? `${a.microfuros} micro furo(s)` : 'sem micro furos');
+  summaryParts.push(`em ${l.city}${l.spot ? ` (${l.spot})` : ''}`);
+  const visitSummary = summaryParts.join(', ');
 
   const summary: { k: string; v: string }[] = [
     { k: 'Categoria', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? '—' },
     { k: 'Local', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` },
-    { k: 'Entrega', v: l.shippable ? 'Enviável' : 'Retirada local' },
+    { k: 'Entrega', v: [l.pickup && 'Retirada', l.shippable && 'Envio'].filter(Boolean).join(' + ') || 'Retirada local' },
   ];
 
   return (
@@ -82,7 +105,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           <h1 style={{ fontFamily: font.serif, fontSize: 36, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '0 0 12px' }}>{title}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14.5, color: color.inkMute, marginBottom: 22 }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
-            {l.city}{l.spot ? ` · ${l.spot}` : ''} — {l.shippable ? 'enviável' : 'retirada local'}
+            {l.city}{l.spot ? ` · ${l.spot}` : ''} — {[l.pickup && 'retirada', l.shippable && 'envio'].filter(Boolean).join(' + ') || 'retirada'}
           </div>
           {l.status !== 'active' && statusLabel[l.status] && (
             <div style={{ background: '#fbf0d8', border: '1px solid #ecdcb0', color: '#7a5e1f', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', borderRadius: 10, marginBottom: 16 }}>
@@ -143,7 +166,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             <OwnerControls listingId={l.id} status={l.status} />
           ) : (
             <>
-              <ContactActions listingId={l.id} initial={reqState} />
+              <ContactActions listingId={l.id} initial={reqState} visitSummary={visitSummary} itemNoun={itemNoun} />
               <div style={{ marginBottom: 24 }}><FavoriteButton listingId={l.id} initial={favorited} variant="inline" /></div>
             </>
           )}
