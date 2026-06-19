@@ -3,7 +3,9 @@ import bcrypt from 'bcryptjs';
 import { db } from './db';
 
 const TTL = Number(process.env.OTP_TTL_SECONDS ?? 300);
-const MOCK = (process.env.OTP_MOCK ?? 'true') === 'true';
+// Mock ligado por padrão (Fase 0). Só desliga com OTP_MOCK='false' explícito —
+// string vazia/unset = mock (evita login quebrado por env mal setada).
+const MOCK = process.env.OTP_MOCK !== 'false';
 
 export const otpIsMock = MOCK;
 
