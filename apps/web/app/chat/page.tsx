@@ -20,7 +20,20 @@ export default function Chat() {
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  async function blockConvo() {
+    if (!activeId) return;
+    if (!window.confirm('Bloquear esta conversa? Ela some pra vocês dois e ninguém pode mais escrever.')) return;
+    setBusy(true); setErr('');
+    try {
+      const res = await fetch(`/api/conversations/${activeId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'blocked' }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro ao bloquear.');
+      setActiveId(null); setThread(null); setMobileView('list');
+      await loadList();
+    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 900px)');
@@ -62,10 +75,12 @@ export default function Chat() {
     if (!body || !activeId) return;
     setSending(true);
     setInput('');
+    setErr('');
     try {
       const res = await fetch(`/api/conversations/${activeId}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
       if (res.ok) { await loadThread(activeId); loadList(); }
-    } finally { setSending(false); }
+      else { setInput(body); setErr((await res.json().catch(() => ({}))).message ?? 'Não foi possível enviar.'); }
+    } catch { setInput(body); setErr('Sem conexão. Tente de novo.'); } finally { setSending(false); }
   }
 
   function openConvo(id: string) {
@@ -144,7 +159,12 @@ export default function Chat() {
                       <div style={{ fontSize: 11.5, color: color.primary, fontWeight: 600 }}>Ver anúncio ›</div>
                     </div>
                   </a>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                    <button onClick={blockConvo} disabled={busy} style={{ background: 'none', border: 'none', color: color.inkFaint, fontSize: 12.5, fontWeight: 600, cursor: busy ? 'default' : 'pointer', fontFamily: font.sans }}>Bloquear conversa</button>
+                  </div>
                 </div>
+
+                {err && <div style={{ flex: 'none', background: '#fdecea', color: '#b3261e', fontSize: 12.5, padding: '8px 22px' }}>{err}</div>}
 
                 <DealBar
                   thread={thread}

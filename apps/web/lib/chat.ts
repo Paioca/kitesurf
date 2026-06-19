@@ -77,12 +77,23 @@ export async function getConversation(userId: string, id: string) {
   return {
     id: c.id,
     role,
+    status: c.status,
     counterpartId: counterpart.id,
     counterpart: { name: counterpart.name, avatarUrl: counterpart.avatarUrl, instagramHandle: counterpart.instagramHandle, phoneVerified: counterpart.phoneVerified },
     listing: { id: c.listing.id, title: c.listing.title, price: c.listing.price, thumb: c.listing.images[0]?.url ?? null, sizeM2: a.size_m2 != null ? String(a.size_m2) : null, shippable: c.listing.shippable },
     messages: messages.map((m) => ({ id: m.id, mine: m.senderId === userId, body: m.body, imageUrl: m.imageUrl, createdAt: m.createdAt })),
     deal,
   };
+}
+
+// Bloquear/desbloquear a conversa. Só um participante. Bloqueada: some das listas
+// dos dois (listConversations exclui) e o envio é recusado (sendMessage).
+export async function setConversationStatus(userId: string, id: string, status: 'open' | 'blocked') {
+  const c = await db.conversation.findUnique({ where: { id } });
+  if (!c) throw new ChatError('Conversa não encontrada.', 404);
+  if (c.buyerId !== userId && c.sellerId !== userId) throw new ChatError('Sem acesso.', 403);
+  await db.conversation.update({ where: { id }, data: { status } });
+  return { ok: true, status };
 }
 
 export async function sendMessage(userId: string, id: string, body: string, imageUrl?: string) {
