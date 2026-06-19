@@ -42,6 +42,7 @@ const createSchema = z.object({
   price: z.number().int().min(100), // conjunto (kit) ou peça única
   city: z.string().min(1),
   spot: z.string().optional(),
+  pickup: z.boolean().optional(),
   shippable: z.boolean(),
   images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40),
   // kit (kite + barra)
@@ -92,6 +93,7 @@ export async function POST(req: Request) {
         price: dto.price,
         city: dto.city,
         spot: dto.spot ?? null,
+        pickup: dto.pickup ?? true,
         shippable: dto.shippable,
         status: 'active',
         lastConfirmedAt: new Date(),

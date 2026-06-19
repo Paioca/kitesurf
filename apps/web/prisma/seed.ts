@@ -5,6 +5,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const CONDITION = ['novo', 'seminovo', 'bom', 'usado', 'com_reparos'];
+// Condição do kite — focada no estado do tecido (sem "com reparo"):
+const KITE_CONDITION = ['novo_lacrado', 'novo_10x', 'semi_otimo', 'semi_desgaste', 'usado_desgaste'];
+const BARRA_CONDITION = ['novo', 'seminovo', 'bom', 'usado'];
 
 const CATEGORIES = [
   {
@@ -16,9 +19,10 @@ const CATEGORIES = [
       required: ['size_m2', 'condition'],
       properties: {
         size_m2: { type: 'number', label: 'Tamanho (m²)', enum: [5, 6, 7, 8, 9, 10, 11, 12, 14, 17] },
-        condition: { type: 'string', enum: CONDITION },
-        repairs_count: { type: 'integer', label: 'Nº de reparos' },
-        usage_time: { type: 'string', label: 'Tempo de uso estimado' },
+        condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
+        microfuros: { type: 'integer', label: 'Micro furos (qtd)' },
+        bladder: { type: 'string', label: 'Bladder', enum: ['zero', 'microfuro_adesivado'] },
+        mangueiras: { type: 'string', label: 'Mangueiras', enum: ['original', 'ja_trocadas'] },
       },
     },
   },
@@ -32,7 +36,7 @@ const CATEGORIES = [
       properties: {
         compatible_brand: { type: 'string', label: 'Marca compatível' },
         line_length_m: { type: 'number', label: 'Comprimento de linha (m)' },
-        condition: { type: 'string', enum: CONDITION },
+        condition: { type: 'string', label: 'Condição', enum: BARRA_CONDITION },
         lines_state: { type: 'string', label: 'Estado das linhas' },
       },
     },

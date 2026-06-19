@@ -10,7 +10,21 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo } from '../../components/ui';
 
-const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
+// Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
+const CONDITION_LABEL: Record<string, string> = {
+  // condição do kite (tecido)
+  novo_lacrado: 'Novo (lacrado)',
+  novo_10x: 'Novo (menos de 10x velejo)',
+  semi_otimo: 'Semi novo (tecido em ótimo estado)',
+  semi_desgaste: 'Semi novo (tecido com início de desgaste)',
+  usado_desgaste: 'Usado (tecido com bastante desgaste)',
+  // condição da barra
+  novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+  // bladder + mangueiras
+  zero: 'Zero', microfuro_adesivado: 'Microfuro adesivado',
+  original: 'Original', ja_trocadas: 'Já trocadas',
+};
+const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
 const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
 const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
 
@@ -33,9 +47,10 @@ export default function Criar() {
   const [sellBarraAlone, setSellBarraAlone] = useState(false);
   const [kitePrice, setKitePrice] = useState('');
   const [barraPrice, setBarraPrice] = useState('');
-  const [city, setCity] = useState('Cumbuco');
-  const [spot, setSpot] = useState('');
-  const [shippable, setShippable] = useState(false);
+  const [city, setCity] = useState('Cumbuco'); // spot principal (lista)
+  const [spot, setSpot] = useState(''); // ponto específico opcional
+  const [pickup, setPickup] = useState(true); // retirada no local
+  const [shippable, setShippable] = useState(false); // envio
   const [uploading, setUploading] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<'kite' | 'barra'>('kite');
   const [error, setError] = useState('');
@@ -107,8 +122,9 @@ export default function Criar() {
   const priceOk = Number(price) > 0
     && (!sellKiteAlone || Number(kitePrice) > 0)
     && (!sellBarraAlone || Number(barraPrice) > 0);
-  const canPublish = !!kind && fichaOk && photosOk && priceOk && !uploading;
-  const missing = !kind ? 'Escolha o tipo' : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : '';
+  const deliveryOk = pickup || shippable;
+  const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading;
+  const missing = !kind ? 'Escolha o tipo' : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
 
   async function publish() {
     setError('');
@@ -119,7 +135,7 @@ export default function Criar() {
           categoryId: mainCat?.id, brandId: brandId || undefined, modelId: modelId || undefined,
           year: year ? Number(year) : undefined, attributes: attrs,
           title: autoTitle || mainCat?.namePt || 'Anúncio', price: Math.round(Number(price) * 100),
-          city, spot: spot || undefined, shippable, images,
+          city, spot: spot || undefined, pickup, shippable, images,
           hasBarra: isKit,
           kitePrice: isKit && sellKiteAlone ? Math.round(Number(kitePrice) * 100) : null,
           barraPrice: isKit && sellBarraAlone ? Math.round(Number(barraPrice) * 100) : null,
@@ -150,7 +166,7 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Anúncio publicado!</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar em Cumbuco. Avisamos quando alguém te chamar.</p>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Avisamos quando alguém te chamar.</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
             <a href="/" style={outline}>Voltar à busca</a>
@@ -168,6 +184,11 @@ export default function Criar() {
         <H1>Anunciar</H1>
         <Lead>Numa tela só. No kit (kite + barra) você descreve as duas peças e decide se vende avulso.</Lead>
 
+        <div style={{ background: '#fef6e7', border: '1.5px solid #f0d79a', borderRadius: 12, padding: '13px 16px', margin: '0 0 24px' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#a9791a', marginBottom: 4 }}>Atenção</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: '#6b5618' }}>Descreva o equipamento com honestidade. Caso sua reputação seja afetada por omissão de informações, você poderá ser banido da plataforma.</div>
+        </div>
+
         <UpLabel>O que você está vendendo?</UpLabel>
         <div className="criar-cats" style={{ display: 'grid', gap: 10, marginBottom: 6 }}>
           <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" />
@@ -182,7 +203,7 @@ export default function Criar() {
               <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
                 <Cell><Label>Marca</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
                 {kind !== 'barra' && <Cell><Label>Modelo</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
-                {kind !== 'barra' && <Cell><Label>Ano</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 12 }, (_, i) => 2025 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
+                {kind !== 'barra' && <Cell><Label>Ano</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 16 }, (_, i) => 2027 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
                 {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
                 <Fields props={mainProps} required={mainRequired} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
               </div>
@@ -208,8 +229,8 @@ export default function Criar() {
               <div style={{ fontSize: 13, color: color.inkFaint }}>{images.length} foto(s)</div>
             </Section>
 
-            {/* PREÇO + ENTREGA */}
-            <Section title="Preço e entrega">
+            {/* PREÇO */}
+            <Section title="Preço">
               {isKit ? (
                 <div>
                   <Label>Preço do conjunto (kite + barra) *</Label>
@@ -225,16 +246,21 @@ export default function Criar() {
               ) : (
                 <><Label>Preço *</Label><PriceInput value={price} onChange={setPrice} /></>
               )}
-              <div style={{ marginTop: 22 }}>
-                <Label>Forma de entrega</Label>
-                <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 4 }}>
-                  <DeliveryOpt on={!shippable} onClick={() => setShippable(false)} title="Retirada local" desc="Encontro em Cumbuco. Combina com o vendedor." />
-                  <DeliveryOpt on={shippable} onClick={() => setShippable(true)} title="Enviável" desc="Manda pelos Correios. Ideal pra acessórios." />
-                </div>
+            </Section>
+
+            {/* LOCAL E ENTREGA */}
+            <Section title="Local e entrega">
+              <div className="criar-loc" style={{ display: 'grid', gap: 16 }}>
+                <Cell><Label>Spot *</Label><select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>{SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}</select></Cell>
+                <Cell><Label>Outro ponto (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder="ex: Outro Beach" /></Cell>
               </div>
-              <div className="criar-loc" style={{ marginTop: 20, display: 'grid', gap: 16 }}>
-                <Cell><Label>Cidade</Label><input className="kl-input" value={city} onChange={(e) => setCity(e.target.value)} /></Cell>
-                <Cell><Label>Spot (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} /></Cell>
+              <div style={{ marginTop: 20 }}>
+                <Label>Forma de entrega *</Label>
+                <Helper>Pode marcar as duas.</Helper>
+                <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 10 }}>
+                  <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title="Retirada no spot" desc="Encontro presencial. Combinam o ponto no WhatsApp." />
+                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio (Correios)" desc="Manda pelos Correios. Ideal pra acessórios." />
+                </div>
               </div>
             </Section>
 
@@ -372,14 +398,6 @@ function Toggle({ on, onClick, title, desc }: { on: boolean; onClick: () => void
     <button onClick={onClick} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, textAlign: 'left', cursor: 'pointer', background: '#fff', border: on ? `2px solid ${color.primary}` : '1.5px solid #e0d9c9', borderRadius: 13, padding: '14px 16px' }}>
       <span style={{ width: 20, height: 20, borderRadius: 6, flex: 'none', marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? color.primary : '#fff', border: `1.5px solid ${on ? color.primary : '#cbc3b2'}` }}>{on && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}</span>
       <span><div style={{ fontSize: 14.5, fontWeight: 700, color: color.ink }}>{title}</div><div style={{ fontSize: 12.5, color: '#7c857c', marginTop: 2 }}>{desc}</div></span>
-    </button>
-  );
-}
-function DeliveryOpt({ on, onClick, title, desc }: { on: boolean; onClick: () => void; title: string; desc: string }) {
-  return (
-    <button onClick={onClick} style={{ borderRadius: 13, padding: '16px 18px', cursor: 'pointer', textAlign: 'left', fontFamily: font.sans, background: '#fff', border: on ? `2px solid ${color.primary}` : '1.5px solid #e0d9c9', boxShadow: on ? '0 0 0 3px rgba(31,107,92,0.1)' : 'none' }}>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 5 }}>{title}</div>
-      <div style={{ fontSize: 13, color: '#7c857c', lineHeight: 1.45 }}>{desc}</div>
     </button>
   );
 }

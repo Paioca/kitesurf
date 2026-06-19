@@ -144,9 +144,10 @@ model Listing {
   kitePrice       Int?          // centavos — kite avulso; null = não vendo o kite sozinho
   barraPrice      Int?          // centavos — barra avulsa; null = não vendo a barra sozinha
   barraAttributes Json?         // infos da barra do kit (line_length_m, condition); barra-only usa `attributes`
-  city            String
-  spot            String?
-  shippable       Boolean       @default(false)
+  city            String // spot principal (lista controlada — ex: Cumbuco, Taíba)
+  spot            String? // ponto específico opcional (texto livre)
+  pickup          Boolean       @default(true) // retirada no local
+  shippable       Boolean       @default(false) // envio (Correios)
   status          ListingStatus @default(draft)
   soldToUserId    String?
   lastConfirmedAt DateTime?
