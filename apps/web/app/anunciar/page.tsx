@@ -10,13 +10,6 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 
 const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
-const RAIL = ['O que você vende', 'Fotos guiadas', 'Preço & entrega', 'Revisão'];
-const TIPS = [
-  'Marca e modelo de listas fechadas é o que deixa a busca por tamanho funcionar de verdade.',
-  'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo — honestidade gera review boa.',
-  'No conjunto, você decide se vende as peças avulsas. Barra avulsa também aparece na busca de barra.',
-  'Confira tudo antes de publicar — capriche na primeira foto e no preço, é o que mais converte.',
-];
 const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
 const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
 
@@ -27,7 +20,6 @@ export default function Criar() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [step, setStep] = useState(0);
   const [kind, setKind] = useState<Kind>('');
   const [brandId, setBrandId] = useState('');
   const [modelId, setModelId] = useState('');
@@ -114,7 +106,8 @@ export default function Criar() {
   const priceOk = Number(price) > 0
     && (!sellKiteAlone || Number(kitePrice) > 0)
     && (!sellBarraAlone || Number(barraPrice) > 0);
-  const canNext = step === 0 ? fichaOk : step === 1 ? photosOk : step === 2 ? priceOk : true;
+  const canPublish = !!kind && fichaOk && photosOk && priceOk && !uploading;
+  const missing = !kind ? 'Escolha o tipo' : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : '';
 
   async function publish() {
     setError('');
@@ -168,162 +161,103 @@ export default function Criar() {
 
   return (
     <Shell>
-      <div className="criar-grid">
-        {/* RAIL */}
-        <div className="only-desktop" style={{ position: 'sticky', top: 24, alignSelf: 'start' }}>
-          {RAIL.map((title, i) => {
-            const done = i < step, active = i === step;
-            return (
-              <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 0' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 999, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700, background: done || active ? color.primary : '#ece6d8', color: done || active ? '#fff' : color.inkFaint2 }}>{done ? '✓' : i + 1}</div>
-                <div style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active || done ? color.ink : color.inkFaint2 }}>{title}</div>
-              </div>
-            );
-          })}
-          <div style={{ marginTop: 18, padding: '14px 16px', background: '#ece3d2', borderRadius: 13 }}>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 14, color: color.primary, marginBottom: 5 }}>Dica</div>
-            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: '#6b6353', margin: 0 }}>{TIPS[step]}</p>
-          </div>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
+
+        <H1>Anunciar</H1>
+        <Lead>Numa tela só. No kit (kite + barra) você descreve as duas peças e decide se vende avulso.</Lead>
+
+        <UpLabel>O que você está vendendo?</UpLabel>
+        <div className="criar-cats" style={{ display: 'grid', gap: 10, marginBottom: 6 }}>
+          <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" />
+          <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" />
+          <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra (kit)" desc="As duas peças no mesmo anúncio" />
         </div>
 
-        {/* CONTENT */}
-        <div>
-          {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{error}</div>}
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Passo {step + 1} de 4</div>
-
-          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
-
-          {step === 0 && (
-            <>
-              <H1>O que você está vendendo?</H1>
-              <Lead>Escolha o tipo. No kit (kite + barra) você descreve as duas peças e decide se vende avulso.</Lead>
-              <UpLabel>Tipo de anúncio</UpLabel>
-              <div className="criar-cats" style={{ display: 'grid', gap: 10, marginBottom: 28 }}>
-                <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" />
-                <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" />
-                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra (kit)" desc="As duas peças no mesmo anúncio" />
+        {kind && (
+          <>
+            {/* FICHA */}
+            <Section title="Ficha">
+              <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
+                <Cell><Label>Marca</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
+                {kind !== 'barra' && <Cell><Label>Modelo</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
+                {kind !== 'barra' && <Cell><Label>Ano</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 12 }, (_, i) => 2025 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
+                {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
+                <Fields props={mainProps} required={mainRequired} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
               </div>
-
-              {kind && (
-                <>
-                  <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
-                    <Cell><Label>Marca</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
-                    {kind !== 'barra' && <Cell><Label>Modelo</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
-                    {kind !== 'barra' && <Cell><Label>Ano</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 12 }, (_, i) => 2025 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
-                    {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Ficha do kite</SubHead>}
-                    <Fields props={mainProps} required={mainRequired} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
-                  </div>
-
-                  {isKit && (
-                    <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
-                      <SubHead style={{ gridColumn: '1 / -1' }}>Ficha da barra</SubHead>
-                      <Fields props={barraProps} required={barraRequired} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 7 }}>
-                      <Label>Título do anúncio</Label>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}>
-                        <span style={{ width: 7, height: 7, background: color.primary, transform: 'rotate(45deg)', borderRadius: 1 }} />Gerado automaticamente
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '14px 15px', minHeight: 50 }}>
-                      <span style={{ fontFamily: font.serif, fontSize: 16, fontWeight: 600, color: color.ink }}>{autoTitle || 'Preencha marca e ficha…'}</span>
-                    </div>
-                  </div>
-                </>
+              {isKit && (
+                <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
+                  <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
+                  <Fields props={barraProps} required={barraRequired} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                </div>
               )}
-            </>
-          )}
+              {autoTitle && (
+                <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 10, background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '12px 15px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: color.primary, flex: 'none' }}>Título</span>
+                  <span style={{ fontFamily: font.serif, fontSize: 15.5, fontWeight: 600, color: color.ink }}>{autoTitle}</span>
+                </div>
+              )}
+            </Section>
 
-          {step === 1 && (
-            <>
-              <H1>Fotos guiadas</H1>
-              <Lead>Mínimo de 3 no total. {isKit ? 'No kit, envie fotos do kite E da barra (a barra precisa da própria foto pra aparecer na busca de barra).' : 'O GPS das imagens é removido automaticamente.'}</Lead>
+            {/* FOTOS */}
+            <Section title="Fotos">
+              <div style={{ fontSize: 13, color: color.inkMute, marginBottom: 12 }}>Mínimo 3.{isKit ? ' No kit, ao menos uma do kite e uma da barra.' : ' O GPS das imagens é removido automaticamente.'}</div>
               {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
               {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
-              <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 12 }}>{images.length} foto(s) · mínimo 3</div>
-            </>
-          )}
+              <div style={{ fontSize: 13, color: color.inkFaint }}>{images.length} foto(s)</div>
+            </Section>
 
-          {step === 2 && (
-            <>
-              <H1>Preço e entrega</H1>
-              <Lead>{isKit ? 'Defina o preço do conjunto e, se quiser, o preço de cada peça avulsa.' : 'Como o comprador recebe define a forma de entrega.'}</Lead>
-
+            {/* PREÇO + ENTREGA */}
+            <Section title="Preço e entrega">
               {isKit ? (
-                <div style={{ maxWidth: 620 }}>
+                <div>
                   <Label>Preço do conjunto (kite + barra) *</Label>
                   <PriceInput value={price} onChange={setPrice} />
                   <Helper>É por esse preço que você vende as duas peças juntas.</Helper>
-
-                  <div style={{ marginTop: 22, display: 'grid', gap: 14 }}>
+                  <div style={{ marginTop: 18, display: 'grid', gap: 14 }}>
                     <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title="Também vendo o kite separado" desc="Aparece na busca de kite com o preço avulso." />
                     {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço do kite sozinho *</Label><PriceInput value={kitePrice} onChange={setKitePrice} /></div>}
                     <Toggle on={sellBarraAlone} onClick={() => setSellBarraAlone((v) => !v)} title="Também vendo a barra separada" desc="Aí a barra também aparece na busca de barra." />
                     {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço da barra sozinha *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} /></div>}
                   </div>
-                  <Helper>Deixe as duas desmarcadas pra vender só o conjunto.</Helper>
                 </div>
               ) : (
-                <>
-                  <Label>Preço</Label>
-                  <div style={{ maxWidth: 260, marginBottom: 8 }}><PriceInput value={price} onChange={setPrice} /></div>
-                </>
+                <><Label>Preço *</Label><PriceInput value={price} onChange={setPrice} /></>
               )}
-
-              <div style={{ marginTop: 26 }}>
+              <div style={{ marginTop: 22 }}>
                 <Label>Forma de entrega</Label>
-                <div className="criar-delivery" style={{ display: 'grid', gap: 14, maxWidth: 620, marginTop: 4 }}>
+                <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 4 }}>
                   <DeliveryOpt on={!shippable} onClick={() => setShippable(false)} title="Retirada local" desc="Encontro em Cumbuco. Combina com o vendedor." />
                   <DeliveryOpt on={shippable} onClick={() => setShippable(true)} title="Enviável" desc="Manda pelos Correios. Ideal pra acessórios." />
                 </div>
               </div>
-              <div className="criar-loc" style={{ marginTop: 24, display: 'grid', gap: 18, maxWidth: 620 }}>
+              <div className="criar-loc" style={{ marginTop: 20, display: 'grid', gap: 16 }}>
                 <Cell><Label>Cidade</Label><input className="kl-input" value={city} onChange={(e) => setCity(e.target.value)} /></Cell>
                 <Cell><Label>Spot (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} /></Cell>
               </div>
-            </>
-          )}
+            </Section>
 
-          {step === 3 && (
-            <>
-              <H1>Revisão</H1>
-              <Lead>É assim que seu anúncio vai aparecer.</Lead>
-              <div style={{ maxWidth: 320, background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ position: 'relative', height: 196, backgroundImage: images[0] ? `url("${images[0].thumbUrl ?? images[0].url}")` : 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                  {attrs.size_m2 && <div style={{ position: 'absolute', top: 13, left: 13, background: 'rgba(20,72,62,0.92)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999 }}>{attrs.size_m2} m²</div>}
-                  {isKit && <div style={{ position: 'absolute', top: 13, right: 13, background: color.gold, color: color.primaryDeep, fontSize: 11.5, fontWeight: 800, padding: '5px 11px', borderRadius: 999 }}>+ Barra</div>}
-                </div>
-                <div style={{ padding: 18 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: color.inkFaint2, marginBottom: 5 }}>{brand?.name}{year ? ` · ${year}` : ''}</div>
-                  <div style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, marginBottom: 12 }}>{autoTitle || mainCat?.namePt}</div>
-                  <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>{price ? Number(price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ —'}</div>
-                  {isKit && (sellKiteAlone || sellBarraAlone) && (
-                    <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 8, lineHeight: 1.5 }}>
-                      {sellKiteAlone && <div>Kite avulso: {Number(kitePrice || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>}
-                      {sellBarraAlone && <div>Barra avulsa: {Number(barraPrice || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
+            {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginTop: 24 }}>{error}</div>}
 
-          {/* erro também perto do botão de ação (no mobile o banner do topo fica fora de vista) */}
-          {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginTop: 24 }}>{error}</div>}
-
-          {/* NAV */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 16, paddingTop: 24, borderTop: `1px solid ${color.line}` }}>
-            <button onClick={() => setStep((s) => Math.max(0, s - 1))} style={{ ...outline, opacity: step === 0 ? 0.4 : 1, pointerEvents: step === 0 ? 'none' : 'auto', border: 'none', cursor: 'pointer' }}>‹ Voltar</button>
-            <button onClick={() => (step < 3 ? setStep((s) => s + 1) : publish())} disabled={!canNext} style={{ background: canNext ? color.primary : '#dfe3df', color: canNext ? '#fff' : color.inkFaint2, border: 'none', borderRadius: 12, padding: '15px 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canNext ? 'pointer' : 'not-allowed' }}>
-              {step === 3 ? 'Publicar anúncio' : 'Continuar'}
-            </button>
-          </div>
-        </div>
+            {/* PUBLICAR — fixo no rodapé, mostra o que falta */}
+            <div style={{ position: 'sticky', bottom: 0, background: color.bg, paddingTop: 14, paddingBottom: 6, marginTop: 18, borderTop: `1px solid ${color.line}` }}>
+              <button onClick={publish} disabled={!canPublish} style={{ width: '100%', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2, border: 'none', borderRadius: 12, padding: 16, fontFamily: font.sans, fontSize: 16, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed' }}>
+                {canPublish ? 'Publicar anúncio' : (missing || 'Publicar anúncio')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Shell>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ borderTop: `1px solid ${color.line}`, marginTop: 28, paddingTop: 22 }}>
+      <SubHead>{title}</SubHead>
+      <div style={{ marginTop: 14 }}>{children}</div>
+    </div>
   );
 }
 
@@ -402,7 +336,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span style={{ fontWeight: 900, fontSize: 21, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Kite <span style={{ color: color.primary }}>Life</span></span>
           </a>
           <span style={{ fontSize: 14, fontWeight: 600, color: color.inkMute }}>Criar anúncio</span>
-          <a href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Salvar e sair</a>
+          <a href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Sair</a>
         </div>
       </header>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 24px 90px' }}>{children}</main>
