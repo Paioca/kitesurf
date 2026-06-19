@@ -19,6 +19,7 @@ export default async function Conta() {
 
   const links: { href: string; label: string; desc: string }[] = [
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
+    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, Instagram, idioma — e excluir conta' },
     { href: '/anunciar', label: 'Anunciar', desc: 'Publicar um novo item' },
     { href: '/chat', label: 'Mensagens', desc: 'Suas conversas' },
   ];
@@ -52,9 +53,6 @@ export default async function Conta() {
       </div>
 
       <LogoutButton />
-      <div style={{ fontSize: 12, color: color.inkFaint2, textAlign: 'center', marginTop: 14 }}>
-        Editar perfil e excluir conta chegam em breve.
-      </div>
     </div>
   );
 
