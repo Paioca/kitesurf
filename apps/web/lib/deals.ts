@@ -51,19 +51,21 @@ export async function confirmPurchase(userId: string, dealId: string) {
   ]);
 }
 
-// Avaliação — só após Deal completed; 1 por avaliador por deal.
-export async function createReview(userId: string, dealId: string, rating: number, comment?: string) {
+// Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA
+// só quando o deal vira completed (os dois confirmam) — filtro em getProfile.
+export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {
   const deal = await db.deal.findUnique({ where: { id: dealId } });
   if (!deal) throw new DealError('Negócio não encontrado.', 404);
-  if (deal.status !== 'completed') throw new DealError('Confirme a compra antes de avaliar.', 400);
+  if (deal.status === 'cancelled') throw new DealError('Negócio cancelado.', 400);
   if (deal.buyerId !== userId && deal.sellerId !== userId) throw new DealError('Sem acesso.', 403);
   if (rating < 1 || rating > 5) throw new DealError('Nota inválida.', 400);
 
   const reviewedId = userId === deal.buyerId ? deal.sellerId : deal.buyerId;
+  const cleanTags = (tags ?? []).filter((t) => typeof t === 'string').slice(0, 8);
   await db.review.upsert({
     where: { dealId_reviewerId: { dealId, reviewerId: userId } },
-    update: { rating, comment: comment ?? null },
-    create: { dealId, reviewerId: userId, reviewedId, rating, comment: comment ?? null },
+    update: { rating, comment: comment ?? null, tags: cleanTags },
+    create: { dealId, reviewerId: userId, reviewedId, rating, comment: comment ?? null, tags: cleanTags },
   });
 }
 

@@ -14,8 +14,9 @@ export async function getProfile(id: string) {
   if (!user) return null;
 
   const [reviewsRaw, salesCount, purchasesCount, listingsRaw] = await Promise.all([
+    // só reviews de negócios concluídos (os dois confirmaram) ficam públicas
     db.review.findMany({
-      where: { reviewedId: id },
+      where: { reviewedId: id, deal: { status: 'completed' } },
       orderBy: { createdAt: 'desc' },
       take: 30,
       include: { reviewer: { select: { name: true, avatarUrl: true } }, deal: { include: { listing: { select: { title: true } } } } },
@@ -47,6 +48,7 @@ export async function getProfile(id: string) {
   const reviews = reviewsRaw.map((r) => ({
     id: r.id,
     rating: r.rating,
+    tags: r.tags ?? [],
     comment: r.comment,
     createdAt: r.createdAt,
     reviewerName: r.reviewer.name,

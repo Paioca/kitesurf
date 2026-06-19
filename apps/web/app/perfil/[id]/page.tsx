@@ -97,6 +97,11 @@ export default async function PerfilPage({ params }: { params: { id: string } })
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, flex: 'none', color: color.accent, letterSpacing: 1 }}>{stars(r.rating)}</div>
                 </div>
+                {r.tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: r.comment ? 10 : 0 }}>
+                    {r.tags.map((t) => <span key={t} style={{ fontSize: 12, fontWeight: 600, color: color.primary, background: '#e8f1ec', border: '1px solid #cfe2d8', borderRadius: 999, padding: '4px 10px' }}>{t}</span>)}
+                  </div>
+                )}
                 {r.comment && <p style={{ fontSize: 14.5, lineHeight: 1.6, color: color.inkSoft, margin: 0 }}>{r.comment}</p>}
               </div>
             ))}

@@ -1,15 +1,21 @@
 'use client';
 
-// Checagem cruzada do negócio (a partir de um pedido aceito): vendedor marca
-// "vendido" → comprador confirma "comprei" → os dois avaliam. Alimenta a reputação.
+// Checagem cruzada do negócio + avaliação padronizada.
+// Avaliar é liberado assim que o negócio existe (vendedor marcou vendido) — não trava
+// no aceite. A avaliação só fica PÚBLICA quando os dois confirmam (deal completed).
 import { useState } from 'react';
 import { color, font } from '../lib/tokens';
 
 type Deal = { id: string; status: string; iAmSeller: boolean; iAmBuyer: boolean; myReviewDone: boolean } | null;
 
+// Critérios padronizados por papel:
+const SELLER_TAGS = ['Equipamento como descrito', 'Pontual', 'Comunicação boa', 'Pagamento tranquilo', 'Recomendo']; // comprador avalia o vendedor
+const BUYER_TAGS = ['Pontual', 'Comunicação boa', 'Negócio tranquilo', 'Recomendo']; // vendedor avalia o comprador
+
 export function DealBox({ requestId, role, deal }: { requestId: string; role: 'seller' | 'buyer'; deal: Deal }) {
   const [busy, setBusy] = useState(false);
   const [rating, setRating] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
   const [comment, setComment] = useState('');
   const [err, setErr] = useState('');
 
@@ -22,33 +28,67 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     } catch { setErr('Sem conexão.'); setBusy(false); }
   }
 
-  const Wrap = ({ children }: { children: React.ReactNode }) => <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}` }}>{children}</div>;
+  const reviewing = role === 'seller' ? 'o comprador' : 'o vendedor';
+  const tagOptions = role === 'seller' ? BUYER_TAGS : SELLER_TAGS;
+  const toggleTag = (t: string) => setTags((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
 
-  if (deal?.status === 'completed') {
-    if (deal.myReviewDone) return <Wrap><div style={{ fontSize: 13, color: color.primary, fontWeight: 600 }}>Negócio fechado · avaliação enviada ✓</div></Wrap>;
-    return (
-      <Wrap>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Negócio fechado — avalie {role === 'seller' ? 'o comprador' : 'o vendedor'}:</div>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-          {[1, 2, 3, 4, 5].map((n) => <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, lineHeight: 1, color: n <= rating ? '#e6a817' : '#d9d2c2', padding: 0 }}>★</button>)}
+  // --- confirmação (marcar vendido / confirmar compra) ---
+  let confirm: React.ReactNode = null;
+  if (!deal) {
+    confirm = role === 'seller'
+      ? <button onClick={() => call(`/api/requests/${requestId}/sold`)} disabled={busy} style={btn}>Marcar como vendido</button>
+      : <div style={muted}>Quando o vendedor marcar a venda, confirme aqui pra concluir o negócio.</div>;
+  } else if (deal.status === 'completed') {
+    confirm = <div style={{ fontSize: 13, fontWeight: 700, color: color.primary }}>Negócio concluído ✓</div>;
+  } else if (deal.status === 'seller_confirmed') {
+    confirm = role === 'seller'
+      ? <div style={muted}>Você marcou como vendido · aguardando o comprador confirmar.</div>
+      : <button onClick={() => call(`/api/deals/${deal.id}/confirm`)} disabled={busy} style={btn}>Confirmar que comprei</button>;
+  }
+
+  // --- avaliação padronizada (liberada assim que o deal existe) ---
+  let review: React.ReactNode = null;
+  if (deal) {
+    if (deal.myReviewDone) {
+      review = <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ {deal.status === 'completed' ? '· já está pública' : '· fica pública quando os dois confirmarem'}</div>;
+    } else {
+      review = (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Avalie {reviewing}:</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+            {[1, 2, 3, 4, 5].map((n) => <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, lineHeight: 1, color: n <= rating ? '#e6a817' : '#d9d2c2', padding: 0 }}>★</button>)}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
+            {tagOptions.map((t) => {
+              const on = tags.includes(t);
+              return <button key={t} onClick={() => toggleTag(t)} style={{ fontFamily: font.sans, fontSize: 12.5, fontWeight: 600, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineInput}` }}>{t}</button>;
+            })}
+          </div>
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário (opcional)" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 10, fontSize: 14, fontFamily: font.sans, resize: 'vertical' }} />
+          <button onClick={() => rating > 0 && call(`/api/deals/${deal.id}/review`, { rating, tags, comment: comment || undefined })} disabled={busy || rating === 0} style={btn}>Enviar avaliação</button>
         </div>
-        <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário (opcional)" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 10, fontSize: 14, fontFamily: font.sans, resize: 'vertical' }} />
-        <button onClick={() => rating > 0 && call(`/api/deals/${deal.id}/review`, { rating, comment: comment || undefined })} disabled={busy || rating === 0} style={btn}>Enviar avaliação</button>
-        {err && <div style={errStyle}>{err}</div>}
-      </Wrap>
-    );
+      );
+    }
   }
 
-  if (role === 'seller') {
-    if (deal?.status === 'seller_confirmed') return <Wrap><div style={muted}>Você marcou como vendido · aguardando o comprador confirmar.</div></Wrap>;
-    return <Wrap><button onClick={() => call(`/api/requests/${requestId}/sold`)} disabled={busy} style={btn}>Marcar como vendido</button>{err && <div style={errStyle}>{err}</div>}</Wrap>;
-  }
+  // --- mensagem de importância (some quando tudo está concluído e avaliado) ---
+  const done = deal?.status === 'completed' && deal.myReviewDone;
+  const note = !done ? (
+    <div style={{ fontSize: 12, lineHeight: 1.5, color: color.inkMute, background: '#f3f1e9', borderRadius: 9, padding: '9px 12px' }}>
+      Confirmar a compra/venda e avaliar fortalece os dois perfis — quem tem histórico de negócios vende mais rápido e passa mais confiança.
+    </div>
+  ) : null;
 
-  // comprador
-  if (deal?.status === 'seller_confirmed') return <Wrap><button onClick={() => call(`/api/deals/${deal.id}/confirm`)} disabled={busy} style={btn}>Confirmar que comprei</button>{err && <div style={errStyle}>{err}</div>}</Wrap>;
-  return <Wrap><div style={muted}>Quando o vendedor marcar a venda, confirme aqui pra liberar a avaliação.</div></Wrap>;
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {confirm}
+      {review && <div style={confirm ? { paddingTop: 12, borderTop: `1px solid ${color.line}` } : undefined}>{review}</div>}
+      {note}
+      {err && <div style={errStyle}>{err}</div>}
+    </div>
+  );
 }
 
 const btn: React.CSSProperties = { background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '11px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', marginTop: 4 };
 const muted: React.CSSProperties = { fontSize: 12.5, color: color.inkFaint2 };
-const errStyle: React.CSSProperties = { color: '#b3261e', fontSize: 12.5, marginTop: 8 };
+const errStyle: React.CSSProperties = { color: '#b3261e', fontSize: 12.5 };
