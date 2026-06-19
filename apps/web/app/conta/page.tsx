@@ -18,6 +18,8 @@ export default async function Conta() {
   const initials = (user.name ?? '?').slice(0, 2).toUpperCase();
 
   const links: { href: string; label: string; desc: string }[] = [
+    { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar — editar, pausar, excluir (inclui pausados)' },
+    { href: '/favoritos', label: 'Favoritos', desc: 'Anúncios que você salvou' },
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
     { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, Instagram, idioma — e excluir conta' },
     { href: '/anunciar', label: 'Anunciar', desc: 'Publicar um novo item' },

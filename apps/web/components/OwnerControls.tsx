@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { color } from '../lib/tokens';
 
-export function OwnerControls({ listingId, status }: { listingId: string; status: string }) {
+export function OwnerControls({ listingId, status, compact = false }: { listingId: string; status: string; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -28,8 +28,8 @@ export function OwnerControls({ listingId, status }: { listingId: string; status
   }
 
   return (
-    <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: color.inkFaint2, marginBottom: 12 }}>Você é o dono deste anúncio</div>
+    <div style={compact ? { padding: '4px 0 0' } : { border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
+      {!compact && <div style={{ fontSize: 13, fontWeight: 700, color: color.inkFaint2, marginBottom: 12 }}>Você é o dono deste anúncio</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <a href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</a>
         {status === 'active' && <button onClick={() => setStatus('paused')} disabled={busy} style={btnOutline}>Pausar</button>}

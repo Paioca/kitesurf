@@ -249,6 +249,16 @@ export async function getBrowseData(sp: SP) {
   return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
 }
 
+// Anúncios do próprio usuário (todos os status, menos excluídos) — cards + status.
+export async function getMyListings(userId: string): Promise<(Card & { status: string })[]> {
+  const raw = await db.listing.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+    include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true },
+  });
+  return raw.map((l) => ({ ...toCard(l, 'all'), status: l.status }));
+}
+
 // Anúncios favoritados (ativos) do usuário, como cards.
 export async function getFavorites(userId: string): Promise<Card[]> {
   const favs = await db.favorite.findMany({
