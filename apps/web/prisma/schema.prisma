@@ -62,6 +62,9 @@ model User {
   listings  Listing[]
   favorites Favorite[]
 
+  sentRequests     Request[] @relation("buyerRequests")
+  receivedRequests Request[] @relation("sellerRequests")
+
   buyerConversations  Conversation[] @relation("buyerConvos")
   sellerConversations Conversation[] @relation("sellerConvos")
   messages            Message[]
@@ -159,6 +162,7 @@ model Listing {
   conversations Conversation[]
   deals         Deal[]
   favoritedBy   Favorite[]
+  requests      Request[]
 
   @@index([categoryId])
   @@index([city])
@@ -299,6 +303,39 @@ model Report {
   reporter User @relation("reportsMade", fields: [reporterId], references: [id])
 
   @@index([status])
+}
+
+enum RequestType {
+  offer
+  visit
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  declined
+}
+
+// Contato estruturado (substitui chat livre). Comprador faz oferta (valor) ou
+// pede visita; vendedor aceita → libera o WhatsApp pro comprador.
+model Request {
+  id        String        @id @default(uuid())
+  listingId String
+  buyerId   String
+  sellerId  String
+  type      RequestType
+  amount    Int? // centavos — só pra oferta
+  status    RequestStatus @default(pending)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer   User    @relation("buyerRequests", fields: [buyerId], references: [id])
+  seller  User    @relation("sellerRequests", fields: [sellerId], references: [id])
+
+  @@unique([listingId, buyerId, type]) // 1 oferta + 1 visita por comprador por anúncio
+  @@index([sellerId])
+  @@index([buyerId])
 }
 
 // Favorito — comprador salva um anúncio. 1 por par.

@@ -4,14 +4,15 @@ import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
 import { getCurrentUser } from '../../../lib/session';
 import { db } from '../../../lib/db';
+import { getListingRequestState } from '../../../lib/requests';
 import { OwnerControls } from '../../../components/OwnerControls';
 import { FavoriteButton } from '../../../components/FavoriteButton';
+import { ContactActions } from '../../../components/ContactActions';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
-import { ContactSellerButton } from '../../../components/ContactSellerButton';
 import { ReportButton } from '../../../components/ReportButton';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   const me = await getCurrentUser();
   const isOwner = !!me && me.id === l.userId;
   const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
+  const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { offer: null, visit: null, whatsapp: null };
   const statusLabel: Record<string, string> = { paused: 'Pausado — não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
 
   const a = (l.attributes ?? {}) as Record<string, any>;
@@ -140,10 +142,10 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           {isOwner ? (
             <OwnerControls listingId={l.id} status={l.status} />
           ) : (
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'stretch' }}>
-              <div style={{ flex: 1, minWidth: 200 }}><ContactSellerButton listingId={l.id} /></div>
-              <FavoriteButton listingId={l.id} initial={favorited} variant="inline" />
-            </div>
+            <>
+              <ContactActions listingId={l.id} initial={reqState} />
+              <div style={{ marginBottom: 24 }}><FavoriteButton listingId={l.id} initial={favorited} variant="inline" /></div>
+            </>
           )}
 
           {/* SELLER */}

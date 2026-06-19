@@ -23,7 +23,7 @@ export default async function Conta() {
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
     { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, Instagram, idioma — e excluir conta' },
     { href: '/anunciar', label: 'Anunciar', desc: 'Publicar um novo item' },
-    { href: '/chat', label: 'Mensagens', desc: 'Suas conversas' },
+    { href: '/pedidos', label: 'Pedidos', desc: 'Ofertas e visitas — enviadas e recebidas' },
   ];
 
   const body = (
