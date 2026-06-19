@@ -45,12 +45,21 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
       {!showOffer ? (
         <button onClick={() => setShowOffer(true)} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
       ) : (
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
+        <div style={{ border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
+          <div style={{ position: 'relative', marginBottom: 12 }}>
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: color.inkFaint }}>R$</span>
             <input autoFocus type="text" inputMode="numeric" value={amount ? Number(amount).toLocaleString('pt-BR') : ''} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Sua oferta" style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 11, padding: '14px 14px 14px 40px', fontSize: 16, fontWeight: 700, fontFamily: font.sans }} />
           </div>
-          <button onClick={() => Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !(Number(amount) > 0)} style={{ ...btnPrimary, width: 'auto', padding: '14px 20px' }}>{busy === 'offer' ? '…' : 'Enviar'}</button>
+          <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
+            Estou ciente de que {itemNoun} é: <strong>{visitSummary}</strong>. E faço esta oferta com intenção real de comprar.
+          </div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#8a5a1f', background: '#fdf0e1', borderRadius: 9, padding: '9px 12px', marginTop: 11 }}>
+            Evite fazer ofertas sem interesse real de compra. Se for reportado como spam, você pode ser banido.
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
+            <button onClick={() => { setShowOffer(false); setAmount(''); }} disabled={busy === 'offer'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
+            <button onClick={() => Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !(Number(amount) > 0)} style={{ ...btnPrimary, flex: 1 }}>{busy === 'offer' ? '…' : 'Confirmar oferta'}</button>
+          </div>
         </div>
       )}
       {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
