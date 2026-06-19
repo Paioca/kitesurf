@@ -15,6 +15,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
         )}
         <span style={sizeBadge}>{item.sizeLabel}</span>
         {item.includesBar && <span style={comboBadge}>+ Barra</span>}
+        {item.partOfKit && <span style={comboBadge}>do kit</span>}
         <span style={deliveryTag}>
           <span style={{ width: 6, height: 6, borderRadius: 999, background: item.ship ? color.primary : color.accent }} />
           {item.ship ? 'Enviável' : 'Retirada local'}

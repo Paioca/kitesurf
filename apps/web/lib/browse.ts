@@ -8,10 +8,9 @@ import { parseFilters, PRICE_RANGES, PRICE_LABELS, type SP } from './filters';
 export const LISTINGS_TAG = 'listings';
 export const PAGE_SIZE = 24;
 
-// Dados da busca — server-side, SQL puro. Resultados filtrados + paginados no
-// banco (sem teto), facetas por agregação SQL (groupBy + um raw query no JSONB).
-// HTML indexável, zero fetch no cliente. Facetas contam sobre TODOS os ativos
-// (independem do filtro), então são cacheadas e invalidadas no publish.
+// Busca SQL paginada (sem teto), por PERSPECTIVA: a mesma listagem aparece como
+// "kite" na busca de kite e como "barra" na de barra. Kit = anúncio de kite com
+// hasBarra; sua barra entra na busca de barra só quando é vendável avulsa (barraPrice).
 export type Card = {
   id: string;
   brand: string;
@@ -26,7 +25,8 @@ export type Card = {
   sizeM2: string | null;
   sizeLabel: string;
   repair: boolean;
-  includesBar: boolean;
+  includesBar: boolean; // kite que vem com barra (badge "+ Barra")
+  partOfKit: boolean; // barra mostrada na busca de barra que faz parte de um kit
   photo: string | null;
 };
 
@@ -38,43 +38,91 @@ export type Facets = {
   city: Facet[];
   price: Facet[];
   repair: Facet[];
-  withbar: Facet[]; // kites que acompanham barra (combo)
+  withbar: Facet[]; // kites que acompanham barra (kit)
 };
 
 function brl(cents: number) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function toCard(l: any): Card {
+function pickPhoto(images: any[], component: string): string | null {
+  const img = (images ?? []).find((i) => i.component === component) ?? (images ?? [])[0];
+  return img?.thumbUrl ?? img?.url ?? null;
+}
+
+type Perspective = 'kite' | 'barra' | 'all';
+function perspectiveOf(f: Filters): Perspective {
+  return f.cat === 'barra' ? 'barra' : f.cat === 'kite' ? 'kite' : 'all';
+}
+
+// Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
+// a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
+function toCard(l: any, persp: Perspective): Card {
+  const showBarra = persp === 'barra' || (persp === 'all' && l.category?.slug === 'barra');
+
+  if (showBarra) {
+    const kit = l.hasBarra === true;
+    const ba = (kit ? l.barraAttributes : l.attributes) ?? {};
+    const len = ba.line_length_m != null ? String(ba.line_length_m) : null;
+    const price = kit ? l.barraPrice ?? l.price : l.price;
+    return {
+      id: l.id,
+      brand: (ba.compatible_brand as string) || l.brand?.name || '',
+      model: kit ? 'Barra do kit' : l.model?.name ?? l.title,
+      year: null,
+      priceCents: price,
+      priceLabel: brl(price),
+      cat: 'Barra',
+      catSlug: 'barra',
+      ship: !!l.shippable,
+      city: l.city,
+      sizeM2: null,
+      sizeLabel: len ? `${len} m` : 'Barra',
+      repair: false,
+      includesBar: false,
+      partOfKit: kit,
+      photo: pickPhoto(l.images, 'barra'),
+    };
+  }
+
+  // cara de kite (kite avulso ou kit). Preço = kite avulso quando houver, senão o cheio.
   const a = l.attributes ?? {};
   const sizeM2 = a.size_m2 != null ? String(a.size_m2) : null;
-  const sizeLabel = sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || '—';
+  const price = l.hasBarra ? l.kitePrice ?? l.price : l.price;
   return {
     id: l.id,
     brand: l.brand?.name ?? '',
     model: l.model?.name ?? l.title,
     year: l.year ?? null,
-    priceCents: l.price,
-    priceLabel: brl(l.price),
+    priceCents: price,
+    priceLabel: brl(price),
     cat: l.category?.namePt ?? '',
     catSlug: l.category?.slug ?? '',
     ship: !!l.shippable,
     city: l.city,
     sizeM2,
-    sizeLabel: String(sizeLabel),
+    sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || '—',
     repair: Number(a.repairs_count ?? 0) > 0,
-    includesBar: a.includes_bar === true,
-    photo: l.images?.[0]?.thumbUrl ?? l.images?.[0]?.url ?? null, // thumb 400px nos cards; url 1600px só no detalhe
+    includesBar: l.hasBarra === true,
+    partOfKit: false,
+    photo: pickPhoto(l.images, 'kite'),
   };
 }
 
 type Filters = ReturnType<typeof parseFilters>;
 const BASE: Prisma.ListingWhereInput = { status: 'active', deletedAt: null };
 
-// WHERE SQL a partir dos filtros multi-seleção (AND entre dimensões, OR dentro).
-function buildWhere(f: Filters): Prisma.ListingWhereInput {
+// WHERE por perspectiva. Barra: barras compráveis (avulsa OU kit com barra avulsa),
+// filtro só por cidade (preço/marca/tamanho da barra ficam pra depois). Kite/all:
+// faceta completa (tamanho m², marca, cidade, preço, reparo, kit).
+function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   const and: Prisma.ListingWhereInput[] = [];
-  if (f.cat) and.push({ category: { slug: f.cat } });
+  if (persp === 'barra') {
+    and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
+    if (f.city.length) and.push({ city: { in: f.city } });
+    return { ...BASE, AND: and };
+  }
+  if (persp === 'kite') and.push({ category: { slug: 'kite' } });
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
   if (f.city.length) and.push({ city: { in: f.city } });
   if (f.size.length) and.push({ OR: f.size.map((s) => ({ attributes: { path: ['size_m2'], equals: Number(s) } })) });
@@ -86,21 +134,19 @@ function buildWhere(f: Filters): Prisma.ListingWhereInput {
       }),
     });
   }
-  // reparo: 'rep' = repairs_count > 0; 'norep' = o contrário. Os dois juntos = sem filtro.
   if (f.repair.length === 1) {
     const rep: Prisma.ListingWhereInput = { attributes: { path: ['repairs_count'], gt: 0 } };
     and.push(f.repair[0] === 'rep' ? rep : { NOT: rep });
   }
-  // combo: kite que acompanha barra (includes_bar = true)
-  if (f.withbar.includes('1')) and.push({ attributes: { path: ['includes_bar'], equals: true } });
+  if (f.withbar.includes('1')) and.push({ hasBarra: true });
   return { ...BASE, AND: and };
 }
 
-// Facetas sobre TODOS os ativos (independem do filtro do usuário) → cacheáveis.
-// Colunas/relações via groupBy; tamanho/preço/reparo (derivados do JSONB) via raw SQL.
+// Facetas sobre TODOS os ativos → cacheáveis. A contagem de "Barra" inclui os kits
+// com barra avulsa (que aparecem na busca de barra).
 const loadFacets = unstable_cache(
   async (): Promise<{ facets: Facets; totalAll: number }> => {
-    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR] = await Promise.all([
+    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR, kitBarraR] = await Promise.all([
       db.listing.groupBy({ by: ['categoryId'], where: BASE, _count: { _all: true } }),
       db.listing.groupBy({ by: ['brandId'], where: { ...BASE, brandId: { not: null } }, _count: { _all: true } }),
       db.listing.groupBy({ by: ['city'], where: BASE, _count: { _all: true } }),
@@ -118,9 +164,8 @@ const loadFacets = unstable_cache(
         SELECT CASE WHEN (attributes->>'repairs_count') ~ '^[0-9]+$' AND (attributes->>'repairs_count')::int > 0
                     THEN 'rep' ELSE 'norep' END AS k, COUNT(*)::int AS count
         FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
-      db.$queryRaw<{ count: number }[]>`
-        SELECT COUNT(*)::int AS count FROM "Listing"
-        WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'includes_bar' = 'true'`,
+      db.listing.count({ where: { ...BASE, hasBarra: true } }),
+      db.listing.count({ where: { ...BASE, hasBarra: true, barraPrice: { not: null } } }),
     ]);
 
     const catMap = new Map(cats.map((c) => [c.id, c]));
@@ -128,7 +173,12 @@ const loadFacets = unstable_cache(
 
     const facets: Facets = {
       category: catG
-        .map((g) => ({ value: catMap.get(g.categoryId)?.slug ?? '', label: catMap.get(g.categoryId)?.namePt ?? '', count: g._count._all }))
+        .map((g) => {
+          const slug = catMap.get(g.categoryId)?.slug ?? '';
+          // barras compráveis = barra-only + kits com barra avulsa
+          const count = slug === 'barra' ? g._count._all + kitBarraR : g._count._all;
+          return { value: slug, label: catMap.get(g.categoryId)?.namePt ?? '', count };
+        })
         .filter((o) => o.value)
         .sort((a, b) => a.label.localeCompare(b.label)),
       size: sizeR
@@ -147,7 +197,7 @@ const loadFacets = unstable_cache(
         .map((r) => ({ value: r.k, label: PRICE_LABELS[r.k] ?? r.k, count: Number(r.count) }))
         .sort((a, b) => a.value.localeCompare(b.value)),
       repair: repairR.map((r) => ({ value: r.k, label: r.k === 'rep' ? 'Com reparo' : 'Sem reparo', count: Number(r.count) })),
-      withbar: Number(withbarR[0]?.count ?? 0) > 0 ? [{ value: '1', label: 'Acompanha barra', count: Number(withbarR[0].count) }] : [],
+      withbar: Number(withbarR) > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: Number(withbarR) }] : [],
     };
 
     const totalAll = priceR.reduce((s, r) => s + Number(r.count), 0);
@@ -159,10 +209,11 @@ const loadFacets = unstable_cache(
 
 export async function getBrowseData(sp: SP) {
   const f = parseFilters(sp);
+  const persp = perspectiveOf(f);
   const pageRaw = Array.isArray(sp.page) ? sp.page[0] : sp.page;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
-  const where = buildWhere(f);
+  const where = buildWhere(f, persp);
   const orderBy: Prisma.ListingOrderByWithRelationInput =
     f.sort === 'price_asc' ? { price: 'asc' } : f.sort === 'price_desc' ? { price: 'desc' } : { createdAt: 'desc' };
 
@@ -173,13 +224,16 @@ export async function getBrowseData(sp: SP) {
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       relationLoadStrategy: 'join',
-      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
+      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true },
     }),
     db.listing.count({ where }),
     loadFacets(),
   ]);
 
-  const items = raw.map(toCard);
+  const items = raw.map((l) => toCard(l, persp));
+  // Na busca de barra, mostra só categoria + cidade (resto é kite-específico).
+  const facets: Facets =
+    persp === 'barra' ? { ...fac.facets, size: [], brand: [], price: [], repair: [], withbar: [] } : fac.facets;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  return { items, facets: fac.facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
+  return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
 }

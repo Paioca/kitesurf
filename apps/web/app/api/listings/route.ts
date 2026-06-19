@@ -39,11 +39,16 @@ const createSchema = z.object({
   attributes: z.record(z.any()),
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
-  price: z.number().int().min(100),
+  price: z.number().int().min(100), // conjunto (kit) ou peça única
   city: z.string().min(1),
   spot: z.string().optional(),
   shippable: z.boolean(),
-  images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional() })).min(3).max(20),
+  images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40),
+  // kit (kite + barra)
+  hasBarra: z.boolean().optional(),
+  kitePrice: z.number().int().min(100).nullable().optional(), // kite avulso
+  barraPrice: z.number().int().min(100).nullable().optional(), // barra avulsa
+  barraAttributes: z.record(z.any()).optional(),
 });
 
 // POST /api/listings — criar anúncio (exige login)
@@ -59,6 +64,20 @@ export async function POST(req: Request) {
     if (!category) return NextResponse.json({ message: 'Categoria inválida.' }, { status: 400 });
 
     const attributes = validateAttributes(category.attributeSchema as any, dto.attributes);
+
+    // Kit: categoria primária precisa ser kite; valida infos da barra; exige
+    // ao menos 1 foto de cada peça (a barra precisa de foto própria pra busca de barra).
+    let barraAttributes: Prisma.InputJsonValue | undefined;
+    const hasBarra = dto.hasBarra === true;
+    if (hasBarra) {
+      if (category.slug !== 'kite') return NextResponse.json({ message: 'Kit precisa ter o kite como peça principal.' }, { status: 400 });
+      const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
+      if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });
+      barraAttributes = validateAttributes(barraCat.attributeSchema as any, dto.barraAttributes ?? {}) as Prisma.InputJsonValue;
+      const hasKitePhoto = dto.images.some((i) => i.component === 'kite');
+      const hasBarraPhoto = dto.images.some((i) => i.component === 'barra');
+      if (!hasKitePhoto || !hasBarraPhoto) return NextResponse.json({ message: 'Envie pelo menos uma foto do kite e uma da barra.' }, { status: 400 });
+    }
 
     const listing = await db.listing.create({
       data: {
@@ -76,7 +95,11 @@ export async function POST(req: Request) {
         shippable: dto.shippable,
         status: 'active',
         lastConfirmedAt: new Date(),
-        images: { create: dto.images.map((img, i) => ({ url: img.url, thumbUrl: img.thumbUrl ?? null, position: i })) },
+        hasBarra,
+        kitePrice: hasBarra ? dto.kitePrice ?? null : null,
+        barraPrice: hasBarra ? dto.barraPrice ?? null : null,
+        barraAttributes: barraAttributes ?? Prisma.JsonNull,
+        images: { create: dto.images.map((img, i) => ({ url: img.url, thumbUrl: img.thumbUrl ?? null, component: img.component ?? null, position: i })) },
       },
       include: { images: true },
     });

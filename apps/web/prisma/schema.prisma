@@ -130,10 +130,15 @@ model Listing {
   brandId         String?
   modelId         String?
   year            Int?
-  attributes      Json          @default("{}") // validado contra Category.attributeSchema
+  attributes      Json          @default("{}") // validado contra Category.attributeSchema (peça primária)
   title           String
   description     String?
-  price           Int // centavos
+  price           Int // centavos — preço do CONJUNTO (kit) ou da peça única (kite-only/barra-only)
+  // --- Kit (kite + barra no mesmo anúncio) ---
+  hasBarra        Boolean       @default(false) // true = kit (categoria primária = kite; barra embutida)
+  kitePrice       Int?          // centavos — kite avulso; null = não vendo o kite sozinho
+  barraPrice      Int?          // centavos — barra avulsa; null = não vendo a barra sozinha
+  barraAttributes Json?         // infos da barra do kit (line_length_m, condition); barra-only usa `attributes`
   city            String
   spot            String?
   shippable       Boolean       @default(false)
@@ -163,6 +168,7 @@ model ListingImage {
   listingId String
   url       String
   thumbUrl  String? // 400px — usado nos cards da busca; url (1600px) fica no detalhe
+  component String? // 'kite' | 'barra' — qual peça do kit a foto mostra (null = anúncio de peça única)
   position  Int      @default(0)
   createdAt DateTime @default(now())
 
