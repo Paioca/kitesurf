@@ -17,7 +17,6 @@ const CATEGORIES = [
       properties: {
         size_m2: { type: 'number', label: 'Tamanho (m²)' },
         condition: { type: 'string', enum: CONDITION },
-        includes_bar: { type: 'boolean', label: 'Acompanha barra' },
         repairs_count: { type: 'integer', label: 'Nº de reparos' },
         usage_time: { type: 'string', label: 'Tempo de uso estimado' },
       },

@@ -13,13 +13,21 @@ import { ReportButton } from '../../../components/ReportButton';
 export const dynamic = 'force-dynamic';
 
 const CONDITION: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
+const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
 
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
   const l = await getListing(params.id);
   if (!l) notFound();
 
   const a = (l.attributes ?? {}) as Record<string, any>;
-  const photos = (l.images ?? []).map((i: any) => i.url);
+  const isKit = (l as any).hasBarra === true;
+  const allImgs = (l.images ?? []) as any[];
+  const kiteImgs = isKit ? allImgs.filter((i) => i.component === 'kite') : allImgs;
+  const photos = (kiteImgs.length ? kiteImgs : allImgs).map((i: any) => i.url); // galeria principal = kite
+  const barraPhotos = allImgs.filter((i) => i.component === 'barra').map((i: any) => i.url);
+  const ba = ((l as any).barraAttributes ?? {}) as Record<string, any>;
+  const kitePrice = (l as any).kitePrice as number | null;
+  const barraPrice = (l as any).barraPrice as number | null;
   const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
   const title = `${l.model?.name ?? l.title}${sizeM2 ? ` ${sizeM2}` : ''}`;
   const memberSince = l.user?.createdAt ? new Date(l.user.createdAt).getFullYear() : null;
@@ -36,7 +44,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   if (a.bar_size) attrs.push({ k: 'Barra', v: String(a.bar_size) });
 
   const summary: { k: string; v: string }[] = [
-    { k: 'Categoria', v: l.category?.namePt ?? '—' },
+    { k: 'Categoria', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? '—' },
     { k: 'Local', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` },
     { k: 'Entrega', v: l.shippable ? 'Enviável' : 'Retirada local' },
   ];
@@ -65,7 +73,22 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
             {l.city}{l.spot ? ` · ${l.spot}` : ''} — {l.shippable ? 'enviável' : 'retirada local'}
           </div>
-          <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
+          {isKit ? (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px' }}>{formatBRL(l.price)}</div>
+              <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 2 }}>Conjunto · kite + barra</div>
+              {(kitePrice || barraPrice) ? (
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {kitePrice ? <span style={pricePill}>Só o kite: {formatBRL(kitePrice)}</span> : null}
+                  {barraPrice ? <span style={pricePill}>Só a barra: {formatBRL(barraPrice)}</span> : null}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 6 }}>Vendido só em conjunto.</div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
+          )}
 
           {attrs.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: color.line, border: `1px solid ${color.line}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
@@ -75,6 +98,27 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
                   <div style={{ fontSize: 15, fontWeight: 600, color: color.ink }}>{at.v}</div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {isKit && (
+            <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                <span style={{ background: color.gold, color: color.primaryDeep, fontSize: 11.5, fontWeight: 800, padding: '4px 10px', borderRadius: 999 }}>+ Barra</span>
+                <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600 }}>Barra que acompanha</div>
+              </div>
+              {barraPhotos.length > 0 && (
+                <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12 }}>
+                  {barraPhotos.map((u, i) => (
+                    <div key={i} style={{ width: 92, height: 92, borderRadius: 10, flex: 'none', backgroundImage: `url("${u}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 14, color: color.ink }}>
+                {ba.line_length_m != null && <div><span style={{ color: color.inkFaint }}>Comprimento: </span><b>{ba.line_length_m} m</b></div>}
+                {ba.condition && <div><span style={{ color: color.inkFaint }}>Estado: </span><b>{CONDITION[ba.condition] ?? ba.condition}</b></div>}
+                {ba.compatible_brand && <div><span style={{ color: color.inkFaint }}>Compatível: </span><b>{ba.compatible_brand}</b></div>}
+              </div>
             </div>
           )}
 
