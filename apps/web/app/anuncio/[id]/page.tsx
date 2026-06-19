@@ -2,6 +2,8 @@
 // Adaptação Fase 0: sem escrow/checkout. CTA = conversar. Sem rating falso.
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
+import { getCurrentUser } from '../../../lib/session';
+import { OwnerControls } from '../../../components/OwnerControls';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
@@ -18,6 +20,10 @@ const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color:
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
   const l = await getListing(params.id);
   if (!l) notFound();
+
+  const me = await getCurrentUser();
+  const isOwner = !!me && me.id === l.userId;
+  const statusLabel: Record<string, string> = { paused: 'Pausado — não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
 
   const a = (l.attributes ?? {}) as Record<string, any>;
   const isKit = (l as any).hasBarra === true;
@@ -73,6 +79,12 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
             {l.city}{l.spot ? ` · ${l.spot}` : ''} — {l.shippable ? 'enviável' : 'retirada local'}
           </div>
+          {l.status !== 'active' && statusLabel[l.status] && (
+            <div style={{ background: '#fbf0d8', border: '1px solid #ecdcb0', color: '#7a5e1f', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', borderRadius: 10, marginBottom: 16 }}>
+              {statusLabel[l.status]}
+            </div>
+          )}
+
           {isKit ? (
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px' }}>{formatBRL(l.price)}</div>
@@ -122,7 +134,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             </div>
           )}
 
-          <ContactSellerButton listingId={l.id} />
+          {isOwner ? <OwnerControls listingId={l.id} status={l.status} /> : <ContactSellerButton listingId={l.id} />}
 
           {/* SELLER */}
           <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18 }}>
