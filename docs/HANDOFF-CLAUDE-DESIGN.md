@@ -28,6 +28,7 @@ deploy Vercel. Marketplace de equipamento de kitesurf (Fase 0 — sem pagamento/
 6. **Sem campo de descrição livre.** Decisão de produto: o anúncio é 100% estruturado. Não adicionar textarea de "descrição".
 7. **Login sem senha.** Auth é telefone + código (OTP). Não adicionar campo de senha.
 8. **Classes utilitárias e ids com lógica:** `only-mobile`, `only-desktop`, `kl-input`, `kl-select`, `kl-scroll` (CSS); `id="otp-0..5"` (foco automático do código). Manter.
+9. **Acessibilidade — não reintroduzir interativo aninhado.** No card de anúncio, o botão **Favoritar** fica **fora** do `<a>` do card (são irmãos, não aninhados). Não voltar a colocar `<button>` dentro de `<a>`. Manter os `aria-label` da galeria e do favorito.
 
 Quando em dúvida se algo é "só visual" ou "load-bearing", trate como load-bearing e pergunte.
 
@@ -57,7 +58,10 @@ Quando em dúvida se algo é "só visual" ou "load-bearing", trate como load-bea
 | `/conta/editar` | Editar perfil (foto, nome, e-mail, IG, idioma) + excluir conta | Client |
 | `/favoritos` | Anúncios salvos | Server |
 | `/perfil/[id]` | Perfil público (reputação, avaliações) | Server |
+| `/termos` · `/privacidade` | Páginas legais (versão inicial) — linkadas no `/entrar` | Server |
 | `/moderacao` | Fila de denúncias (admin) | Server |
+
+> **Rotas protegidas** (`/favoritos`, `/pedidos`, `/conta*`) redirecionam o deslogado para `/entrar?next=<rota>` e o login volta ao destino. Não remover o `?next=`.
 
 Navegação fixa: **header desktop** (`SiteHeader`) tem Logo + atalhos (Anúncios/Pedidos/Favoritos quando logado) + Anunciar. **Mobile** usa barra inferior (`MobileTabBar`): Início · Favoritos · Anunciar · Pedidos · Conta.
 
@@ -159,3 +163,5 @@ Campos: foto, nome, **e-mail**, Instagram, idioma → `PATCH /api/auth/me`. Bot�
 - [ ] Banner "Atenção" no /anunciar mantido.
 - [ ] Selo Oferta/Visita e status destacado dos pedidos mantidos.
 - [ ] Classes `only-mobile`/`only-desktop`/`kl-*` e `id="otp-*"` preservadas.
+- [ ] Favoritar continua **fora** do link do card; `aria-label`s da galeria/favorito mantidos.
+- [ ] Links de Termos/Privacidade no `/entrar` continuam apontando para `/termos` e `/privacidade`.
