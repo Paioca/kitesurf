@@ -16,13 +16,10 @@ const PERKS = [
 
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
-  const [method, setMethod] = useState<'phone' | 'email'>('phone');
   const [rawPhone, setRawPhone] = useState('');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [instagram, setInstagram] = useState('');
   const [lang, setLang] = useState<'pt' | 'en'>('pt');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,7 +67,7 @@ export default function Entrar() {
     setLoading(true);
     try {
       const body: any = { phone, code };
-      if (withProfile) Object.assign(body, { name, email: email.trim() || undefined, avatarUrl, instagramHandle: instagram.trim() || undefined, locale: lang });
+      if (withProfile) Object.assign(body, { name, avatarUrl, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,30 +147,15 @@ export default function Entrar() {
             <>
               <h1 style={h1}>Entrar ou criar conta</h1>
               <p style={sub}>Sem senha. Te mandamos um código pra confirmar.</p>
-              <div style={tabs}>
-                <button onClick={() => setMethod('phone')} style={method === 'phone' ? tabOn : tabOff}>Telefone</button>
-                <button onClick={() => setMethod('email')} style={method === 'email' ? tabOn : tabOff}>E-mail</button>
+              <label style={lbl}>Telefone</label>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+                <div style={ddi}>🇧🇷 +55</div>
+                <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
               </div>
-              {method === 'phone' ? (
-                <>
-                  <label style={lbl}>Telefone</label>
-                  <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                    <div style={ddi}>🇧🇷 +55</div>
-                    <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#8a948d', marginBottom: 24 }}>
-                    🌎 Aceita número internacional — gringo também entra.
-                  </div>
-                  <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
-                    {loading ? '...' : 'Enviar código'}
-                  </button>
-                  <p style={terms}>Ao continuar, você concorda com os Termos e a Política de Privacidade da Vaya.</p>
-                </>
-              ) : (
-                <div style={{ padding: '20px 0', fontSize: 14, color: '#6b7a73' }}>
-                  Login por e-mail chega em breve. Por enquanto, use o <button onClick={() => setMethod('phone')} style={linkInline}>telefone</button>.
-                </div>
-              )}
+              <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
+                {loading ? '...' : 'Enviar código'}
+              </button>
+              <p style={terms}>Ao continuar, você concorda com os Termos e a Política de Privacidade da Vaya.</p>
             </>
           )}
 
@@ -214,14 +196,7 @@ export default function Entrar() {
               </div>
 
               <label style={lbl}>Nome</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 16 }} />
-
-              <label style={lbl}>E-mail <span style={{ color: '#9aa49d', fontWeight: 500 }}>· opcional</span></label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="voce@email.com" style={{ ...input, width: '100%', marginBottom: 16 }} />
-
-              <label style={lbl}>Instagram <span style={{ color: '#9aa49d', fontWeight: 500 }}>· opcional</span></label>
-              <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuperfil" style={{ ...input, width: '100%', marginBottom: 6 }} />
-              <div style={{ fontSize: 12, color: '#9aa49d', marginBottom: 18 }}>A comunidade vive no IG — exibir o @ é prova social potente.</div>
+              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 18 }} />
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 26 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 600, color: '#48564f' }}>Idioma</span>
@@ -294,9 +269,6 @@ const imageryInner: React.CSSProperties = { position: 'relative', height: '100%'
 const formWrap: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, minHeight: '100vh', boxSizing: 'border-box' };
 const h1: React.CSSProperties = { fontFamily: "'Spectral',serif", fontSize: 31, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
 const sub: React.CSSProperties = { fontSize: 15, color: '#6b7a73', margin: '0 0 26px' };
-const tabs: React.CSSProperties = { display: 'flex', background: '#efe9dc', borderRadius: 12, padding: 4, marginBottom: 22 };
-const tabOn: React.CSSProperties = { flex: 1, background: '#fff', color: '#23332e', border: 'none', borderRadius: 9, padding: 11, cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 14, fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' };
-const tabOff: React.CSSProperties = { flex: 1, background: 'none', color: '#8a948d', border: 'none', borderRadius: 9, padding: 11, cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 14, fontWeight: 600 };
 const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#48564f', display: 'block', marginBottom: 8 };
 const input: React.CSSProperties = { fontSize: 15, fontWeight: 500, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 15px', background: '#fff' };
 const ddi: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 7, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 14px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none' };

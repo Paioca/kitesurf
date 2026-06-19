@@ -7,7 +7,11 @@ const TTL = Number(process.env.OTP_TTL_SECONDS ?? 300);
 // Produção envia SMS de verdade. Mock só quando OTP_MOCK='true' (dev) OU pro número
 // ser de teste (perfis de demo, com telefone fake que não recebe SMS).
 const MOCK = process.env.OTP_MOCK === 'true';
-const TEST_PREFIX = '+558599100000'; // perfis de demo (seed-journey) seguem em mock
+// Números de teste seguem em mock (código volta na resposta, sem SMS):
+//   +5585991000…  → perfis de demo seedados (seed-journey)
+//   +5500…        → faixa descartável p/ testar cadastro (DDD 00 não existe, não colide com real)
+const TEST_PREFIXES = ['+5585991000', '+5500'];
+const isTestPhone = (p: string) => TEST_PREFIXES.some((t) => p.startsWith(t));
 
 export const otpIsMock = MOCK;
 
@@ -19,7 +23,7 @@ export async function generateOtp(phone: string): Promise<string | null> {
   const expiresAt = new Date(Date.now() + TTL * 1000);
   await db.otpCode.create({ data: { phone, codeHash, expiresAt } });
 
-  if (MOCK || phone.startsWith(TEST_PREFIX)) {
+  if (MOCK || isTestPhone(phone)) {
     // eslint-disable-next-line no-console
     console.warn(`[MOCK SMS] OTP para ${phone}: ${code}`);
     return code;
