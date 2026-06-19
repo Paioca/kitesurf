@@ -1,6 +1,7 @@
 // Header desktop Kite Life. Server-compatible.
 import { color, radius } from '../lib/tokens';
 import { Logo } from './ui';
+import { AccountNav } from './AccountNav';
 
 export function SiteHeader() {
   return (
@@ -8,7 +9,7 @@ export function SiteHeader() {
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: '0 32px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
         <a href="/" style={{ textDecoration: 'none' }}><Logo size={21} /></a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <a href="/entrar" style={{ fontSize: 15, fontWeight: 500, color: color.ink, textDecoration: 'none' }}>Entrar</a>
+          <AccountNav />
           <a href="/anunciar" style={{ fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar</a>
         </div>
       </div>

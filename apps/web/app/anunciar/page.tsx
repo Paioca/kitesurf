@@ -15,7 +15,7 @@ const TIPS = [
   'Marca e modelo de listas fechadas é o que deixa a busca por tamanho funcionar de verdade.',
   'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo — honestidade gera review boa.',
   'No conjunto, você decide se vende as peças avulsas. Barra avulsa também aparece na busca de barra.',
-  'Tudo certo? É só publicar. Dá pra editar depois.',
+  'Confira tudo antes de publicar — capriche na primeira foto e no preço, é o que mais converte.',
 ];
 const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
 const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
@@ -87,6 +87,9 @@ export default function Criar() {
   function pickPhotos(component: 'kite' | 'barra') {
     setUploadTarget(component);
     fileRef.current?.click();
+  }
+  function removePhoto(img: Img) {
+    setImages((imgs) => imgs.filter((i) => i.url !== img.url));
   }
   async function upload(files: FileList | null) {
     if (!files) return;
@@ -238,8 +241,8 @@ export default function Criar() {
             <>
               <H1>Fotos guiadas</H1>
               <Lead>Mínimo de 3 no total. {isKit ? 'No kit, envie fotos do kite E da barra (a barra precisa da própria foto pra aparecer na busca de barra).' : 'O GPS das imagens é removido automaticamente.'}</Lead>
-              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} onPick={() => pickPhotos('kite')} />}
-              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} onPick={() => pickPhotos('barra')} />}
+              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
+              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
               <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 12 }}>{images.length} foto(s) · mínimo 3</div>
             </>
           )}
@@ -347,7 +350,7 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
   );
 }
 
-function PhotoSection({ title, slots, photos, uploading, onPick }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; onPick: () => void }) {
+function PhotoSection({ title, slots, photos, uploading, onPick, onRemove }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; onPick: () => void; onRemove: (img: Img) => void }) {
   return (
     <div style={{ marginBottom: 22 }}>
       <SubHead>{title}</SubHead>
@@ -357,6 +360,7 @@ function PhotoSection({ title, slots, photos, uploading, onPick }: { title: stri
           return (
             <button key={label} onClick={onPick} style={{ position: 'relative', height: 150, borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 10, overflow: 'hidden', cursor: 'pointer', border: img ? `1.5px solid ${color.primary}` : '1.5px dashed #cbc3b2', background: img ? undefined : '#fbfaf6' }}>
               {img && <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${img.thumbUrl ?? img.url}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
+              {img && <span role="button" aria-label="Remover foto" onClick={(e) => { e.stopPropagation(); onRemove(img); }} style={{ position: 'absolute', top: 9, left: 9, width: 26, height: 26, borderRadius: 999, background: 'rgba(20,20,20,0.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 2 }}>✕</span>}
               {img && <div style={{ position: 'absolute', top: 9, right: 9, width: 24, height: 24, borderRadius: 999, background: color.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✓</div>}
               {!img && <div style={{ fontSize: 26, color: '#bcccc4', lineHeight: 1, marginBottom: 8 }}>{uploading ? '…' : '+'}</div>}
               <div style={img ? { position: 'relative', zIndex: 1, background: 'rgba(20,48,42,0.78)', color: '#fff', fontSize: 11.5, fontWeight: 600, padding: '5px 11px', borderRadius: 999 } : { fontSize: 13, fontWeight: 600, color: color.inkFaint }}>{label}</div>

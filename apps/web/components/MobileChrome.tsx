@@ -1,12 +1,13 @@
 // App bar + bottom tab bar do mobile. Server-compatible (links).
 import { color } from '../lib/tokens';
 import { Diamond, Logo } from './ui';
+import { AccountNav } from './AccountNav';
 
 export function MobileAppBar() {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(246,243,236,0.94)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${color.line}`, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <a href="/" style={{ textDecoration: 'none' }}><Logo size={18} /></a>
-      <a href="/entrar" style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, textDecoration: 'none' }}>Entrar</a>
+      <AccountNav mobile />
     </header>
   );
 }
@@ -20,7 +21,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </a>
       <a href="/chat" style={tab(active === 'msg')}><span style={{ fontSize: 18 }}>✉</span><span style={lbl(active === 'msg')}>Mensagens</span></a>
-      <span style={{ ...tab(false), opacity: 0.5 }} title="Em breve"><span style={{ width: 19, height: 19, borderRadius: 999, background: '#cfd8d2', display: 'block' }} /><span style={lbl(false)}>Perfil</span></span>
+      <a href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></a>
     </nav>
   );
 }
