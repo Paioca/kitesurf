@@ -177,14 +177,14 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
         </div>
       </main>
 
-      {/* DESCRIPTION + SUMMARY */}
+      {/* SUMMARY (+ descrição quando houver — anúncios são estruturados, sem texto livre) */}
       <section className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '56px 24px' }}>
-        <div>
-          <h2 style={{ fontFamily: font.serif, fontSize: 28, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 16px' }}>Descrição</h2>
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: color.inkSoft, margin: 0, whiteSpace: 'pre-line' }}>
-            {l.description || 'Sem descrição adicional.'}
-          </p>
-        </div>
+        {l.description && (
+          <div>
+            <h2 style={{ fontFamily: font.serif, fontSize: 28, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 16px' }}>Descrição</h2>
+            <p style={{ fontSize: 16, lineHeight: 1.7, color: color.inkSoft, margin: 0, whiteSpace: 'pre-line' }}>{l.description}</p>
+          </div>
+        )}
         <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 20, alignSelf: 'start' }}>
           <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 14 }}>Resumo</div>
           {summary.map((r, i) => (

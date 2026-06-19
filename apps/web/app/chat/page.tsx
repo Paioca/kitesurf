@@ -83,6 +83,16 @@ export default function Chat() {
     } catch { setInput(body); setErr('Sem conexão. Tente de novo.'); } finally { setSending(false); }
   }
 
+  async function sendPreset(text: string) {
+    if (!activeId || sending) return;
+    setSending(true); setErr('');
+    try {
+      const res = await fetch(`/api/conversations/${activeId}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) });
+      if (res.ok) { await loadThread(activeId); loadList(); }
+      else setErr((await res.json().catch(() => ({}))).message ?? 'Não foi possível enviar.');
+    } catch { setErr('Sem conexão. Tente de novo.'); } finally { setSending(false); }
+  }
+
   function openConvo(id: string) {
     setActiveId(id);
     setThread(null);
@@ -192,9 +202,18 @@ export default function Chat() {
                   ))}
                 </div>
 
+                {thread.messages.length === 0 && (
+                  <div className="kl-scroll" style={{ flex: 'none', display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 22px 0' }}>
+                    {['Ainda está disponível?', 'Aceita negociar?', 'Você envia?'].map((q) => (
+                      <button key={q} onClick={() => sendPreset(q)} disabled={sending} style={{ flex: 'none', fontFamily: font.sans, fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999, whiteSpace: 'nowrap', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineChip}`, cursor: 'pointer' }}>{q}</button>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ flex: 'none', background: '#fff', borderTop: `1px solid ${color.line}`, padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <input
                     value={input}
+                    autoFocus
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
                     placeholder={`Escreva sobre a ${thread.listing.title.split(' · ')[0]}…`}

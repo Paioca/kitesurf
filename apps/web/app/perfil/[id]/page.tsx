@@ -5,6 +5,7 @@ import { getProfile } from '../../../lib/profile';
 import { color, font, heroGradient } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
+import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
 import { ListingCard } from '../../../components/ListingCard';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,8 @@ export default async function PerfilPage({ params }: { params: { id: string } })
 
   return (
     <>
-      <SiteHeader />
+      <div className="only-mobile"><MobileAppBar /></div>
+      <div className="only-desktop"><SiteHeader /></div>
       <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: heroGradient }} />
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 90px' }}>
@@ -101,7 +103,8 @@ export default async function PerfilPage({ params }: { params: { id: string } })
           </div>
         )}
       </main>
-      <Footer />
+      <div className="only-desktop"><Footer /></div>
+      <div className="only-mobile"><MobileTabBar /></div>
     </>
   );
 }

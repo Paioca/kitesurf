@@ -2,7 +2,7 @@
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import { color, font, heroGradient } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, pageHref, type SP } from '../lib/filters';
+import { setHref, clearHref, pageHref, toggleHref, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
@@ -51,7 +51,24 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             </div>
           )}
 
-          <div style={{ padding: '10px 18px 4px', fontSize: 13, color: color.inkFaint }}>{countLabel}</div>
+          {/* chips de tamanho on-page (o filtro-assinatura, antes só no sheet) */}
+          {facets.size.length > 0 && (
+            <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '4px 18px 2px' }}>
+              {facets.size.map((o) => (
+                <a key={o.value} href={toggleHref(sp, 'size', o.value)} style={catChip(filters.size.includes(o.value))}>{o.label}</a>
+              ))}
+            </div>
+          )}
+
+          {/* contagem + ordenação (antes só no desktop) */}
+          <div style={{ padding: '10px 18px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <span style={{ fontSize: 13, color: color.inkFaint, flex: 'none' }}>{total} {total === 1 ? 'anúncio' : 'anúncios'}</span>
+            <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
+              {sorts.map(([key, label]) => (
+                <a key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</a>
+              ))}
+            </div>
+          </div>
 
           <div style={{ padding: '6px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={200} />)}

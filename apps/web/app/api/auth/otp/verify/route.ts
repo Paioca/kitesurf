@@ -32,17 +32,18 @@ export async function POST(req: Request) {
   if (!existing) {
     // Conta nova sem onboarding completo: só "espia" o código (não queima),
     // pra ele continuar válido até a criação efetiva.
-    if (!dto.name || !dto.email || !dto.avatarUrl) {
+    // E-mail é opcional (pedido depois, dentro da plataforma). Obrigatórios: nome + foto.
+    if (!dto.name || !dto.avatarUrl) {
       const ok = await verifyOtp(dto.phone, dto.code, false);
       if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
       return NextResponse.json(
-        { needsOnboarding: true, message: 'Conta nova: nome, email e foto de perfil são obrigatórios.' },
+        { needsOnboarding: true, message: 'Conta nova: nome e foto de perfil são obrigatórios.' },
         { status: 400 },
       );
     }
     const ok = await verifyOtp(dto.phone, dto.code, true);
     if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
-    if (await db.user.findUnique({ where: { email: dto.email } })) {
+    if (dto.email && (await db.user.findUnique({ where: { email: dto.email } }))) {
       return NextResponse.json({ message: 'Email já cadastrado.' }, { status: 409 });
     }
     user = await db.user.create({
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
         phoneCountry: dto.phone.startsWith('+55') ? 'BR' : 'INT',
         phoneVerified: true,
         name: dto.name,
-        email: dto.email,
+        email: dto.email ?? null,
         avatarUrl: dto.avatarUrl,
         instagramHandle: dto.instagramHandle ?? null,
         locale: dto.locale ?? 'pt',

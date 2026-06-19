@@ -4,7 +4,7 @@ import { getCurrentUser } from '../../../lib/session';
 import { color } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
-import { MobileAppBar } from '../../../components/MobileChrome';
+import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
 import { EditProfileForm } from '../../../components/EditProfileForm';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +26,7 @@ export default async function EditarPerfil() {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ padding: '22px 18px 96px' }}>{form}</div>
+        <MobileTabBar active="perfil" />
       </div>
       <div className="only-desktop">
         <SiteHeader />

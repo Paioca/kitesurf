@@ -14,7 +14,8 @@ export function ContactSellerButton({ listingId }: { listingId: string }) {
     try {
       const res = await fetch('/api/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listingId }) });
       if (res.status === 401) {
-        window.location.href = '/entrar';
+        // volta pro anúncio após o cadastro, em vez de perder o lead em '/'
+        window.location.href = `/entrar?next=${encodeURIComponent(`/anuncio/${listingId}`)}`;
         return;
       }
       const data = await res.json();

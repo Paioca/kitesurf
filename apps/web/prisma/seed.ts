@@ -15,7 +15,7 @@ const CATEGORIES = [
     attributeSchema: {
       required: ['size_m2', 'condition'],
       properties: {
-        size_m2: { type: 'number', label: 'Tamanho (m²)' },
+        size_m2: { type: 'number', label: 'Tamanho (m²)', enum: [5, 6, 7, 8, 9, 10, 11, 12, 14, 17] },
         condition: { type: 'string', enum: CONDITION },
         repairs_count: { type: 'integer', label: 'Nº de reparos' },
         usage_time: { type: 'string', label: 'Tempo de uso estimado' },

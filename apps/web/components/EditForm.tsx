@@ -18,11 +18,11 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
   const [attrs, setAttrs] = useState<Record<string, any>>(data.attributes ?? {});
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>(data.barraAttributes ?? {});
   const [images, setImages] = useState<Img[]>(data.images ?? []);
-  const [price, setPrice] = useState<string>(String((data.price ?? 0) / 100));
+  const [price, setPrice] = useState<string>(String(Math.round((data.price ?? 0) / 100)));
   const [sellKite, setSellKite] = useState<boolean>(data.kitePrice != null);
   const [sellBarra, setSellBarra] = useState<boolean>(data.barraPrice != null);
-  const [kitePrice, setKitePrice] = useState<string>(data.kitePrice != null ? String(data.kitePrice / 100) : '');
-  const [barraPrice, setBarraPrice] = useState<string>(data.barraPrice != null ? String(data.barraPrice / 100) : '');
+  const [kitePrice, setKitePrice] = useState<string>(data.kitePrice != null ? String(Math.round(data.kitePrice / 100)) : '');
+  const [barraPrice, setBarraPrice] = useState<string>(data.barraPrice != null ? String(Math.round(data.barraPrice / 100)) : '');
   const [city, setCity] = useState<string>(data.city ?? '');
   const [spot, setSpot] = useState<string>(data.spot ?? '');
   const [shippable, setShippable] = useState<boolean>(!!data.shippable);
@@ -152,7 +152,14 @@ function Fields({ schema, values, onChange }: { schema: Schema; values: Record<s
       {Object.entries(props).map(([key, spec]) => (
         <div key={key}>
           <Label>{(spec.label ?? key)}{required.includes(key) ? ' *' : ''}</Label>
-          {spec.enum ? (
+          {spec.enum && (spec.type === 'number' || spec.type === 'integer') ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {spec.enum.map((o) => {
+                const on = String(values[key]) === String(o);
+                return <button key={String(o)} onClick={() => onChange(key, String(o))} style={{ fontFamily: font.sans, fontSize: 14.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineCard}` }}>{String(o)}</button>;
+              })}
+            </div>
+          ) : spec.enum ? (
             <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)}>
               <option value="">—</option>
               {spec.enum.map((o) => <option key={String(o)} value={String(o)}>{CONDITION_LABEL[String(o)] ?? String(o)}</option>)}
@@ -190,11 +197,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 function Label({ children }: { children: React.ReactNode }) { return <label style={{ fontSize: 13, fontWeight: 600, color: color.inkSoft, display: 'block', marginBottom: 7 }}>{children}</label>; }
+// value = dígitos (reais inteiros). Display formatado; sem type=number (bug do separador).
 function PriceInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const display = value ? Number(value).toLocaleString('pt-BR') : '';
   return (
     <div style={{ position: 'relative', maxWidth: 260 }}>
       <span style={{ position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)', fontSize: 15, fontWeight: 700, color: color.inkFaint }}>R$</span>
-      <input className="kl-input" type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0" style={{ paddingLeft: 42, fontWeight: 700, fontSize: 17 }} />
+      <input className="kl-input" type="text" inputMode="numeric" value={display} onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))} placeholder="0" style={{ paddingLeft: 42, fontWeight: 700, fontSize: 17 }} />
     </div>
   );
 }

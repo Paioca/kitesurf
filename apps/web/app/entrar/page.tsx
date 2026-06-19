@@ -2,7 +2,7 @@
 
 // Cadastro / Entrar — design Kite Life (handoff Entrar.dc.html).
 // Fluxo: telefone -> OTP -> perfil (foto obrigatória) -> pronto. Sessão em cookie.
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { downscaleImage } from '../../lib/resizeImage';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
@@ -27,6 +27,16 @@ export default function Entrar() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const submittedRef = useRef('');
+
+  // Auto-submete o OTP quando as 6 células completam (no mock o devCode já preenche).
+  // Cada código único é submetido uma vez só (evita loop em código errado).
+  useEffect(() => {
+    if (step === 'otp' && code.length === 6 && !loading && submittedRef.current !== code) {
+      submittedRef.current = code;
+      verify(false);
+    }
+  }, [step, code, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Monta E.164: se começar com +, usa direto; senão assume +55.
   const phone = rawPhone.trim().startsWith('+')
@@ -59,7 +69,7 @@ export default function Entrar() {
     setLoading(true);
     try {
       const body: any = { phone, code };
-      if (withProfile) Object.assign(body, { name, email, avatarUrl, instagramHandle: instagram, locale: lang });
+      if (withProfile) Object.assign(body, { name, email: email.trim() || undefined, avatarUrl, instagramHandle: instagram.trim() || undefined, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,6 +81,9 @@ export default function Entrar() {
         return;
       }
       if (!res.ok) throw new Error(data.message ?? 'Código inválido.');
+      // Volta pro ponto de origem (ex.: o anúncio que o usuário ia contatar).
+      const next = new URLSearchParams(window.location.search).get('next');
+      if (next && next.startsWith('/')) { window.location.href = next; return; }
       setStep('done');
     } catch (e: any) {
       setError(e.message);
@@ -98,7 +111,8 @@ export default function Entrar() {
     }
   }
 
-  const canFinish = !!avatarUrl && name.trim().length >= 2 && /\S+@\S+/.test(email);
+  // Foto obrigatória (anti-fake) + nome. E-mail é opcional — pedido depois, dentro da plataforma.
+  const canFinish = !!avatarUrl && name.trim().length >= 2;
 
   return (
     <div style={shell}>
@@ -147,7 +161,7 @@ export default function Entrar() {
                   <label style={lbl}>Telefone</label>
                   <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                     <div style={ddi}>🇧🇷 +55</div>
-                    <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
+                    <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#8a948d', marginBottom: 24 }}>
                     🌎 Aceita número internacional — gringo também entra.
@@ -202,10 +216,10 @@ export default function Entrar() {
               </div>
 
               <label style={lbl}>Nome</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 16 }} />
+              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 16 }} />
 
-              <label style={lbl}>E-mail</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" style={{ ...input, width: '100%', marginBottom: 16 }} />
+              <label style={lbl}>E-mail <span style={{ color: '#9aa49d', fontWeight: 500 }}>· opcional</span></label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="voce@email.com" style={{ ...input, width: '100%', marginBottom: 16 }} />
 
               <label style={lbl}>Instagram <span style={{ color: '#9aa49d', fontWeight: 500 }}>· opcional</span></label>
               <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuperfil" style={{ ...input, width: '100%', marginBottom: 6 }} />
@@ -220,7 +234,7 @@ export default function Entrar() {
               </div>
 
               <button onClick={() => verify(true)} disabled={!canFinish || loading} style={canFinish ? primaryBtn : disabledBtn}>
-                {loading ? '...' : canFinish ? 'Criar conta' : 'Adicione foto, nome e e-mail'}
+                {loading ? '...' : canFinish ? 'Criar conta' : 'Adicione foto e nome'}
               </button>
             </>
           )}
@@ -260,6 +274,7 @@ function OtpCells({ value, onChange }: { value: string; onChange: (v: string) =>
           id={`otp-${i}`}
           value={d}
           inputMode="numeric"
+          autoComplete={i === 0 ? 'one-time-code' : 'off'}
           maxLength={1}
           onChange={(e) => handle(i, e.target.value)}
           onPaste={(e) => {

@@ -41,7 +41,7 @@ enum ListingStatus {
 model User {
   id              String     @id @default(uuid())
   name            String
-  email           String     @unique
+  email           String?    @unique // opcional no cadastro; pedido depois
   emailVerified   Boolean    @default(false)
   phone           String     @unique
   phoneCountry    String     @default("BR")

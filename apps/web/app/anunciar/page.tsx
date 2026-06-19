@@ -311,8 +311,11 @@ export default function Criar() {
             </>
           )}
 
+          {/* erro também perto do botão de ação (no mobile o banner do topo fica fora de vista) */}
+          {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginTop: 24 }}>{error}</div>}
+
           {/* NAV */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 38, paddingTop: 24, borderTop: `1px solid ${color.line}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 16, paddingTop: 24, borderTop: `1px solid ${color.line}` }}>
             <button onClick={() => setStep((s) => Math.max(0, s - 1))} style={{ ...outline, opacity: step === 0 ? 0.4 : 1, pointerEvents: step === 0 ? 'none' : 'auto', border: 'none', cursor: 'pointer' }}>‹ Voltar</button>
             <button onClick={() => (step < 3 ? setStep((s) => s + 1) : publish())} disabled={!canNext} style={{ background: canNext ? color.primary : '#dfe3df', color: canNext ? '#fff' : color.inkFaint2, border: 'none', borderRadius: 12, padding: '15px 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canNext ? 'pointer' : 'not-allowed' }}>
               {step === 3 ? 'Publicar anúncio' : 'Continuar'}
@@ -333,7 +336,9 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
         return (
           <Cell key={key}>
             <Label>{(spec.label ?? key)}{req ? ' *' : ''}</Label>
-            {spec.enum ? (
+            {spec.enum && (spec.type === 'number' || spec.type === 'integer') ? (
+              <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} />
+            ) : spec.enum ? (
               <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)}>
                 <option value="">—</option>
                 {spec.enum.map((o: string) => <option key={o} value={o}>{CONDITION_LABEL[o] ?? o}</option>)}
@@ -347,6 +352,19 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
         );
       })}
     </>
+  );
+}
+
+function ChipSelect({ options, value, onChange }: { options: (string | number)[]; value: any; onChange: (v: string) => void }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {options.map((o) => {
+        const on = String(value) === String(o);
+        return (
+          <button key={String(o)} onClick={() => onChange(String(o))} style={{ fontFamily: font.sans, fontSize: 14.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineInput}` }}>{o}</button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -398,11 +416,14 @@ function Label({ children }: { children: React.ReactNode }) { return <label styl
 function Cell({ children }: { children: React.ReactNode }) { return <div>{children}</div>; }
 function SubHead({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) { return <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, color: color.ink, ...style }}>{children}</div>; }
 function Helper({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>{children}</div>; }
+// value = string de dígitos (reais inteiros). Display formatado pt-BR. Sem type=number
+// (evita o bug onde "1.500" virava 1,5 → R$1,50).
 function PriceInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const display = value ? Number(value).toLocaleString('pt-BR') : '';
   return (
     <div style={{ position: 'relative', maxWidth: 260 }}>
       <span style={{ position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)', fontSize: 15, fontWeight: 700, color: color.inkFaint }}>R$</span>
-      <input className="kl-input" type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0" style={{ paddingLeft: 42, fontWeight: 700, fontSize: 17 }} />
+      <input className="kl-input" type="text" inputMode="numeric" value={display} onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))} placeholder="0" style={{ paddingLeft: 42, fontWeight: 700, fontSize: 17 }} />
     </div>
   );
 }
