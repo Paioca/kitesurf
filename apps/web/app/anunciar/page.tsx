@@ -8,6 +8,7 @@ import { color, font } from '../../lib/tokens';
 import { downscaleImage } from '../../lib/resizeImage';
 import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
+import { Logo } from '../../components/ui';
 
 const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
 const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
@@ -331,10 +332,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="only-mobile"><MobileAppBar /></div>
       <header className="only-desktop" style={{ background: '#fff', borderBottom: `1px solid ${color.line}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 36px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', color: color.ink }}>
-            <span style={{ width: 17, height: 17, background: color.primary, transform: 'rotate(45deg)', borderRadius: 3 }} />
-            <span style={{ fontWeight: 900, fontSize: 21, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Kite <span style={{ color: color.primary }}>Life</span></span>
-          </a>
+          <a href="/" style={{ textDecoration: 'none', color: color.ink }}><Logo size={20} /></a>
           <span style={{ fontSize: 14, fontWeight: 600, color: color.inkMute }}>Criar anúncio</span>
           <a href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Sair</a>
         </div>

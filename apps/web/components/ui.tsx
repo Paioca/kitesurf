@@ -6,13 +6,15 @@ import { color, font, radius } from '../lib/tokens';
 
 /* ---------- Logo ---------- */
 export function Logo({ size = 18, onDark = false }: { size?: number; onDark?: boolean }) {
+  const c = onDark ? '#fff' : color.primary;
+  const m = Math.round(size + 4);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
-      <span style={{ width: size * 0.9, height: size * 0.9, background: onDark ? color.accent : color.primary, transform: 'rotate(45deg)', borderRadius: 3 }} />
-      <span style={{ fontWeight: 900, fontSize: size + 3, letterSpacing: '-0.5px', textTransform: 'uppercase', color: onDark ? '#fff' : color.ink }}>
-        Kite {!onDark && <span style={{ color: color.primary }}>Life</span>}
-        {onDark && 'Life'}
-      </span>
+      <svg width={m} height={m} viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }} aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.8" />
+        <line x1="1.5" y1="12" x2="22.5" y2="12" stroke={c} strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+      <span style={{ fontFamily: font.sans, fontWeight: 800, fontSize: size + 6, letterSpacing: '-0.5px', color: onDark ? '#fff' : color.ink }}>Vaya</span>
     </span>
   );
 }

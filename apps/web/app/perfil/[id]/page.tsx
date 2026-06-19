@@ -37,7 +37,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>{user.name}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 14, color: color.inkMute }}>
               {user.instagramHandle && <><span>@{user.instagramHandle}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
-              <span>na Kite Life desde {since}</span>
+              <span>na Vaya desde {since}</span>
             </div>
           </div>
         </div>

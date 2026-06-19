@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Kite Life — Cumbuco',
-  description: 'Compra e venda de equipamento de kitesurf com confiança.',
+  title: 'Vaya — More than kites',
+  description: 'Compra e venda de equipamento de kitesurf com confiança. Cumbuco.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

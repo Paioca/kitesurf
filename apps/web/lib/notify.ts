@@ -23,7 +23,7 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
     body.set('ContentVariables', JSON.stringify({ '1': what, '2': opts.listingTitle, '3': url }));
   } else {
     // fallback (só funciona no sandbox / janela de 24h) — útil pra testar antes do template
-    body.set('Body', `Kite Life: você recebeu ${what} no anúncio "${opts.listingTitle}". Veja em ${url}`);
+    body.set('Body', `Vaya: você recebeu ${what} no anúncio "${opts.listingTitle}". Veja em ${url}`);
   }
 
   try {

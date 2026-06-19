@@ -4,6 +4,7 @@
 // Fluxo: telefone -> OTP -> perfil (foto obrigatória) -> pronto. Sessão em cookie.
 import { useEffect, useRef, useState } from 'react';
 import { downscaleImage } from '../../lib/resizeImage';
+import { Logo } from '../../components/ui';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 
@@ -120,10 +121,7 @@ export default function Entrar() {
       <div className="only-desktop" style={imagery}>
         <div style={imageryOverlay} />
         <div style={imageryInner}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none' }}>
-            <span style={{ width: 18, height: 18, background: '#d9a86b', transform: 'rotate(45deg)', borderRadius: 3 }} />
-            <span style={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.5px', textTransform: 'uppercase', color: '#fff' }}>Kite Life</span>
-          </a>
+          <a href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></a>
           <div>
             <div style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre na comunidade</div>
             <h2 style={{ fontFamily: "'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
@@ -169,7 +167,7 @@ export default function Entrar() {
                   <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                     {loading ? '...' : 'Enviar código'}
                   </button>
-                  <p style={terms}>Ao continuar, você concorda com os Termos e a Política de Privacidade da Kite Life.</p>
+                  <p style={terms}>Ao continuar, você concorda com os Termos e a Política de Privacidade da Vaya.</p>
                 </>
               ) : (
                 <div style={{ padding: '20px 0', fontSize: 14, color: '#6b7a73' }}>
@@ -242,7 +240,7 @@ export default function Entrar() {
           {step === 'done' && (
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
-              <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kite Life!</h1>
+              <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Vaya!</h1>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Sua conta está pronta e verificada. Bons ventos. 🪁</p>
               <a href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</a>
               <a href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</a>
