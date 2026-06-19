@@ -61,7 +61,7 @@ function toCard(l: any): Card {
     sizeM2,
     sizeLabel: String(sizeLabel),
     repair: Number(a.repairs_count ?? 0) > 0,
-    photo: l.images?.[0]?.url ?? null,
+    photo: l.images?.[0]?.thumbUrl ?? l.images?.[0]?.url ?? null, // thumb 400px nos cards; url 1600px só no detalhe
   };
 }
 

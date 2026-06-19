@@ -161,6 +161,7 @@ model ListingImage {
   id        String   @id @default(uuid())
   listingId String
   url       String
+  thumbUrl  String? // 400px — usado nos cards da busca; url (1600px) fica no detalhe
   position  Int      @default(0)
   createdAt DateTime @default(now())
 

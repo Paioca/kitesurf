@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         shippable: dto.shippable,
         status: 'active',
         lastConfirmedAt: new Date(),
-        images: { create: dto.images.map((img, i) => ({ url: img.url, position: i })) },
+        images: { create: dto.images.map((img, i) => ({ url: img.url, thumbUrl: img.thumbUrl ?? null, position: i })) },
       },
       include: { images: true },
     });
