@@ -29,8 +29,8 @@ export default async function PerfilPage({ params }: { params: { id: string } })
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 90px' }}>
         {/* header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 22, marginTop: -46, marginBottom: 30, flexWrap: 'wrap' }}>
-          <div style={{ width: 108, height: 108, borderRadius: 24, background: user.avatarUrl ? `center/cover url("${user.avatarUrl}")` : color.primary, color: '#fff', fontSize: 36, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '4px solid #f6f3ec', flex: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 22, marginBottom: 30, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+          <div style={{ width: 108, height: 108, borderRadius: 24, marginTop: -54, background: user.avatarUrl ? `center/cover url("${user.avatarUrl}")` : color.primary, color: '#fff', fontSize: 36, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '4px solid #f6f3ec', flex: 'none' }}>
             {!user.avatarUrl && initials}
           </div>
           <div style={{ flex: 1, minWidth: 240, paddingBottom: 4 }}>
