@@ -78,11 +78,14 @@ npm run db:seed        # taxonomia (Kite/Barra ativos; resto active:false)
 | Editar | `/anuncio/[id]/editar` | Form pré-preenchido, só o dono; ficha+fotos add/remove+preços+entrega |
 | Chat | `/chat` | Lista + thread, polling 4s. Confirmação venda→compra + avaliação no thread |
 | Perfil público | `/perfil/[id]` | Reputação (média, vendas, compras, ativos) + avaliações |
-| Conta | `/conta` | Hub do logado: perfil público, anunciar, mensagens, **Sair** (logout). Redireciona /entrar se deslogado |
+| Conta | `/conta` | Hub do logado: perfil público, editar perfil, anunciar, mensagens, **Sair** (logout) |
+| Editar perfil | `/conta/editar` | Foto/nome/IG/idioma + **excluir conta** (zona de risco); só o logado |
+| Moderação | `/moderacao` | Fila de denúncias (resolver/revisar); **só admin** (`User.admin`), senão 404 |
 
-Backend (`app/api/`): auth (otp request/verify/me/logout) · catalog · listings (**GET** busca · **POST**
-criar · **PATCH** editar+status · **DELETE** soft) · uploads (image/avatar) · conversations + messages ·
-deals (confirm) + review · reports. **Segurança:** cookie httpOnly · ownership (criar/editar/excluir
+Backend (`app/api/`): auth (otp · me **GET/PATCH/DELETE** · logout) · catalog · listings (**GET** busca ·
+**POST** criar · **PATCH** editar+status · **DELETE** soft) · uploads (image/avatar) · conversations
+(+ **PATCH** bloquear) + messages · deals (confirm) + review · reports (**POST** denunciar · **GET/PATCH**
+admin). `requireAdmin()` gateia moderação. **Segurança:** cookie httpOnly · ownership (criar/editar/excluir
 anúncio = dono; conversa/deal/review) · rate limiting (DB, `lib/ratelimit.ts`) · RLS · resize+EXIF strip
 · zod.
 
@@ -92,11 +95,11 @@ anúncio = dono; conversa/deal/review) · rate limiting (DB, `lib/ratelimit.ts`)
 Deal · Review · RateHit · Report`.
 - **Listing** novos campos: `hasBarra`, `kitePrice`, `barraPrice`, `barraAttributes`; `status`
   (draft/active/paused/sold/archived), `deletedAt` (soft).
-- **ListingImage**: `thumbUrl`, `component` ('kite'|'barra').
+- **ListingImage**: `thumbUrl`, `component` ('kite'|'barra'). **User**: `admin` (moderação).
 - Migrations: init · chat · deal_review · ratelimit_report · enable_rls · **listing_image_thumb** ·
-  **category_active** · **kit_kite_barra**.
-- Enums prontos mas **não usados ainda** (espaço pros próximos batches): `ConversationStatus.blocked`,
-  `DealStatus.cancelled`. **Fora (Fase 0):** Order/escrow, PSP, BusinessListing.
+  **category_active** · **kit_kite_barra** · **user_admin**.
+- `ConversationStatus.blocked` agora **usado** (bloquear). Ainda não usado: `DealStatus.cancelled`
+  (cancelar negócio — Batch 5+). **Fora (Fase 0):** Order/escrow, PSP, BusinessListing.
 
 ## Design system (REGRA)
 
@@ -113,11 +116,13 @@ completo, mas faltava **pós-criação e autogestão**. Plano em 5 batches:
   wizard; corrigida a dica falsa "dá pra editar depois".
 - **Batch 2 (FEITO):** ciclo de vida do anúncio — `PATCH/DELETE /api/listings/[id]` (ownership 403),
   editar/pausar/reativar/excluir (soft), controles do dono no detalhe, `/anuncio/[id]/editar`.
-- **Batch 3 (PENDENTE):** segurança/moderação — **bloquear usuário** no chat (`Conversation.blocked` já
-  existe) + tela mínima de moderação de `Report` (hoje a denúncia cai num buraco; moderação = SQL na mão).
-- **Batch 4 (PENDENTE):** conta/LGPD — **editar perfil** (`PATCH /api/auth/me`) + **excluir conta** (soft).
-- **Batch 5 (PENDENTE):** engajamento — feedback de erro no chat (hoje falha silencioso); **favoritos**
-  (não existe model nem rota; aba mobile "♡" desabilitada); notificações (só polling 4s).
+- **Batch 3 (FEITO):** segurança/moderação — **bloquear conversa** no chat (some das 2 listas, envio 403);
+  feedback de erro no chat; **`/moderacao`** (admin) lista/resolve denúncias (`GET/PATCH /api/reports`).
+  `User.admin` (migration). **Virar admin:** `UPDATE "User" SET admin=true WHERE phone='+55...'` no Supabase SQL.
+- **Batch 4 (FEITO):** conta/LGPD — **editar perfil** (`PATCH /api/auth/me`) em `/conta/editar`;
+  **excluir conta** (`DELETE`, soft: anonimiza PII, libera tel/email, arquiva anúncios, encerra sessão).
+- **Batch 5 (PENDENTE):** engajamento — **favoritos** (não existe model nem rota; aba mobile "♡"
+  desabilitada); notificações (só polling 4s). _(O feedback de erro do chat já saiu no Batch 3.)_
 
 ## PENDÊNCIAS operacionais (antes de gente real)
 
