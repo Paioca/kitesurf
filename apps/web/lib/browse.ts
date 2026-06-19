@@ -2,6 +2,7 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { db } from './db';
+import { getCurrentUser } from './session';
 import { parseFilters, PRICE_RANGES, PRICE_LABELS, type SP } from './filters';
 
 // Tag pra invalidar o cache quando um anúncio é criado/muda (revalidateTag).
@@ -27,6 +28,7 @@ export type Card = {
   repair: boolean;
   includesBar: boolean; // kite que vem com barra (badge "+ Barra")
   partOfKit: boolean; // barra mostrada na busca de barra que faz parte de um kit
+  favorited: boolean; // o usuário logado já favoritou
   photo: string | null;
 };
 
@@ -81,6 +83,7 @@ function toCard(l: any, persp: Perspective): Card {
       repair: false,
       includesBar: false,
       partOfKit: kit,
+      favorited: false,
       photo: pickPhoto(l.images, 'barra'),
     };
   }
@@ -105,6 +108,7 @@ function toCard(l: any, persp: Perspective): Card {
     repair: Number(a.repairs_count ?? 0) > 0,
     includesBar: l.hasBarra === true,
     partOfKit: false,
+    favorited: false,
     photo: pickPhoto(l.images, 'kite'),
   };
 }
@@ -231,9 +235,26 @@ export async function getBrowseData(sp: SP) {
   ]);
 
   const items = raw.map((l) => toCard(l, persp));
+  // marca quais o usuário logado já favoritou (1 query)
+  const me = await getCurrentUser();
+  if (me && items.length) {
+    const favs = await db.favorite.findMany({ where: { userId: me.id, listingId: { in: items.map((i) => i.id) } }, select: { listingId: true } });
+    const favSet = new Set(favs.map((f) => f.listingId));
+    items.forEach((it) => { it.favorited = favSet.has(it.id); });
+  }
   // Na busca de barra, mostra só categoria + cidade (resto é kite-específico).
   const facets: Facets =
     persp === 'barra' ? { ...fac.facets, size: [], brand: [], price: [], repair: [], withbar: [] } : fac.facets;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
+}
+
+// Anúncios favoritados (ativos) do usuário, como cards.
+export async function getFavorites(userId: string): Promise<Card[]> {
+  const favs = await db.favorite.findMany({
+    where: { userId, listing: { status: 'active', deletedAt: null } },
+    orderBy: { createdAt: 'desc' },
+    include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true } } },
+  });
+  return favs.map((f) => ({ ...toCard(f.listing, 'all'), favorited: true }));
 }

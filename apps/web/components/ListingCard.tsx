@@ -1,6 +1,7 @@
 // Card de anúncio — primitivo compartilhado (mobile + desktop). Server-compatible.
 import { color, font, radius } from '../lib/tokens';
 import type { Card } from '../lib/browse';
+import { FavoriteButton } from './FavoriteButton';
 
 const HATCH = 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)';
 
@@ -20,6 +21,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
           <span style={{ width: 6, height: 6, borderRadius: 999, background: item.ship ? color.primary : color.accent }} />
           {item.ship ? 'Enviável' : 'Retirada local'}
         </span>
+        <FavoriteButton listingId={item.id} initial={item.favorited} />
       </div>
       <div style={body}>
         <div style={{ fontSize: 13, fontWeight: 600, color: color.inkFaint2, marginBottom: 4 }}>

@@ -59,7 +59,8 @@ model User {
   updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
 
-  listings Listing[]
+  listings  Listing[]
+  favorites Favorite[]
 
   buyerConversations  Conversation[] @relation("buyerConvos")
   sellerConversations Conversation[] @relation("sellerConvos")
@@ -157,6 +158,7 @@ model Listing {
   images        ListingImage[]
   conversations Conversation[]
   deals         Deal[]
+  favoritedBy   Favorite[]
 
   @@index([categoryId])
   @@index([city])
@@ -297,4 +299,18 @@ model Report {
   reporter User @relation("reportsMade", fields: [reporterId], references: [id])
 
   @@index([status])
+}
+
+// Favorito — comprador salva um anúncio. 1 por par.
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
 }

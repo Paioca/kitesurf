@@ -40,7 +40,7 @@ export async function getProfile(id: string) {
       id: l.id, brand: l.brand?.name ?? '', model: l.model?.name ?? l.title, year: l.year ?? null,
       priceCents: l.price, priceLabel: brl(l.price), cat: l.category?.namePt ?? '', catSlug: l.category?.slug ?? '',
       ship: l.shippable, city: l.city, sizeM2, sizeLabel: sizeM2 ? `${sizeM2} m²` : (a.harness_size || l.category?.namePt || '—'),
-      repair: Number(a.repairs_count ?? 0) > 0, includesBar: l.hasBarra === true, partOfKit: false, photo: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null,
+      repair: Number(a.repairs_count ?? 0) > 0, includesBar: l.hasBarra === true, partOfKit: false, favorited: false, photo: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null,
     };
   });
 

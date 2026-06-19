@@ -16,7 +16,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
   return (
     <nav style={tabBar}>
       <a href="/" style={tab(active === 'home')}><Diamond size={18} c={active === 'home' ? color.primary : color.inkFaint2} r={3} /><span style={lbl(active === 'home')}>Início</span></a>
-      <span style={{ ...tab(false), opacity: 0.5 }} title="Em breve"><span style={{ fontSize: 19 }}>♡</span><span style={lbl(false)}>Favoritos</span></span>
+      <a href="/favoritos" style={tab(active === 'fav')}><span style={{ fontSize: 19 }}>{active === 'fav' ? '♥' : '♡'}</span><span style={lbl(active === 'fav')}>Favoritos</span></a>
       <a href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </a>

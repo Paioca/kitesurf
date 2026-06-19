@@ -3,7 +3,9 @@
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
 import { getCurrentUser } from '../../../lib/session';
+import { db } from '../../../lib/db';
 import { OwnerControls } from '../../../components/OwnerControls';
+import { FavoriteButton } from '../../../components/FavoriteButton';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
@@ -23,6 +25,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
 
   const me = await getCurrentUser();
   const isOwner = !!me && me.id === l.userId;
+  const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
   const statusLabel: Record<string, string> = { paused: 'Pausado — não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
 
   const a = (l.attributes ?? {}) as Record<string, any>;
@@ -134,7 +137,14 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             </div>
           )}
 
-          {isOwner ? <OwnerControls listingId={l.id} status={l.status} /> : <ContactSellerButton listingId={l.id} />}
+          {isOwner ? (
+            <OwnerControls listingId={l.id} status={l.status} />
+          ) : (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'stretch' }}>
+              <div style={{ flex: 1, minWidth: 200 }}><ContactSellerButton listingId={l.id} /></div>
+              <FavoriteButton listingId={l.id} initial={favorited} variant="inline" />
+            </div>
+          )}
 
           {/* SELLER */}
           <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18 }}>
