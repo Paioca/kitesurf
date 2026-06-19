@@ -2,6 +2,7 @@
 import { color } from '../lib/tokens';
 import { Diamond, Logo } from './ui';
 import { AccountNav } from './AccountNav';
+import { RequestBadge } from './RequestBadge';
 
 export function MobileAppBar() {
   return (
@@ -20,7 +21,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
       <a href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </a>
-      <a href="/pedidos" style={tab(active === 'msg')}><span style={{ fontSize: 18 }}>✉</span><span style={lbl(active === 'msg')}>Pedidos</span></a>
+      <a href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Pedidos</span></a>
       <a href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></a>
     </nav>
   );

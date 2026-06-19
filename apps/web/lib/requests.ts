@@ -1,5 +1,6 @@
 import 'server-only';
 import { db } from './db';
+import { notifyNewRequest } from './notify';
 
 export class RequestError extends Error {
   constructor(message: string, public status = 400) {
@@ -17,15 +18,17 @@ const listingSel = { id: true, title: true, price: true, images: { orderBy: { po
 // Comprador faz oferta (valor) ou pede visita. 1 oferta + 1 visita por anúncio
 // (re-oferecer atualiza o valor e volta pra pendente).
 export async function createRequest(userId: string, listingId: string, type: 'offer' | 'visit', amount?: number | null) {
-  const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null } });
+  const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null }, include: { user: { select: { phone: true } } } });
   if (!listing) throw new RequestError('Anúncio não encontrado.', 404);
   if (listing.userId === userId) throw new RequestError('Você é o dono deste anúncio.', 400);
   if (type === 'offer' && (!amount || amount < 100)) throw new RequestError('Informe um valor válido.', 400);
-  return db.request.upsert({
+  const r = await db.request.upsert({
     where: { listingId_buyerId_type: { listingId, buyerId: userId, type } },
     update: { amount: type === 'offer' ? amount! : null, status: 'pending' },
     create: { listingId, buyerId: userId, sellerId: listing.userId, type, amount: type === 'offer' ? amount! : null },
   });
+  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: listing.title }); // no-op se Twilio não configurado
+  return r;
 }
 
 // Vendedor aceita/recusa. Aceitar = libera o WhatsApp pro comprador.

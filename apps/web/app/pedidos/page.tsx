@@ -29,13 +29,14 @@ export default async function Pedidos() {
   const user = await getCurrentUser();
   if (!user) redirect('/entrar');
   const { incoming, outgoing } = await getRequestsForUser(user.id);
+  const novos = incoming.filter((r) => r.status === 'pending').length;
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Pedidos</h1>
       <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 24 }}>Ofertas e visitas. Ao aceitar, seu WhatsApp é liberado pro comprador.</div>
 
-      <SectionTitle>Recebidos</SectionTitle>
+      <SectionTitle>Recebidos{novos > 0 ? ` · ${novos} novo${novos > 1 ? 's' : ''}` : ''}</SectionTitle>
       {incoming.length === 0 ? <Empty>Nenhum pedido recebido ainda.</Empty> : incoming.map((r) => (
         <Row key={r.id}>
           <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
