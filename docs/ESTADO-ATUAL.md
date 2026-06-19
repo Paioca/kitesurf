@@ -1,107 +1,138 @@
 # Estado atual — Kite Life (handoff entre janelas)
 
-> Marketplace de equipamento de kitesurf, Cumbuco. **Fase 0 completo e no ar.**
+> Marketplace de equipamento de kitesurf, Cumbuco. **Fase 0 no ar.**
 > Última atualização: jun/2026. Este doc é o ponto de partida pra continuar.
+
+## Mudanças recentes (jun/2026) — LER
+
+- **Banco em São Paulo.** Supabase migrado pra `sa-east-1`, ref novo **`oycxkofylcofvvditjeg`**; função
+  Vercel fixada em **`gru1`** (`apps/web/vercel.json`). Compute e banco os dois no Brasil → home TTFB
+  ~1,1s → ~0,15s. Projeto antigo `vndzuhgshqdxqqbqtawn` (us-west-2) está **órfão → deletar**.
+- **Busca reescrita em SQL** (`lib/browse.ts`): filtros + paginação no banco (`PAGE_SIZE 24`, Anterior/
+  Próxima via URL) — **sem o antigo teto de 500**; facetas por agregação SQL (groupBy + raw no JSONB),
+  cacheadas (`unstable_cache` 60s, `revalidateTag('listings')` no publish). Prisma `relationJoins`.
+- **Imagens otimizadas.** `ListingImage.thumbUrl` (400px) gravado e usado nos cards; `url` (1600px) no
+  detalhe. Upload **reduz a imagem no cliente** antes de enviar (`lib/resizeImage.ts`) — rápido no 4G,
+  sem estourar o limite de 4,5MB do serverless, e tira EXIF/GPS no aparelho.
+- **MVP = só Kite + Barra** (`Category.active`; as outras 5 categorias estão `active:false`). O **kit
+  (kite + barra no mesmo anúncio)** é modelado como flag no kite: `Listing.hasBarra` + `kitePrice` +
+  `barraPrice` + `barraAttributes`, fotos marcadas por peça (`ListingImage.component`). Busca **por
+  perspectiva**: kit aparece na busca de kite (badge "+ Barra", preço do kite avulso quando houver) e,
+  **só se a barra é vendável avulsa**, também na de barra (cara da barra, badge "do kit").
+- **Conta/logout + ciclo de vida do anúncio** (resultado da auditoria UX/QA — ver seção no fim).
+
+> **Testar sempre no Vercel, não local** (o `.env` local tende a perder a `SERVICE_ROLE_KEY` → upload
+> quebra com "Invalid Compact JWS"). Fluxo: editar em `apps/web` → `npm run build` valida → commit+push
+> → Vercel redeploya o `kitesurf-web` sozinho.
 
 ## O que é / estratégia
 
-Marketplace web responsivo (mobile + desktop), marca **"Kite Life"**. **Fase 0 = sem
-pagamento/checkout** — vender acontece fora; a plataforma entrega descoberta + contato (chat) +
-reputação. Norte: **fricção mínima, crescer base de usuários, cobrar depois.** Detalhe em
-[fase-0.md](fase-0.md).
+Marketplace web responsivo (mobile + desktop), marca **"Kite Life"**. **Fase 0 = sem pagamento/checkout**
+— vender acontece fora; a plataforma entrega descoberta + contato (chat) + reputação. Norte: **fricção
+mínima, crescer base, cobrar depois.** Detalhe em [fase-0.md](fase-0.md).
 
 ## Onde tudo vive
 
 | Coisa | Valor |
 |---|---|
 | Repo GitHub | https://github.com/Paioca/kitesurf (branch `main`) · auth via deploy key SSH |
-| App no ar | **https://kitesurf-web.vercel.app** (projeto Vercel `kitesurf-web`) |
-| Vercel órfãos (DELETAR) | `kitesurf` e `kitesurf-api` — sobras das tentativas; o app é só o `kitesurf-web` |
-| Supabase | projeto ref `vndzuhgshqdxqqbqtawn` (região us-west-2) · bucket público `listings` |
+| App no ar | **https://kitesurf-web.vercel.app** (projeto Vercel `kitesurf-web`, região `gru1`) |
+| Supabase | **`oycxkofylcofvvditjeg` (sa-east-1 / São Paulo)** · bucket público `listings` |
+| Supabase ANTIGO (DELETAR) | `vndzuhgshqdxqqbqtawn` (us-west-2) — órfão, carrega creds vazadas |
+| Vercel órfãos (DELETAR) | `kitesurf` e `kitesurf-api` — o app é só o `kitesurf-web` |
 | Dir local | `/Users/felipegalli/Downloads/Kitesurf app` (monorepo) |
 | Bundle de design | `/Users/felipegalli/Downloads/_kite_handoff2/an-lise-e-prototipo-web/project/*.dc.html` |
 
 ## Stack / arquitetura
 
-- **App único Next.js 14** (App Router, consolidado) em `apps/web/` — backend e frontend juntos
-  (Route Handlers em `app/api/*` + Server Components com Prisma direto). **Sem hop extra, sem CORS.**
+- **App único Next.js 14** (App Router) em `apps/web/` — Route Handlers em `app/api/*` + Server
+  Components com Prisma direto. Sem hop extra, sem CORS.
 - **Prisma** → **Supabase Postgres** (pooled 6543 runtime + direct 5432 migrations).
-- **Supabase Storage** (bucket `listings`) pras fotos (EXIF/GPS removido no upload via sharp).
-- **Sessão em cookie httpOnly** (`lib/session.ts`) — NÃO localStorage.
-- `apps/api/` = NestJS legado, **não usado** (pode deletar; a lógica migrou pro `apps/web`).
+- **Supabase Storage** (bucket `listings`); EXIF/GPS removido no cliente (resize) + sharp no servidor.
+- **Sessão em cookie httpOnly** (`lib/session.ts`), JWT 30d. Login só por **OTP de telefone — não há senha.**
+- `apps/api/` = NestJS legado, **não usado** (deletar).
 
 ## Variáveis de ambiente (no projeto Vercel `kitesurf-web`)
 
 `DATABASE_URL` · `DIRECT_URL` · `SUPABASE_URL` · `SUPABASE_SERVICE_ROLE_KEY` · `SUPABASE_BUCKET=listings`
-· `JWT_SECRET` · `OTP_MOCK=true`. (Local: já estão em `apps/web/.env`.)
+· `JWT_SECRET` · `OTP_MOCK=true`. (Local: em `apps/web/.env`.)
 
 ## Rodar local
 
 ```bash
-cd "/Users/felipegalli/Downloads/Kitesurf app"
+cd "/Users/felipegalli/Downloads/Kitesurf app/apps/web"
 npm install
-cd apps/web
-npm run dev            # http://localhost:3000 (usa o Supabase remoto; não precisa DB local)
-# migrations/seed (apontam pro Supabase):
-npm run db:migrate
-npm run db:seed        # taxonomia (categorias/marcas)
+npm run dev            # http://localhost:3000 (usa o Supabase SP remoto)
+npm run db:deploy      # aplica migrations (migrate deploy — sem shadow DB)
+npm run db:seed        # taxonomia (Kite/Barra ativos; resto active:false)
 ```
 
-## O que está PRONTO (jornada Fase 0 completa, testada e2e)
-
-Todas as telas no design **Kite Life**, responsivas, no design system:
+## Telas PRONTAS (no design system Kite Life)
 
 | Tela | Rota | Notas |
 |---|---|---|
-| Início / Busca | `/` | Server-rendered, filtros na URL, facetas (chips Tamanho/Categoria), esconde count 0 |
-| Cadastro | `/entrar` | OTP telefone (mock) + foto obrigatória (upload real) + IG opcional; cookie |
-| Detalhe | `/anuncio/[id]` | Galeria, ficha, vendedor, "Conversar", "Ver perfil", denunciar. Sem escrow |
-| Criar | `/anunciar` | Wizard 4 passos (categoria/fotos/preço/revisão), gate de login |
-| Chat | `/chat` | Lista + thread, polling 4s, ownership. Confirmação venda/compra + avaliação no thread |
-| Perfil | `/perfil/[id]` | Reputação real (média, vendas, compras, ativos) + avaliações |
+| Início / Busca | `/` | SQL paginado (Anterior/Próxima), facetas, perspectiva kite/barra |
+| Cadastro | `/entrar` | OTP telefone (mock) + foto obrigatória + IG opcional; cookie |
+| Detalhe | `/anuncio/[id]` | Galeria, ficha, "Conversar", denunciar; **kit** (barra + opções de preço); **controles do dono** (Editar/Pausar/Excluir) + banner de status |
+| Criar | `/anunciar` | Wizard: Kite / Barra / **Kite+Barra**; ficha+fotos por peça; 3 preços; remover foto (✕) |
+| Editar | `/anuncio/[id]/editar` | Form pré-preenchido, só o dono; ficha+fotos add/remove+preços+entrega |
+| Chat | `/chat` | Lista + thread, polling 4s. Confirmação venda→compra + avaliação no thread |
+| Perfil público | `/perfil/[id]` | Reputação (média, vendas, compras, ativos) + avaliações |
+| Conta | `/conta` | Hub do logado: perfil público, anunciar, mensagens, **Sair** (logout). Redireciona /entrar se deslogado |
 
-Backend (Route Handlers em `apps/web/app/api/`): auth (otp request/verify/me/logout),
-catalog, listings (GET busca / POST criar), uploads (image/avatar), conversations + messages,
-deals (confirm sale/purchase) + review, reports.
+Backend (`app/api/`): auth (otp request/verify/me/logout) · catalog · listings (**GET** busca · **POST**
+criar · **PATCH** editar+status · **DELETE** soft) · uploads (image/avatar) · conversations + messages ·
+deals (confirm) + review · reports. **Segurança:** cookie httpOnly · ownership (criar/editar/excluir
+anúncio = dono; conversa/deal/review) · rate limiting (DB, `lib/ratelimit.ts`) · RLS · resize+EXIF strip
+· zod.
 
-**Segurança:** cookie httpOnly · ownership checks em tudo · **rate limiting** (DB, `lib/ratelimit.ts`)
-em OTP/avatar/listing/messages/report · **RLS** habilitado em todas as tabelas (anon bloqueado;
-app via owner) · EXIF strip · validação zod.
+## Modelo de dados (`apps/web/prisma/schema.prisma`)
 
-## Modelo de dados (Prisma, `apps/web/prisma/schema.prisma`)
+`User · OtpCode · Category(+active) · Brand · Model · Listing · ListingImage · Conversation · Message ·
+Deal · Review · RateHit · Report`.
+- **Listing** novos campos: `hasBarra`, `kitePrice`, `barraPrice`, `barraAttributes`; `status`
+  (draft/active/paused/sold/archived), `deletedAt` (soft).
+- **ListingImage**: `thumbUrl`, `component` ('kite'|'barra').
+- Migrations: init · chat · deal_review · ratelimit_report · enable_rls · **listing_image_thumb** ·
+  **category_active** · **kit_kite_barra**.
+- Enums prontos mas **não usados ainda** (espaço pros próximos batches): `ConversationStatus.blocked`,
+  `DealStatus.cancelled`. **Fora (Fase 0):** Order/escrow, PSP, BusinessListing.
 
-`User · OtpCode · Category · Brand · Model · Listing · ListingImage · Conversation · Message ·
-Deal · Review · RateHit · Report`. Migrations: init, chat, deal_review, ratelimit_report, enable_rls.
-**Fora (cortado no Fase 0):** Order/escrow, PSP, BusinessListing (parceiros).
+## Design system (REGRA)
 
-## Design system (REGRA IMPORTANTE)
+Tudo deriva do bundle Claude Design. Tokens em `lib/tokens.ts`; primitivos em `components/ui.tsx` +
+`ListingCard`, `Footer`, `SiteHeader`, `MobileChrome`. **NÃO inventar elemento/copy/emoji fora do
+`.dc.html`** (memória `kitelife-design-system`). Afordância de dev fica invisível.
 
-Tudo deriva do bundle Claude Design. Tokens em `apps/web/lib/tokens.ts`; primitivos em
-`apps/web/components/ui.tsx` (Logo, Button, Field, TextInput, Chip, etc.) + `ListingCard`,
-`Footer`, `SiteHeader`, `MobileChrome`. **NÃO inventar elemento/copy/emoji fora do `.dc.html`
-correspondente** (regra na memória `kitelife-design-system`). Afordância de dev fica invisível.
+## Auditoria UX/QA (jun/2026) — batches
 
-## Adaptações Fase 0 aplicadas (vs design original)
+Auditoria completa identificou que o **eixo de transação** (descobrir→conversar→fechar→avaliar) está
+completo, mas faltava **pós-criação e autogestão**. Plano em 5 batches:
 
-- Sem "Comprar com escrow"/checkout → CTA é "Conversar"; confirmação venda/compra substitui o Pedido.
-- Sem rating falso onde não há reviews; "Enviável · escrow" → só "Enviável".
-- Telas Checkout/Pedido (escrow) e Negocio/CadastroLoja (parceiros) **não construídas** (fora do escopo).
-- Tabs Favoritos não construída (backend é futuro).
+- **Batch 1 (FEITO):** logout + `/conta` (hub) + AccountNav no header; aba Perfil ligada; remover foto no
+  wizard; corrigida a dica falsa "dá pra editar depois".
+- **Batch 2 (FEITO):** ciclo de vida do anúncio — `PATCH/DELETE /api/listings/[id]` (ownership 403),
+  editar/pausar/reativar/excluir (soft), controles do dono no detalhe, `/anuncio/[id]/editar`.
+- **Batch 3 (PENDENTE):** segurança/moderação — **bloquear usuário** no chat (`Conversation.blocked` já
+  existe) + tela mínima de moderação de `Report` (hoje a denúncia cai num buraco; moderação = SQL na mão).
+- **Batch 4 (PENDENTE):** conta/LGPD — **editar perfil** (`PATCH /api/auth/me`) + **excluir conta** (soft).
+- **Batch 5 (PENDENTE):** engajamento — feedback de erro no chat (hoje falha silencioso); **favoritos**
+  (não existe model nem rota; aba mobile "♡" desabilitada); notificações (só polling 4s).
 
-## PENDÊNCIAS antes de lançar pra gente real (operacional)
+## PENDÊNCIAS operacionais (antes de gente real)
 
-1. **SMS real** — OTP ainda é mock (`OTP_MOCK=true`; código volta no `devCode` e auto-preenche).
-   Plugar Zenvia/Twilio em `lib/otp.ts` (`send`) + `OTP_MOCK=false`.
-2. **Resetar senha do banco** no Supabase (vazou no chat: `OzziOsbourne1313*`) + atualizar
-   `DATABASE_URL`/`DIRECT_URL` (local e Vercel).
-3. **Limpar dados de teste** — usuários/anúncios fake dos testes e2e ("Colete teste", "Leash teste").
-4. **LGPD** — Política de Privacidade + Termos (link no cadastro/rodapé).
-5. **Domínio próprio** + **seeding de Cumbuco** (50 anúncios — trilha operacional, ver
-   [reference/seeding-plan.md](reference/seeding-plan.md)).
-6. **Deletar projetos Vercel órfãos** (`kitesurf`, `kitesurf-api`) e a pasta `apps/api`.
+1. **SMS real** — OTP é mock (`OTP_MOCK=true`). Plugar Zenvia/Twilio em `lib/otp.ts` + `OTP_MOCK=false`.
+2. **Segurança** — senha `OzziOsbourne1313*` foi **reusada** no projeto SP e **continua vazada**. Trocar
+   no Supabase + atualizar env (local+Vercel); rotacionar `service_role`; **deletar o projeto antigo** (Oregon).
+3. ~~Dados de teste~~ — RESOLVIDA (banco SP nasceu zerado).
+4. **LGPD** — Política de Privacidade + Termos (link no cadastro/rodapé) + excluir conta (Batch 4).
+5. **Domínio próprio** + **seeding de Cumbuco** ([reference/seeding-plan.md](reference/seeding-plan.md)).
+6. **Deletar** Vercel órfãos + pasta `apps/api`.
+7. ~~Otimizar imagens~~ — RESOLVIDA (thumb 400px gravado e usado; resize no cliente).
+8. **Cron de limpeza** de `RateHit`/`OtpCode` (acumulam linhas; sem TTL).
 
 ## Como continuar
 
-Próximos candidatos: plugar SMS real; script de seed de Cumbuco + limpar testes; telas fora do
-Fase 0 se quiser (Favoritos). Fluxo de trabalho: editar em `apps/web`, `npm run build` pra validar,
-commit + push → Vercel redeploya o `kitesurf-web` automático. Sempre derivar UI do design system.
+Candidatos: **Batch 3** (bloquear/moderação) → **Batch 4** (perfil/LGPD) → **Batch 5** (favoritos/
+notificação); operacional: SMS real, seeding de Cumbuco, segurança #2. Fluxo: editar em `apps/web`,
+`npm run build`, commit+push → redeploy. Sempre derivar UI do design system. Verificar no Vercel.
