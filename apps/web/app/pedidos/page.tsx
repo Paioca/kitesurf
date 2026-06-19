@@ -41,6 +41,7 @@ export default async function Pedidos() {
         <Row key={r.id}>
           <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
             <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ marginBottom: 5 }}><TypeTag type={r.type} /></div>
               <div style={titleTxt}>{r.listing.title}</div>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
               <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name} · {ST[r.status]}</div>
@@ -58,6 +59,7 @@ export default async function Pedidos() {
         <Row key={r.id}>
           <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
             <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ marginBottom: 5 }}><TypeTag type={r.type} /></div>
               <div style={titleTxt}>{r.listing.title}</div>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
               <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name} · {STO[r.status]}</div>
@@ -90,5 +92,9 @@ const rowLink: React.CSSProperties = { display: 'flex', gap: 12, alignItems: 'ce
 const titleTxt: React.CSSProperties = { fontFamily: font.serif, fontSize: 16, fontWeight: 600, lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 const okTag: React.CSSProperties = { marginTop: 12, fontSize: 13, fontWeight: 600, color: color.primary };
 function Row({ children }: { children: React.ReactNode }) { return <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 14, marginBottom: 12 }}>{children}</div>; }
+function TypeTag({ type }: { type: string }) {
+  const offer = type === 'offer';
+  return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#fdf0e1', color: offer ? color.primary : '#b06a1f' }}>{offer ? 'Oferta' : 'Visita'}</span>;
+}
 function SectionTitle({ children }: { children: React.ReactNode }) { return <div style={{ fontFamily: font.serif, fontSize: 19, fontWeight: 600, marginBottom: 12 }}>{children}</div>; }
 function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px' }}>{children}</div>; }
