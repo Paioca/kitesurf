@@ -34,6 +34,7 @@ export function parseFilters(sp: SP) {
     city: list(sp, 'city'),
     price: list(sp, 'price'),
     repair: list(sp, 'repair'),
+    withbar: list(sp, 'withbar'),
     sort: one(sp, 'sort') || 'recent',
   };
 }
@@ -47,7 +48,7 @@ function toQuery(sp: Record<string, string>): string {
 
 function current(sp: SP): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'sort']) {
+  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'sort']) {
     const v = one(sp, k);
     if (v) out[k] = v;
   }
@@ -88,5 +89,5 @@ export function clearHref(sp: SP): string {
 
 export function hasAnyFilter(sp: SP): boolean {
   const f = parseFilters(sp);
-  return !!(f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length);
+  return !!(f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length);
 }

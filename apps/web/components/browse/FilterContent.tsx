@@ -6,7 +6,7 @@ import { clearHref, setHref, toggleHref, type SP } from '../../lib/filters';
 import type { Facets } from '../../lib/browse';
 import { SectionLabel } from '../ui';
 
-type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[] };
+type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[] };
 
 export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets; filters: Filters }) {
   return (
@@ -56,6 +56,14 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
         <Block title="Preço">
           {facets.price.map((o) => (
             <RowLink key={o.value} href={toggleHref(sp, 'price', o.value)} on={filters.price.includes(o.value)} label={o.label} count={o.count} />
+          ))}
+        </Block>
+      )}
+
+      {facets.withbar.length > 0 && (
+        <Block title="Combo">
+          {facets.withbar.map((o) => (
+            <RowLink key={o.value} href={toggleHref(sp, 'withbar', o.value)} on={filters.withbar.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}

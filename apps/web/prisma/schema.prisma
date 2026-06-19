@@ -93,6 +93,7 @@ model Category {
   namePt          String
   nameEn          String
   attributeSchema Json // JSON Schema dos atributos obrigatórios
+  active          Boolean  @default(true) // false = fora do MVP (não aparece no anunciar)
   createdAt       DateTime @default(now())
 
   models   Model[]

@@ -11,11 +11,13 @@ const CATEGORIES = [
     slug: 'kite',
     namePt: 'Kite',
     nameEn: 'Kite',
+    active: true,
     attributeSchema: {
       required: ['size_m2', 'condition'],
       properties: {
         size_m2: { type: 'number', label: 'Tamanho (m²)' },
         condition: { type: 'string', enum: CONDITION },
+        includes_bar: { type: 'boolean', label: 'Acompanha barra' },
         repairs_count: { type: 'integer', label: 'Nº de reparos' },
         usage_time: { type: 'string', label: 'Tempo de uso estimado' },
       },
@@ -25,11 +27,12 @@ const CATEGORIES = [
     slug: 'barra',
     namePt: 'Barra',
     nameEn: 'Bar',
+    active: true,
     attributeSchema: {
-      required: ['bar_size', 'condition'],
+      required: ['line_length_m', 'condition'],
       properties: {
         compatible_brand: { type: 'string', label: 'Marca compatível' },
-        bar_size: { type: 'string', label: 'Tamanho da barra' },
+        line_length_m: { type: 'number', label: 'Comprimento de linha (m)' },
         condition: { type: 'string', enum: CONDITION },
         lines_state: { type: 'string', label: 'Estado das linhas' },
       },
@@ -39,6 +42,7 @@ const CATEGORIES = [
     slug: 'twin-tip',
     namePt: 'Twin Tip',
     nameEn: 'Twin Tip',
+    active: false,
     attributeSchema: {
       required: ['length_cm', 'condition'],
       properties: {
@@ -54,6 +58,7 @@ const CATEGORIES = [
     slug: 'surfboard',
     namePt: 'Surfboard (Wave)',
     nameEn: 'Surfboard (Wave)',
+    active: false,
     attributeSchema: {
       required: ['length', 'condition'],
       properties: {
@@ -68,6 +73,7 @@ const CATEGORIES = [
     slug: 'foil',
     namePt: 'Foil',
     nameEn: 'Foil',
+    active: false,
     attributeSchema: {
       required: ['mast_length', 'condition'],
       properties: {
@@ -82,6 +88,7 @@ const CATEGORIES = [
     slug: 'trapezio',
     namePt: 'Trapézio',
     nameEn: 'Harness',
+    active: false,
     attributeSchema: {
       required: ['harness_size', 'condition'],
       properties: {
@@ -95,6 +102,7 @@ const CATEGORIES = [
     slug: 'acessorios',
     namePt: 'Acessórios',
     nameEn: 'Accessories',
+    active: false,
     attributeSchema: {
       required: ['subtype', 'condition'],
       properties: {
@@ -129,7 +137,7 @@ async function main() {
   for (const c of CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: c.slug },
-      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema },
+      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema, active: c.active },
       create: c,
     });
   }

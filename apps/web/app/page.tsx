@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = searchParams;
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
-  const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + (filters.cat ? 1 : 0);
+  const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + (filters.cat ? 1 : 0);
   const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'} em Cumbuco e região`;
   const empty = totalAll === 0;
 

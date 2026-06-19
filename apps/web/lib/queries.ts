@@ -5,7 +5,7 @@ import { db } from './db';
 const PAGE_SIZE = 48;
 
 export function getCategories() {
-  return db.category.findMany({ orderBy: { namePt: 'asc' } });
+  return db.category.findMany({ where: { active: true }, orderBy: { namePt: 'asc' } });
 }
 
 export function getBrands() {

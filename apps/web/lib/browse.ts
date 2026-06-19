@@ -26,6 +26,7 @@ export type Card = {
   sizeM2: string | null;
   sizeLabel: string;
   repair: boolean;
+  includesBar: boolean;
   photo: string | null;
 };
 
@@ -37,6 +38,7 @@ export type Facets = {
   city: Facet[];
   price: Facet[];
   repair: Facet[];
+  withbar: Facet[]; // kites que acompanham barra (combo)
 };
 
 function brl(cents: number) {
@@ -61,6 +63,7 @@ function toCard(l: any): Card {
     sizeM2,
     sizeLabel: String(sizeLabel),
     repair: Number(a.repairs_count ?? 0) > 0,
+    includesBar: a.includes_bar === true,
     photo: l.images?.[0]?.thumbUrl ?? l.images?.[0]?.url ?? null, // thumb 400px nos cards; url 1600px só no detalhe
   };
 }
@@ -88,6 +91,8 @@ function buildWhere(f: Filters): Prisma.ListingWhereInput {
     const rep: Prisma.ListingWhereInput = { attributes: { path: ['repairs_count'], gt: 0 } };
     and.push(f.repair[0] === 'rep' ? rep : { NOT: rep });
   }
+  // combo: kite que acompanha barra (includes_bar = true)
+  if (f.withbar.includes('1')) and.push({ attributes: { path: ['includes_bar'], equals: true } });
   return { ...BASE, AND: and };
 }
 
@@ -95,7 +100,7 @@ function buildWhere(f: Filters): Prisma.ListingWhereInput {
 // Colunas/relações via groupBy; tamanho/preço/reparo (derivados do JSONB) via raw SQL.
 const loadFacets = unstable_cache(
   async (): Promise<{ facets: Facets; totalAll: number }> => {
-    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR] = await Promise.all([
+    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR] = await Promise.all([
       db.listing.groupBy({ by: ['categoryId'], where: BASE, _count: { _all: true } }),
       db.listing.groupBy({ by: ['brandId'], where: { ...BASE, brandId: { not: null } }, _count: { _all: true } }),
       db.listing.groupBy({ by: ['city'], where: BASE, _count: { _all: true } }),
@@ -113,6 +118,9 @@ const loadFacets = unstable_cache(
         SELECT CASE WHEN (attributes->>'repairs_count') ~ '^[0-9]+$' AND (attributes->>'repairs_count')::int > 0
                     THEN 'rep' ELSE 'norep' END AS k, COUNT(*)::int AS count
         FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
+      db.$queryRaw<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count FROM "Listing"
+        WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'includes_bar' = 'true'`,
     ]);
 
     const catMap = new Map(cats.map((c) => [c.id, c]));
@@ -139,6 +147,7 @@ const loadFacets = unstable_cache(
         .map((r) => ({ value: r.k, label: PRICE_LABELS[r.k] ?? r.k, count: Number(r.count) }))
         .sort((a, b) => a.value.localeCompare(b.value)),
       repair: repairR.map((r) => ({ value: r.k, label: r.k === 'rep' ? 'Com reparo' : 'Sem reparo', count: Number(r.count) })),
+      withbar: Number(withbarR[0]?.count ?? 0) > 0 ? [{ value: '1', label: 'Acompanha barra', count: Number(withbarR[0].count) }] : [],
     };
 
     const totalAll = priceR.reduce((s, r) => s + Number(r.count), 0);
