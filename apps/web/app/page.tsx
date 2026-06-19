@@ -2,7 +2,7 @@
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import { color, font, heroGradient } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, type SP } from '../lib/filters';
+import { setHref, clearHref, pageHref, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = searchParams;
-  const { items, facets, total, totalAll, filters } = await getBrowseData(sp);
+  const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
   const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + (filters.cat ? 1 : 0);
   const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'} em Cumbuco e região`;
   const empty = totalAll === 0;
@@ -57,6 +57,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={200} />)}
             {total === 0 && <EmptyState empty={empty} sp={sp} />}
           </div>
+          <Pager page={page} totalPages={totalPages} sp={sp} />
         </div>
         <MobileTabBar active="home" />
       </div>
@@ -88,6 +89,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
                 {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={180} />)}
               </div>
             )}
+            <Pager page={page} totalPages={totalPages} sp={sp} />
           </div>
         </main>
       </div>
@@ -105,6 +107,21 @@ function EmptyState({ empty, sp, big }: { empty: boolean; sp: SP; big?: boolean 
         {empty ? 'Anunciar o primeiro' : 'Limpar filtros'}
       </a>
     </div>
+  );
+}
+
+// Paginação Anterior/Próxima — links na URL (preserva filtros). Só aparece com 2+ páginas.
+function Pager({ page, totalPages, sp }: { page: number; totalPages: number; sp: SP }) {
+  if (totalPages <= 1) return null;
+  const base: React.CSSProperties = { fontFamily: font.sans, fontSize: 13.5, fontWeight: 600, padding: '10px 18px', borderRadius: 999, textDecoration: 'none', border: `1px solid ${color.lineChip}` };
+  const on: React.CSSProperties = { ...base, background: color.surface, color: color.ink };
+  const off: React.CSSProperties = { ...base, background: 'transparent', color: color.inkFaint3, pointerEvents: 'none' };
+  return (
+    <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '26px 18px 8px' }}>
+      {page > 1 ? <a href={pageHref(sp, page - 1)} style={on}>← Anterior</a> : <span style={off}>← Anterior</span>}
+      <span style={{ fontSize: 13, color: color.inkMute }}>Página {page} de {totalPages}</span>
+      {page < totalPages ? <a href={pageHref(sp, page + 1)} style={on}>Próxima →</a> : <span style={off}>Próxima →</span>}
+    </nav>
   );
 }
 

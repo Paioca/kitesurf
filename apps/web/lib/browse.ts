@@ -1,14 +1,17 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
+import { Prisma } from '@prisma/client';
 import { db } from './db';
-import { parseFilters, PRICE_RANGES, type SP } from './filters';
+import { parseFilters, PRICE_RANGES, PRICE_LABELS, type SP } from './filters';
 
 // Tag pra invalidar o cache quando um anúncio é criado/muda (revalidateTag).
 export const LISTINGS_TAG = 'listings';
+export const PAGE_SIZE = 24;
 
-// Dados da busca — server-side. Para a escala de 1 hub, busca o conjunto ativo
-// (cap 500) e calcula facetas + aplica filtros em memória no servidor (HTML
-// indexável, zero fetch no cliente). Migrar pra agregação SQL quando crescer.
+// Dados da busca — server-side, SQL puro. Resultados filtrados + paginados no
+// banco (sem teto), facetas por agregação SQL (groupBy + um raw query no JSONB).
+// HTML indexável, zero fetch no cliente. Facetas contam sobre TODOS os ativos
+// (independem do filtro), então são cacheadas e invalidadas no publish.
 export type Card = {
   id: string;
   brand: string;
@@ -62,75 +65,112 @@ function toCard(l: any): Card {
   };
 }
 
-function priceKey(cents: number): string | null {
-  for (const [k, [lo, hi]] of Object.entries(PRICE_RANGES)) if (cents >= lo && cents < hi) return k;
-  return null;
-}
+type Filters = ReturnType<typeof parseFilters>;
+const BASE: Prisma.ListingWhereInput = { status: 'active', deletedAt: null };
 
-// Conta sobre o conjunto todo; só devolve opções com count > 0 (esconde zeros).
-function facetCount<T>(items: Card[], pick: (c: Card) => T | null, labelOf: (v: T) => string): Facet[] {
-  const map = new Map<string, { label: string; count: number }>();
-  for (const it of items) {
-    const v = pick(it);
-    if (v == null || v === '') continue;
-    const key = String(v);
-    const cur = map.get(key) ?? { label: labelOf(v), count: 0 };
-    cur.count++;
-    map.set(key, cur);
-  }
-  return Array.from(map.entries()).map(([value, { label, count }]) => ({ value, label, count }));
-}
-
-// Conjunto ativo (cap 500) como cards já mapeados — serializável e cacheável.
-// relationLoadStrategy:'join' = 1 LATERAL JOIN em vez de ~5 round-trips ao banco.
-// unstable_cache (revalidate 60s) tira o banco do caminho da maioria dos loads;
-// invalidado na hora quando alguém publica (revalidateTag(LISTINGS_TAG)).
-const loadActiveCards = unstable_cache(
-  async (): Promise<Card[]> => {
-    const raw = await db.listing.findMany({
-      where: { status: 'active', deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 500,
-      relationLoadStrategy: 'join',
-      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
+// WHERE SQL a partir dos filtros multi-seleção (AND entre dimensões, OR dentro).
+function buildWhere(f: Filters): Prisma.ListingWhereInput {
+  const and: Prisma.ListingWhereInput[] = [];
+  if (f.cat) and.push({ category: { slug: f.cat } });
+  if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
+  if (f.city.length) and.push({ city: { in: f.city } });
+  if (f.size.length) and.push({ OR: f.size.map((s) => ({ attributes: { path: ['size_m2'], equals: Number(s) } })) });
+  if (f.price.length) {
+    and.push({
+      OR: f.price.map((k) => {
+        const [lo, hi] = PRICE_RANGES[k] ?? [0, 1e12];
+        return { price: { gte: lo, lt: hi } };
+      }),
     });
-    return raw.map(toCard);
+  }
+  // reparo: 'rep' = repairs_count > 0; 'norep' = o contrário. Os dois juntos = sem filtro.
+  if (f.repair.length === 1) {
+    const rep: Prisma.ListingWhereInput = { attributes: { path: ['repairs_count'], gt: 0 } };
+    and.push(f.repair[0] === 'rep' ? rep : { NOT: rep });
+  }
+  return { ...BASE, AND: and };
+}
+
+// Facetas sobre TODOS os ativos (independem do filtro do usuário) → cacheáveis.
+// Colunas/relações via groupBy; tamanho/preço/reparo (derivados do JSONB) via raw SQL.
+const loadFacets = unstable_cache(
+  async (): Promise<{ facets: Facets; totalAll: number }> => {
+    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR] = await Promise.all([
+      db.listing.groupBy({ by: ['categoryId'], where: BASE, _count: { _all: true } }),
+      db.listing.groupBy({ by: ['brandId'], where: { ...BASE, brandId: { not: null } }, _count: { _all: true } }),
+      db.listing.groupBy({ by: ['city'], where: BASE, _count: { _all: true } }),
+      db.category.findMany({ select: { id: true, slug: true, namePt: true } }),
+      db.brand.findMany({ select: { id: true, name: true } }),
+      db.$queryRaw<{ v: string; count: number }[]>`
+        SELECT attributes->>'size_m2' AS v, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'size_m2' IS NOT NULL
+        GROUP BY 1`,
+      db.$queryRaw<{ k: string; count: number }[]>`
+        SELECT CASE WHEN price < 50000 THEN 'p1' WHEN price < 200000 THEN 'p2'
+                    WHEN price < 500000 THEN 'p3' ELSE 'p4' END AS k, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
+      db.$queryRaw<{ k: string; count: number }[]>`
+        SELECT CASE WHEN (attributes->>'repairs_count') ~ '^[0-9]+$' AND (attributes->>'repairs_count')::int > 0
+                    THEN 'rep' ELSE 'norep' END AS k, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
+    ]);
+
+    const catMap = new Map(cats.map((c) => [c.id, c]));
+    const brandMap = new Map(brands.map((b) => [b.id, b.name]));
+
+    const facets: Facets = {
+      category: catG
+        .map((g) => ({ value: catMap.get(g.categoryId)?.slug ?? '', label: catMap.get(g.categoryId)?.namePt ?? '', count: g._count._all }))
+        .filter((o) => o.value)
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      size: sizeR
+        .filter((r) => r.v)
+        .map((r) => ({ value: r.v, label: `${r.v} m²`, count: Number(r.count) }))
+        .sort((a, b) => Number(a.value) - Number(b.value)),
+      brand: brandG
+        .map((g) => ({ value: brandMap.get(g.brandId!) ?? '', label: brandMap.get(g.brandId!) ?? '', count: g._count._all }))
+        .filter((o) => o.value)
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      city: cityG
+        .map((g) => ({ value: g.city, label: g.city, count: g._count._all }))
+        .filter((o) => o.value)
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      price: priceR
+        .map((r) => ({ value: r.k, label: PRICE_LABELS[r.k] ?? r.k, count: Number(r.count) }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+      repair: repairR.map((r) => ({ value: r.k, label: r.k === 'rep' ? 'Com reparo' : 'Sem reparo', count: Number(r.count) })),
+    };
+
+    const totalAll = priceR.reduce((s, r) => s + Number(r.count), 0);
+    return { facets, totalAll };
   },
-  ['browse:active-cards'],
+  ['browse:facets'],
   { revalidate: 60, tags: [LISTINGS_TAG] },
 );
 
 export async function getBrowseData(sp: SP) {
   const f = parseFilters(sp);
+  const pageRaw = Array.isArray(sp.page) ? sp.page[0] : sp.page;
+  const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
-  const all = await loadActiveCards();
+  const where = buildWhere(f);
+  const orderBy: Prisma.ListingOrderByWithRelationInput =
+    f.sort === 'price_asc' ? { price: 'asc' } : f.sort === 'price_desc' ? { price: 'desc' } : { createdAt: 'desc' };
 
-  // facetas (sobre o conjunto todo)
-  const facets: Facets = {
-    category: facetCount(all, (c) => c.catSlug || null, (v) => all.find((x) => x.catSlug === v)?.cat ?? v).sort((a, b) => a.label.localeCompare(b.label)),
-    size: facetCount(all, (c) => c.sizeM2, (v) => `${v} m²`).sort((a, b) => Number(a.value) - Number(b.value)),
-    brand: facetCount(all, (c) => c.brand || null, (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
-    city: facetCount(all, (c) => c.city || null, (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
-    price: facetCount(all, (c) => priceKey(c.priceCents), (v) => v).sort((a, b) => a.value.localeCompare(b.value)),
-    repair: facetCount(all, (c) => (c.repair ? 'rep' : 'norep'), (v) => (v === 'rep' ? 'Com reparo' : 'Sem reparo')),
-  };
+  const [raw, total, fac] = await Promise.all([
+    db.listing.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      relationLoadStrategy: 'join',
+      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
+    }),
+    db.listing.count({ where }),
+    loadFacets(),
+  ]);
 
-  // aplica filtros selecionados
-  let items = all.filter((c) => {
-    if (f.cat && c.catSlug !== f.cat) return false;
-    if (f.size.length && !(c.sizeM2 && f.size.includes(c.sizeM2))) return false;
-    if (f.brand.length && !f.brand.includes(c.brand)) return false;
-    if (f.city.length && !f.city.includes(c.city)) return false;
-    if (f.repair.length && !f.repair.includes(c.repair ? 'rep' : 'norep')) return false;
-    if (f.price.length) {
-      const k = priceKey(c.priceCents);
-      if (!k || !f.price.includes(k)) return false;
-    }
-    return true;
-  });
-
-  if (f.sort === 'price_asc') items = items.slice().sort((a, b) => a.priceCents - b.priceCents);
-  else if (f.sort === 'price_desc') items = items.slice().sort((a, b) => b.priceCents - a.priceCents);
-
-  return { items, facets, total: items.length, totalAll: all.length, filters: f };
+  const items = raw.map(toCard);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  return { items, facets: fac.facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
 }

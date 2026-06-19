@@ -74,6 +74,13 @@ export function setHref(sp: SP, key: string, value: string, toggle = false): str
   return toQuery(cur);
 }
 
+// href que troca a página, preservando filtros (page some quando = 1).
+export function pageHref(sp: SP, page: number): string {
+  const cur = current(sp);
+  if (page > 1) cur.page = String(page);
+  return toQuery(cur);
+}
+
 export function clearHref(sp: SP): string {
   const sort = one(sp, 'sort');
   return toQuery(sort ? { sort } : {});
