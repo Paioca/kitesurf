@@ -7,7 +7,6 @@ import { color, font } from '../lib/tokens';
 
 type State = { offer: { status: string; amount: number | null } | null; visit: { status: string } | null; whatsapp: string | null };
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const STATUS_TXT: Record<string, string> = { pending: 'aguardando o vendedor', accepted: 'aceita', declined: 'recusada' };
 
 export function ContactActions({ listingId, initial, visitSummary = '', itemNoun = 'o item' }: { listingId: string; initial: State; visitSummary?: string; itemNoun?: string }) {
   const [state, setState] = useState<State>(initial);
@@ -41,9 +40,6 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
     );
   }
 
-  const offerLabel = state.offer ? `Oferta de ${state.offer.amount != null ? brl(state.offer.amount) : ''} · ${STATUS_TXT[state.offer.status]}` : null;
-  const visitLabel = state.visit ? `Visita solicitada · ${STATUS_TXT[state.visit.status]}` : null;
-
   return (
     <div style={{ marginBottom: 24 }}>
       {!showOffer ? (
@@ -57,7 +53,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
           <button onClick={() => Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !(Number(amount) > 0)} style={{ ...btnPrimary, width: 'auto', padding: '14px 20px' }}>{busy === 'offer' ? '…' : 'Enviar'}</button>
         </div>
       )}
-      {offerLabel && <div style={statusLine}>{offerLabel}</div>}
+      {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
 
       {!confirmVisit ? (
         <button onClick={() => setConfirmVisit(true)} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
@@ -75,7 +71,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
           </div>
         </div>
       )}
-      {visitLabel && <div style={statusLine}>{visitLabel}</div>}
+      {state.visit && <SentBox title="Visita solicitada" status={state.visit.status} />}
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>
@@ -87,4 +83,17 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
 
 const btnPrimary: React.CSSProperties = { display: 'block', width: '100%', background: color.primary, color: '#fff', border: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
 const btnOutline: React.CSSProperties = { display: 'block', width: '100%', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineCard}`, textAlign: 'center', padding: 15, borderRadius: 12, fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
-const statusLine: React.CSSProperties = { fontSize: 13, color: color.inkMute, marginTop: 8 };
+
+// Status destacado do pedido enviado (pendente / recusado).
+function SentBox({ title, status }: { title: string; status: string }) {
+  const declined = status === 'declined';
+  return (
+    <div style={{ marginTop: 10, background: declined ? '#fdecea' : '#e8f1ec', border: `1px solid ${declined ? '#f3cdc8' : '#cfe2d8'}`, borderRadius: 12, padding: '13px 15px', display: 'flex', gap: 11 }}>
+      <span style={{ width: 22, height: 22, borderRadius: 999, flex: 'none', background: declined ? '#b3261e' : color.primary, color: '#fff', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{declined ? '✕' : '✓'}</span>
+      <div>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: declined ? '#b3261e' : color.primary }}>{title}</div>
+        <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 3, lineHeight: 1.45 }}>{declined ? 'O vendedor recusou desta vez.' : 'Aguardando o vendedor aceitar. Quando ele aceitar, o WhatsApp dele aparece aqui.'}</div>
+      </div>
+    </div>
+  );
+}
