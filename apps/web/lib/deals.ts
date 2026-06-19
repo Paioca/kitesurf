@@ -21,6 +21,23 @@ export async function confirmSale(userId: string, conversationId: string) {
   return deal.id;
 }
 
+// Vendedor marca "vendido pra esse comprador" a partir de um pedido aceito.
+// 1 negócio por listing+comprador (mesmo com oferta E visita aceitas).
+export async function confirmSaleFromRequest(userId: string, requestId: string) {
+  const r = await db.request.findUnique({ where: { id: requestId } });
+  if (!r) throw new DealError('Pedido não encontrado.', 404);
+  if (r.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
+  if (r.status !== 'accepted') throw new DealError('Aceite o pedido antes de marcar como vendido.', 400);
+
+  let deal = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId } });
+  if (!deal) {
+    deal = await db.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
+  } else if (deal.status !== 'completed' && !deal.sellerConfirmedAt) {
+    deal = await db.deal.update({ where: { id: deal.id }, data: { status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
+  }
+  return deal.id;
+}
+
 // Comprador confirma a compra → completa o negócio + marca anúncio vendido.
 export async function confirmPurchase(userId: string, dealId: string) {
   const deal = await db.deal.findUnique({ where: { id: dealId } });

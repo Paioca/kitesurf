@@ -8,6 +8,7 @@ import { SiteHeader } from '../../components/SiteHeader';
 import { Footer } from '../../components/Footer';
 import { MobileAppBar, MobileTabBar } from '../../components/MobileChrome';
 import { RequestActions } from '../../components/RequestActions';
+import { DealBox } from '../../components/DealBox';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,7 @@ export default async function Pedidos() {
           </a>
           {r.status === 'pending' && <RequestActions id={r.id} />}
           {r.status === 'accepted' && <div style={okTag}>WhatsApp liberado pro comprador</div>}
+          {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
         </Row>
       ))}
 
@@ -61,6 +63,7 @@ export default async function Pedidos() {
             </div>
           </a>
           {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
+          {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
         </Row>
       ))}
     </div>

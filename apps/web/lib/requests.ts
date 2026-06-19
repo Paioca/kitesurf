@@ -44,13 +44,21 @@ function listingShape(l: any) {
 // Caixa de pedidos: recebidos (vendedor) + enviados (comprador). WhatsApp do
 // vendedor só vem nos enviados que foram aceitos.
 export async function getRequestsForUser(userId: string) {
-  const [incoming, outgoing] = await Promise.all([
+  const [incoming, outgoing, deals] = await Promise.all([
     db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true } } } }),
     db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
+    db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } } } }),
   ]);
+  const dkey = (l: string, b: string, s: string) => `${l}|${b}|${s}`;
+  const dmap = new Map(deals.map((d) => [dkey(d.listingId, d.buyerId, d.sellerId), d]));
+  const dealState = (r: any) => {
+    const d = dmap.get(dkey(r.listingId, r.buyerId, r.sellerId));
+    if (!d) return null;
+    return { id: d.id, status: d.status, iAmSeller: d.sellerId === userId, iAmBuyer: d.buyerId === userId, myReviewDone: d.reviews.some((rv) => rv.reviewerId === userId) };
+  };
   return {
-    incoming: incoming.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl }, createdAt: r.createdAt.toISOString() })),
-    outgoing: outgoing.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null, createdAt: r.createdAt.toISOString() })),
+    incoming: incoming.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl }, deal: dealState(r), createdAt: r.createdAt.toISOString() })),
+    outgoing: outgoing.map((r) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, listing: listingShape(r.listing), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null, deal: dealState(r), createdAt: r.createdAt.toISOString() })),
   };
 }
 
