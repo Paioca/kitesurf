@@ -1,0 +1,4 @@
+type,brand,model,year,size_m2,line_length_m,condition,price,kite_price,barra_price,city,spot,shippable,seller_name,seller_phone,photos_kite,photos_barra
+kite,Duotone,Evo,2022,12,,bom,4500,,,Cumbuco,,false,João Silva,+5585999990001,https://exemplo.com/evo1.jpg|https://exemplo.com/evo2.jpg|https://exemplo.com/evo3.jpg,
+barra,North,,,,24,seminovo,1200,,,Cumbuco,,false,Maria Souza,+5585999990002,,https://exemplo.com/barra1.jpg|https://exemplo.com/barra2.jpg|https://exemplo.com/barra3.jpg
+kit,Cabrinha,Switchblade,2023,9,22,bom,6000,4500,1500,Cumbuco,,false,Pedro Lima,+5585999990003,https://exemplo.com/k1.jpg|https://exemplo.com/k2.jpg,https://exemplo.com/b1.jpg
