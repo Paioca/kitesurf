@@ -81,6 +81,7 @@ npm run db:seed        # taxonomia (Kite/Barra ativos; resto active:false)
 | Conta | `/conta` | Hub do logado: perfil público, editar perfil, anunciar, mensagens, **Sair** (logout) |
 | Editar perfil | `/conta/editar` | Foto/nome/IG/idioma + **excluir conta** (zona de risco); só o logado |
 | Moderação | `/moderacao` | Fila de denúncias (resolver/revisar); **só admin** (`User.admin`), senão 404 |
+| Favoritos | `/favoritos` | Anúncios salvos pelo logado; coração nos cards/detalhe |
 
 Backend (`app/api/`): auth (otp · me **GET/PATCH/DELETE** · logout) · catalog · listings (**GET** busca ·
 **POST** criar · **PATCH** editar+status · **DELETE** soft) · uploads (image/avatar) · conversations
@@ -91,13 +92,13 @@ anúncio = dono; conversa/deal/review) · rate limiting (DB, `lib/ratelimit.ts`)
 
 ## Modelo de dados (`apps/web/prisma/schema.prisma`)
 
-`User · OtpCode · Category(+active) · Brand · Model · Listing · ListingImage · Conversation · Message ·
-Deal · Review · RateHit · Report`.
+`User(+admin) · OtpCode · Category(+active) · Brand · Model · Listing · ListingImage · Conversation ·
+Message · Deal · Review · RateHit · Report · Favorite`.
 - **Listing** novos campos: `hasBarra`, `kitePrice`, `barraPrice`, `barraAttributes`; `status`
   (draft/active/paused/sold/archived), `deletedAt` (soft).
 - **ListingImage**: `thumbUrl`, `component` ('kite'|'barra'). **User**: `admin` (moderação).
 - Migrations: init · chat · deal_review · ratelimit_report · enable_rls · **listing_image_thumb** ·
-  **category_active** · **kit_kite_barra** · **user_admin**.
+  **category_active** · **kit_kite_barra** · **user_admin** · **favorite**.
 - `ConversationStatus.blocked` agora **usado** (bloquear). Ainda não usado: `DealStatus.cancelled`
   (cancelar negócio — Batch 5+). **Fora (Fase 0):** Order/escrow, PSP, BusinessListing.
 
@@ -121,8 +122,11 @@ completo, mas faltava **pós-criação e autogestão**. Plano em 5 batches:
   `User.admin` (migration). **Virar admin:** `UPDATE "User" SET admin=true WHERE phone='+55...'` no Supabase SQL.
 - **Batch 4 (FEITO):** conta/LGPD — **editar perfil** (`PATCH /api/auth/me`) em `/conta/editar`;
   **excluir conta** (`DELETE`, soft: anonimiza PII, libera tel/email, arquiva anúncios, encerra sessão).
-- **Batch 5 (PENDENTE):** engajamento — **favoritos** (não existe model nem rota; aba mobile "♡"
-  desabilitada); notificações (só polling 4s). _(O feedback de erro do chat já saiu no Batch 3.)_
+- **Batch 5 (FEITO — favoritos):** model `Favorite` + `POST/DELETE /api/listings/[id]/favorite`;
+  coração nos cards (estado marcado server-side em `getBrowseData`) + "Salvar" no detalhe; `/favoritos`
+  (aba "♡" ligada). **Falta só:** notificações de verdade (push/email; hoje só polling 4s) — trilha à parte.
+
+**Os 5 batches da auditoria estão no ar.** Único item de engajamento pendente: notificações.
 
 ## PENDÊNCIAS operacionais (antes de gente real)
 
