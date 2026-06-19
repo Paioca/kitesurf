@@ -5,8 +5,9 @@ import { useRef, useState } from 'react';
 import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
 
-export function EditProfileForm({ initial }: { initial: { name: string; instagramHandle: string; avatarUrl: string; locale: string } }) {
+export function EditProfileForm({ initial }: { initial: { name: string; email: string; instagramHandle: string; avatarUrl: string; locale: string } }) {
   const [name, setName] = useState(initial.name);
+  const [email, setEmail] = useState(initial.email);
   const [instagram, setInstagram] = useState(initial.instagramHandle);
   const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl);
   const [locale, setLocale] = useState(initial.locale || 'pt');
@@ -31,7 +32,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; instagra
   async function save() {
     setSaving(true); setError('');
     try {
-      const res = await fetch('/api/auth/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, instagramHandle: instagram || null, avatarUrl, locale }) });
+      const res = await fetch('/api/auth/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email: email.trim() || null, instagramHandle: instagram || null, avatarUrl, locale }) });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro ao salvar.');
       window.location.href = '/conta';
     } catch (e: any) { setError(e.message); setSaving(false); }
@@ -63,6 +64,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; instagra
       </div>
 
       <Field label="Nome"><input className="kl-input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
+      <Field label="E-mail (opcional)"><input className="kl-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" /></Field>
       <Field label="Instagram (opcional)"><input className="kl-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuperfil" /></Field>
       <Field label="Idioma">
         <div style={{ display: 'inline-flex', background: '#fff', border: `1.5px solid ${color.lineCard}`, borderRadius: 999, padding: 3 }}>

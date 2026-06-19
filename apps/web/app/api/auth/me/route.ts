@@ -11,6 +11,7 @@ export async function GET() {
   return NextResponse.json({
     id: user.id,
     name: user.name,
+    email: user.email,
     avatarUrl: user.avatarUrl,
     instagramHandle: user.instagramHandle,
     phoneVerified: user.phoneVerified,
@@ -21,6 +22,7 @@ export async function GET() {
 
 const patchSchema = z.object({
   name: z.string().min(2).max(80).optional(),
+  email: z.string().email().max(120).nullable().optional(), // coletado no perfil; validação (confirmação) fica pra depois
   instagramHandle: z.string().max(40).nullable().optional(),
   avatarUrl: z.string().min(1).optional(),
   locale: z.enum(['pt', 'en']).optional(),
@@ -34,13 +36,16 @@ export async function PATCH(req: Request) {
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
     const ig = dto.instagramHandle === undefined ? undefined : dto.instagramHandle ? dto.instagramHandle.replace(/^@/, '').trim() || null : null;
+    // e-mail novo zera a verificação (será confirmado depois); null limpa o campo
+    const email = dto.email === undefined ? undefined : (dto.email ? dto.email.toLowerCase().trim() : null);
     const updated = await db.user.update({
       where: { id: user.id },
-      data: { name: dto.name, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
+      data: { name: dto.name, email, emailVerified: email === undefined ? undefined : false, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
     });
-    return NextResponse.json({ id: updated.id, name: updated.name, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
+    return NextResponse.json({ id: updated.id, name: updated.name, email: updated.email, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if ((e as { code?: string }).code === 'P2002') return NextResponse.json({ message: 'Esse e-mail já está em uso por outra conta.' }, { status: 409 });
     return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
   }
 }

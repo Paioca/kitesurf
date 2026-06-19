@@ -17,6 +17,7 @@ const PERKS = [
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
   const [rawPhone, setRawPhone] = useState('');
+  const [dial, setDial] = useState('+55'); // DDI do país — default Brasil
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -39,7 +40,7 @@ export default function Entrar() {
   // Monta E.164: se começar com +, usa direto; senão assume +55.
   const phone = rawPhone.trim().startsWith('+')
     ? '+' + rawPhone.replace(/[^\d]/g, '')
-    : '+55' + rawPhone.replace(/[^\d]/g, '');
+    : dial + rawPhone.replace(/[^\d]/g, '');
 
   async function requestOtp() {
     setError('');
@@ -149,8 +150,10 @@ export default function Entrar() {
               <p style={sub}>Sem senha. Te mandamos um código pra confirmar.</p>
               <label style={lbl}>Telefone</label>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-                <div style={ddi}>🇧🇷 +55</div>
-                <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1 }} />
+                <select value={dial} onChange={(e) => setDial(e.target.value)} style={ddi} aria-label="País">
+                  {COUNTRIES.map((c) => <option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
+                </select>
+                <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1, minWidth: 0 }} />
               </div>
               <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                 {loading ? '...' : 'Enviar código'}
@@ -271,7 +274,19 @@ const h1: React.CSSProperties = { fontFamily: "'Spectral',serif", fontSize: 31, 
 const sub: React.CSSProperties = { fontSize: 15, color: '#6b7a73', margin: '0 0 26px' };
 const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#48564f', display: 'block', marginBottom: 8 };
 const input: React.CSSProperties = { fontSize: 15, fontWeight: 500, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 15px', background: '#fff' };
-const ddi: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 7, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 14px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none' };
+const ddi: React.CSSProperties = { border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 8px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none', cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
+
+// DDI por país — Brasil default no topo; o resto cobre os gringos mais comuns em Cumbuco.
+const COUNTRIES = [
+  { flag: '🇧🇷', dial: '+55' }, { flag: '🇵🇹', dial: '+351' }, { flag: '🇦🇷', dial: '+54' },
+  { flag: '🇺🇸', dial: '+1' }, { flag: '🇨🇱', dial: '+56' }, { flag: '🇺🇾', dial: '+598' },
+  { flag: '🇪🇸', dial: '+34' }, { flag: '🇫🇷', dial: '+33' }, { flag: '🇩🇪', dial: '+49' },
+  { flag: '🇮🇹', dial: '+39' }, { flag: '🇳🇱', dial: '+31' }, { flag: '🇬🇧', dial: '+44' },
+  { flag: '🇨🇭', dial: '+41' }, { flag: '🇦🇹', dial: '+43' }, { flag: '🇧🇪', dial: '+32' },
+  { flag: '🇵🇱', dial: '+48' }, { flag: '🇸🇪', dial: '+46' }, { flag: '🇳🇴', dial: '+47' },
+  { flag: '🇩🇰', dial: '+45' }, { flag: '🇨🇿', dial: '+420' }, { flag: '🇮🇱', dial: '+972' },
+  { flag: '🇦🇺', dial: '+61' },
+];
 const primaryBtn: React.CSSProperties = { width: '100%', background: '#1f6b5c', color: '#fff', border: 'none', borderRadius: 12, padding: 16, fontFamily: "'Archivo',sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer' };
 const disabledBtn: React.CSSProperties = { ...primaryBtn, background: '#dfe3df', color: '#9aa49d', cursor: 'not-allowed' };
 const terms: React.CSSProperties = { fontSize: 12, lineHeight: 1.5, color: '#9aa49d', textAlign: 'center', margin: '18px 0 0' };

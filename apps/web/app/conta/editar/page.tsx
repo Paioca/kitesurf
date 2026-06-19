@@ -15,6 +15,7 @@ export default async function EditarPerfil() {
 
   const initial = {
     name: user.name ?? '',
+    email: user.email ?? '',
     instagramHandle: user.instagramHandle ?? '',
     avatarUrl: user.avatarUrl ?? '',
     locale: user.locale ?? 'pt',
