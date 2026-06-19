@@ -59,7 +59,8 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   if (a.bladder) attrs.push({ k: 'Bladder', v: CONDITION[a.bladder] ?? a.bladder });
   if (a.mangueiras) attrs.push({ k: 'Mangueiras', v: CONDITION[a.mangueiras] ?? a.mangueiras });
   if (a.microfuros != null) attrs.push({ k: 'Micro furos', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
-  if (a.repairs_count != null) attrs.push({ k: 'Reparos', v: Number(a.repairs_count) > 0 ? String(a.repairs_count) : 'Nenhum' });
+  if (a.reparos != null) attrs.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
+  else if (a.repairs_count != null) attrs.push({ k: 'Reparos', v: Number(a.repairs_count) > 0 ? String(a.repairs_count) : 'Nenhum' });
   if (a.harness_size) attrs.push({ k: 'Tamanho', v: String(a.harness_size) });
   if (a.bar_size) attrs.push({ k: 'Barra', v: String(a.bar_size) });
 
@@ -74,6 +75,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   if (a.bladder) summaryParts.push(`bladder ${(CONDITION[a.bladder] ?? a.bladder).toLowerCase()}`);
   if (a.mangueiras) summaryParts.push(`mangueiras ${(CONDITION[a.mangueiras] ?? a.mangueiras).toLowerCase()}`);
   if (a.microfuros != null) summaryParts.push(Number(a.microfuros) > 0 ? `${a.microfuros} micro furo(s)` : 'sem micro furos');
+  if (a.reparos != null) summaryParts.push(Number(a.reparos) > 0 ? `${a.reparos} reparo(s)` : 'sem reparos');
   summaryParts.push(`em ${l.city}${l.spot ? ` (${l.spot})` : ''}`);
   const visitSummary = summaryParts.join(', ');
 

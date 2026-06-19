@@ -21,6 +21,7 @@ const CATEGORIES = [
         size_m2: { type: 'number', label: 'Tamanho (m²)', enum: [5, 6, 7, 8, 9, 10, 11, 12, 14, 17] },
         condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
         microfuros: { type: 'integer', label: 'Micro furos (qtd)' },
+        reparos: { type: 'integer', label: 'Reparos (qtd)' },
         bladder: { type: 'string', label: 'Bladder', enum: ['zero', 'microfuro_adesivado'] },
         mangueiras: { type: 'string', label: 'Mangueiras', enum: ['original', 'ja_trocadas'] },
       },
