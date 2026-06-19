@@ -4,6 +4,7 @@ import { color, font, heroGradient } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
 import { setHref, clearHref, pageHref, toggleHref, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
+import { HomeIntro } from '../components/HomeIntro';
 import { SiteHeader } from '../components/SiteHeader';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
 import { FilterContent } from '../components/browse/FilterContent';
@@ -34,6 +35,8 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
               <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamento de kite<br />com confiança</h1>
             </div>
           </div>
+
+          <HomeIntro compact />
 
           <div style={{ padding: '16px 18px 8px', display: 'flex', gap: 9 }}>
             <FilterSheet activeCount={activeCount}>
@@ -82,6 +85,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
       {/* ---------- DESKTOP ---------- */}
       <div className="only-desktop">
         <SiteHeader />
+        <HomeIntro />
         <main style={{ maxWidth: 1320, margin: '0 auto', padding: '34px 32px 80px', display: 'grid', gridTemplateColumns: '262px 1fr', gap: 36, alignItems: 'start' }}>
           <aside style={{ position: 'sticky', top: 96 }}>
             <FilterContent sp={sp} facets={facets} filters={filters} />
