@@ -1,10 +1,30 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
-import { requireUser, UnauthorizedError } from '../../../lib/session';
+import { requireUser, requireAdmin, UnauthorizedError, ForbiddenError } from '../../../lib/session';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// GET — fila de denúncias (admin). ?status=open|reviewed|actioned (default: todas).
+export async function GET(req: Request) {
+  try {
+    await requireAdmin();
+    const status = new URL(req.url).searchParams.get('status');
+    const reports = await db.report.findMany({
+      where: status ? { status: status as any } : {},
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: { reporter: { select: { id: true, name: true } } },
+    });
+    return NextResponse.json(reports);
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if (e instanceof ForbiddenError) return NextResponse.json({ message: 'Sem permissão.' }, { status: 403 });
+    throw e;
+  }
+}
 
 const schema = z.object({
   targetType: z.enum(['user', 'listing', 'message']),

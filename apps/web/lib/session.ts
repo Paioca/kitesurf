@@ -50,8 +50,22 @@ export async function requireUser() {
   return user;
 }
 
+// Exige admin (moderação). Lança se não logado ou não-admin.
+export async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user) throw new UnauthorizedError();
+  if (!user.admin) throw new ForbiddenError();
+  return user;
+}
+
 export class UnauthorizedError extends Error {
   constructor() {
     super('Não autenticado.');
+  }
+}
+
+export class ForbiddenError extends Error {
+  constructor() {
+    super('Sem permissão.');
   }
 }
