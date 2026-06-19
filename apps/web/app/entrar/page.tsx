@@ -279,7 +279,7 @@ function OtpCells({ value, onChange }: { value: string; onChange: (v: string) =>
             const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
             if (t) { e.preventDefault(); onChange(t); }
           }}
-          style={{ flex: 1, height: 58, borderRadius: 12, textAlign: 'center', fontSize: 23, fontWeight: 700, background: '#fff', border: d ? '2px solid #1f6b5c' : '1.5px solid #e0d9c9' }}
+          style={{ flex: 1, minWidth: 0, width: 0, height: 58, borderRadius: 12, textAlign: 'center', fontSize: 23, fontWeight: 700, background: '#fff', border: d ? '2px solid #1f6b5c' : '1.5px solid #e0d9c9', boxSizing: 'border-box', padding: 0 }}
         />
       ))}
     </div>
