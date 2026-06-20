@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { db } from './db';
 import type { Card } from './browse';
 
@@ -6,7 +7,8 @@ function brl(c: number) {
   return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export async function getProfile(id: string) {
+// cache(): generateMetadata + a página do perfil compartilham uma query/request.
+export const getProfile = cache(async (id: string) => {
   const user = await db.user.findFirst({
     where: { id, deletedAt: null },
     select: { id: true, name: true, avatarUrl: true, instagramHandle: true, phoneVerified: true, emailVerified: true, role: true, locale: true, createdAt: true },
@@ -61,4 +63,4 @@ export async function getProfile(id: string) {
     listings,
     reviews,
   };
-}
+});

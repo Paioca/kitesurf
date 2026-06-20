@@ -1,5 +1,6 @@
 // Perfil público — handoff Claude Design (Perfil.dc.html), marca Kitetropos. Server-rendered.
 // Reputação real: stats e avaliações vêm de Deals/Reviews concluídos.
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getProfile } from '../../../lib/profile';
 import { color, font } from '../../../lib/tokens';
@@ -9,6 +10,18 @@ import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
 import { ListingCard } from '../../../components/ListingCard';
 
 export const dynamic = 'force-dynamic';
+
+// OG do perfil — superfície de "compartilhe pra vender".
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const data = await getProfile(params.id);
+  if (!data) return { title: 'Perfil não encontrado — Kitetropos' };
+  const { user, stats } = data;
+  const rep = stats.ratingCount ? `★ ${stats.ratingAvg?.toFixed(1)} · ${stats.salesCount} venda(s)` : `${stats.activeCount} anúncio(s) ativo(s)`;
+  const title = `${user.name} — Kitetropos`;
+  const description = `Perfil de ${user.name} na Kitetropos. ${rep}. Telefone verificado, reputação real.`;
+  const images = user.avatarUrl ? [user.avatarUrl] : ['/hero-beach.jpg'];
+  return { title, description, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
+}
 
 function stars(n: number) {
   return '★'.repeat(n) + '☆'.repeat(5 - n);

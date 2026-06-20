@@ -17,7 +17,7 @@ export function FavoriteButton({ listingId, initial = false, variant = 'overlay'
     setFav(next);
     try {
       const res = await fetch(`/api/listings/${listingId}/favorite`, { method: next ? 'POST' : 'DELETE' });
-      if (res.status === 401) { window.location.href = '/entrar'; return; }
+      if (res.status === 401) { window.location.href = `/entrar?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
       if (!res.ok) setFav(!next);
     } catch { setFav(!next); } finally { setBusy(false); }
   }

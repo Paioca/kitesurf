@@ -14,6 +14,18 @@ import { ActiveChips } from '../components/browse/ActiveChips';
 
 export const dynamic = 'force-dynamic';
 
+// OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
+export const metadata = {
+  title: 'Kitetropos — equipamento de kite, com confiança',
+  description: 'Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário, sem chat de spam. Começando em Cumbuco.',
+  openGraph: {
+    title: 'Kitetropos — equipamento de kite, com confiança',
+    description: 'Marketplace de equipamento de kitesurf do Brasil. Compre e venda sem medo do golpe.',
+    images: ['/hero-beach.jpg'],
+    type: 'website',
+  },
+};
+
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = searchParams;
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
@@ -180,10 +192,10 @@ const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
 function Hero() {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
-      <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
-        <div style={{ maxWidth: 690 }}>
+        <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.gold, marginBottom: 22 }}>Cumbuco · Ceará · o hub do kite no Brasil</div>
           <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
           <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 520 }}>Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário e sem chat de spam.</p>

@@ -26,6 +26,38 @@ body {
   color: #23332e;
 }
 
+/* Acessibilidade & micro-interações globais */
+:focus-visible {
+  outline: 2px solid #1f6b5c;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hero (landing): Ken-Burns na foto + entrada do texto (Design Book) */
+@keyframes kl-drift {
+  from { transform: scale(1.06) translate(0, 0); }
+  to { transform: scale(1.14) translate(-2.5%, -1.5%); }
+}
+@keyframes kl-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .kl-scroll {
   scrollbar-width: none;
 }
