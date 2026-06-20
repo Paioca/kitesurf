@@ -17,6 +17,12 @@ export async function POST(req: Request) {
   const okIp = await rateLimit(`otp:reqip:${clientIp(req)}`, 20, 3600);
   if (!okPhone || !okIp) return tooMany();
 
-  const devCode = await generateOtp(parsed.data.phone);
+  let devCode: string | null;
+  try {
+    devCode = await generateOtp(parsed.data.phone);
+  } catch (e) {
+    console.error('[otp] envio falhou', e);
+    return NextResponse.json({ message: 'Não foi possível enviar o SMS agora. Tente novamente em instantes.' }, { status: 502 });
+  }
   return NextResponse.json({ ok: true, message: 'Código enviado por SMS.', ...(devCode ? { devCode } : {}) });
 }

@@ -20,6 +20,7 @@ const listingSel = { id: true, title: true, price: true, images: { orderBy: { po
 export async function createRequest(userId: string, listingId: string, type: 'offer' | 'visit', amount?: number | null) {
   const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null }, include: { user: { select: { phone: true } } } });
   if (!listing) throw new RequestError('Anúncio não encontrado.', 404);
+  if (listing.status !== 'active') throw new RequestError('Este anúncio não está mais disponível.', 409);
   if (listing.userId === userId) throw new RequestError('Você é o dono deste anúncio.', 400);
   if (type === 'offer' && (!amount || amount < 100)) throw new RequestError('Informe um valor válido.', 400);
   const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
@@ -38,6 +39,11 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
   const r = await db.request.findUnique({ where: { id } });
   if (!r) throw new RequestError('Pedido não encontrado.', 404);
   if (r.sellerId !== userId) throw new RequestError('Sem permissão.', 403);
+  if (status === 'accepted') {
+    const listing = await db.listing.findUnique({ where: { id: r.listingId }, select: { status: true, deletedAt: true } });
+    if (!listing || listing.deletedAt || listing.status === 'sold') throw new RequestError('Este anúncio já foi vendido.', 409);
+    if (listing.status !== 'active') throw new RequestError('Anúncio não está disponível.', 409);
+  }
   await db.request.update({ where: { id }, data: { status } });
   return { ok: true, status };
 }

@@ -4,8 +4,22 @@ import jwt from 'jsonwebtoken';
 import { db } from './db';
 
 const COOKIE = 'kite_session';
-const SECRET = process.env.JWT_SECRET ?? 'dev-secret-troque';
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
+
+// Segredo do JWT. Sem fallback adivinhável: em produção exigimos uma chave forte
+// no startup — caso contrário qualquer um forjaria o cookie e assumiria contas.
+function resolveSecret(): string {
+  const s = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    if (!s || s.length < 32) {
+      throw new Error('JWT_SECRET ausente ou fraco: defina uma chave forte (>= 32 chars) em produção.');
+    }
+    return s;
+  }
+  // dev/test: fallback só fora de produção.
+  return s ?? 'dev-secret-troque';
+}
+const SECRET = resolveSecret();
 
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
 export function setSession(userId: string) {

@@ -256,6 +256,9 @@ model Deal {
 
   @@index([sellerId])
   @@index([buyerId])
+  // Índice único PARCIAL (só status='completed') criado via SQL em
+  // migrations/20260620000000_deal_unique_completed — Prisma não modela
+  // partial unique index; garante 1 venda completa por anúncio.
 }
 
 // Avaliação atrelada a um Deal `completed`. 1 review por avaliador por deal.

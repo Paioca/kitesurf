@@ -29,6 +29,11 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
   if (r.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
   if (r.status !== 'accepted') throw new DealError('Aceite o pedido antes de marcar como vendido.', 400);
 
+  const listing = await db.listing.findUnique({ where: { id: r.listingId }, select: { status: true, deletedAt: true } });
+  if (!listing || listing.deletedAt) throw new DealError('Anúncio não encontrado.', 404);
+  if (listing.status === 'sold') throw new DealError('Este anúncio já foi vendido.', 409);
+  if (listing.status !== 'active' && listing.status !== 'paused') throw new DealError('Anúncio não está disponível.', 400);
+
   let deal = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId } });
   if (!deal) {
     deal = await db.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
@@ -45,10 +50,24 @@ export async function confirmPurchase(userId: string, dealId: string) {
   if (deal.buyerId !== userId) throw new DealError('Só o comprador confirma a compra.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Negócio não está aguardando confirmação.', 400);
 
-  await db.$transaction([
-    db.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } }),
-    db.listing.update({ where: { id: deal.listingId }, data: { status: 'sold', soldToUserId: deal.buyerId } }),
-  ]);
+  // Atômico: só marca vendido se o anúncio ainda está disponível. Se outro
+  // comprador já fechou (updateMany.count === 0), abortamos — sem segundo "vendido"
+  // nem segunda review válida. O índice único parcial em Deal(listingId) WHERE
+  // status='completed' é a trava de DB que cobre a corrida real.
+  await db.$transaction(async (tx) => {
+    const updated = await tx.listing.updateMany({
+      where: { id: deal.listingId, status: { in: ['active', 'paused'] } },
+      data: { status: 'sold', soldToUserId: deal.buyerId },
+    });
+    if (updated.count === 0) throw new DealError('Este anúncio já foi vendido.', 409);
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
+    // Vendido → recusa os pedidos pendentes/aceitos dos outros compradores no mesmo
+    // anúncio (o item não está mais disponível pra eles).
+    await tx.request.updateMany({
+      where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] } },
+      data: { status: 'declined' },
+    });
+  });
 }
 
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA
