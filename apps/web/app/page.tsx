@@ -1,5 +1,7 @@
 // Home / Busca — Server Component. Anúncios renderizados no servidor (rápido +
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
+import Image from 'next/image';
+import Link from 'next/link';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
 import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, SIZES, SPOTS, type SP } from '../lib/filters';
@@ -51,7 +53,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
           <div style={{ position: 'relative', height: 188, overflow: 'hidden' }}>
-            <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            <Image src="/hero-beach.jpg" alt="" fill priority sizes="430px" style={{ objectFit: 'cover' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
               <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.gold, marginBottom: 4 }}>Cumbuco · Ceará</div>
@@ -68,9 +70,9 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
           {/* chips de categoria (scroll) */}
           {typeChips.length > 0 && (
             <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 18px 6px' }}>
-              <a href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</a>
+              <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</Link>
               {typeChips.map((t) => (
-                <a key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</a>
+                <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
               ))}
             </div>
           )}
@@ -79,7 +81,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
           {facets.size.length > 0 && (
             <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '4px 18px 2px' }}>
               {facets.size.map((o) => (
-                <a key={o.value} href={toggleHref(sp, 'size', o.value)} style={catChip(filters.size.includes(o.value))}>{o.label}</a>
+                <Link key={o.value} href={toggleHref(sp, 'size', o.value)} style={catChip(filters.size.includes(o.value))}>{o.label}</Link>
               ))}
             </div>
           )}
@@ -89,7 +91,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <span style={{ fontSize: 13, color: color.inkFaint, flex: 'none' }}>{total} {total === 1 ? 'anúncio' : 'anúncios'}</span>
             <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
               {sorts.map(([key, label]) => (
-                <a key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</a>
+                <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
               ))}
             </div>
           </div>
@@ -121,16 +123,16 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {sorts.map(([key, label]) => (
-                    <a key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</a>
+                    <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
                   ))}
                 </div>
               </div>
 
               {typeChips.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 36 }}>
-                  <a href={clearHref(sp)} style={catChip(!filters.cat)}>Todos <span style={{ opacity: 0.5, fontWeight: 500 }}>{totalAll}</span></a>
+                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos <span style={{ opacity: 0.5, fontWeight: 500 }}>{totalAll}</span></Link>
                   {typeChips.map((t) => (
-                    <a key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label} <span style={{ opacity: 0.5, fontWeight: 500 }}>{t.count}</span></a>
+                    <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label} <span style={{ opacity: 0.5, fontWeight: 500 }}>{t.count}</span></Link>
                   ))}
                 </div>
               )}
@@ -160,7 +162,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {sorts.map(([key, label]) => (
-                    <a key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</a>
+                    <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
                   ))}
                 </div>
               </div>
@@ -193,7 +195,7 @@ const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
 function Hero() {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
-      <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
+      <Image src="/hero-beach.jpg" alt="" fill priority sizes="100vw" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
@@ -295,9 +297,9 @@ function EmptyState({ empty, sp, big }: { empty: boolean; sp: SP; big?: boolean 
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: big ? 19 : 16, color: color.inkFaint2, marginBottom: 14 }}>
         {empty ? 'Ainda não há anúncios por aqui.' : 'Nada com esses filtros.'}
       </div>
-      <a href={empty ? '/anunciar' : clearFiltersHref(sp)} style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>
+      <Link href={empty ? '/anunciar' : clearFiltersHref(sp)} style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>
         {empty ? 'Anunciar o primeiro' : 'Limpar filtros'}
-      </a>
+      </Link>
     </div>
   );
 }
@@ -310,9 +312,9 @@ function Pager({ page, totalPages, sp }: { page: number; totalPages: number; sp:
   const off: React.CSSProperties = { ...base, background: 'transparent', color: color.inkFaint3, pointerEvents: 'none' };
   return (
     <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '26px 18px 8px' }}>
-      {page > 1 ? <a href={pageHref(sp, page - 1)} style={on}>← Anterior</a> : <span style={off}>← Anterior</span>}
+      {page > 1 ? <Link href={pageHref(sp, page - 1)} style={on}>← Anterior</Link> : <span style={off}>← Anterior</span>}
       <span style={{ fontSize: 13, color: color.inkMute }}>Página {page} de {totalPages}</span>
-      {page < totalPages ? <a href={pageHref(sp, page + 1)} style={on}>Próxima →</a> : <span style={off}>Próxima →</span>}
+      {page < totalPages ? <Link href={pageHref(sp, page + 1)} style={on}>Próxima →</Link> : <span style={off}>Próxima →</span>}
     </nav>
   );
 }

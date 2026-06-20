@@ -37,6 +37,13 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true, // Next 14: habilita instrumentation.ts (Sentry server/edge)
   },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co' }, // storage oficial das fotos
+      { protocol: 'https', hostname: 'i.pravatar.cc' }, // avatares de seed
+      { protocol: 'https', hostname: 'fastly.picsum.photos' }, // imagens de seed
+    ],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
