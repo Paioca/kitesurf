@@ -7,13 +7,13 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/api & npm run dev --workspace=apps/web",
-    "dev:api": "npm run dev --workspace=apps/api",
+    "dev": "npm run dev --workspace=apps/web",
     "dev:web": "npm run dev --workspace=apps/web",
     "db:up": "docker compose up -d",
-    "db:migrate": "npm run db:migrate --workspace=apps/api",
-    "db:seed": "npm run db:seed --workspace=apps/api",
-    "db:studio": "npm run db:studio --workspace=apps/api"
+    "db:migrate": "npm run db:migrate --workspace=apps/web",
+    "db:deploy": "npm run db:deploy --workspace=apps/web",
+    "db:seed": "npm run db:seed --workspace=apps/web",
+    "db:studio": "npm run db:studio --workspace=apps/web"
   },
   "engines": {
     "node": ">=20"
