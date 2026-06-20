@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorResponse } from '../../../../lib/http';
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -92,7 +93,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json(updated);
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }
 
@@ -107,6 +108,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }

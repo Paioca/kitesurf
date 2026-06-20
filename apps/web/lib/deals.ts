@@ -1,11 +1,8 @@
 import 'server-only';
 import { db } from './db';
+import { PublicError } from './http';
 
-export class DealError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
-  }
-}
+export class DealError extends PublicError {}
 
 // Vendedor confirma a venda (a partir da conversa) → cria o Deal.
 export async function confirmSale(userId: string, conversationId: string) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorResponse } from '../../../../lib/http';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { getCurrentUser, requireUser, clearSession, UnauthorizedError } from '../../../../lib/session';
@@ -50,7 +51,7 @@ export async function PATCH(req: Request) {
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if ((e as { code?: string }).code === 'P2002') return NextResponse.json({ message: 'Esse e-mail já está em uso por outra conta.' }, { status: 409 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }
 
@@ -75,6 +76,6 @@ export async function DELETE() {
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }

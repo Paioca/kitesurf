@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorResponse } from '../../../../lib/http';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { requireAdmin, UnauthorizedError, ForbiddenError } from '../../../../lib/session';
@@ -18,6 +19,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if (e instanceof ForbiddenError) return NextResponse.json({ message: 'Sem permissão.' }, { status: 403 });
-    throw e;
+    return errorResponse(e);
   }
 }

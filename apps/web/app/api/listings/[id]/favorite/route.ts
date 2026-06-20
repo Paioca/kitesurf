@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorResponse } from '../../../../../lib/http';
 import { db } from '../../../../../lib/db';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 
@@ -16,7 +17,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ ok: true, favorited: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }
 
@@ -28,6 +29,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ ok: true, favorited: false });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }

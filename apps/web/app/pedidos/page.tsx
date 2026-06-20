@@ -9,6 +9,7 @@ import { Footer } from '../../components/Footer';
 import { MobileAppBar, MobileTabBar } from '../../components/MobileChrome';
 import { RequestActions } from '../../components/RequestActions';
 import { DealBox } from '../../components/DealBox';
+import { CancelRequestButton } from '../../components/CancelRequestButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,7 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
             </a>
             {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
+            {r.status === 'pending' && <CancelRequestButton requestId={r.id} type={r.type} />}
           </Row>
         ))
       )}

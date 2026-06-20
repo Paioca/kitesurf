@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { errorResponse } from '../../../lib/http';
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
@@ -126,6 +127,6 @@ export async function POST(req: Request) {
     return NextResponse.json(listing, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    return NextResponse.json({ message: (e as Error).message ?? 'Erro.' }, { status: 400 });
+    return errorResponse(e);
   }
 }

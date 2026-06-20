@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorResponse } from '../../../lib/http';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { requireUser, requireAdmin, UnauthorizedError, ForbiddenError } from '../../../lib/session';
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if (e instanceof ForbiddenError) return NextResponse.json({ message: 'Sem permissão.' }, { status: 403 });
-    throw e;
+    return errorResponse(e);
   }
 }
 
@@ -43,6 +44,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    throw e;
+    return errorResponse(e);
   }
 }

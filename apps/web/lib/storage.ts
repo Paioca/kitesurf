@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import { PublicError } from './http';
 
 const BUCKET = process.env.SUPABASE_BUCKET ?? 'listings';
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -22,7 +23,7 @@ async function save(buffer: Buffer): Promise<string> {
   const { error } = await supabase()
     .storage.from(BUCKET)
     .upload(path, buffer, { contentType: 'image/jpeg', upsert: false });
-  if (error) throw new Error(`Upload falhou: ${error.message}`);
+  if (error) throw new Error(`Upload Supabase falhou: ${error.message}`); // interno → vira genérico + Sentry
   return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
@@ -68,8 +69,8 @@ export async function processImage(
   mimetype: string,
   size: number,
 ): Promise<ProcessedImage> {
-  if (!ALLOWED.includes(mimetype)) throw new Error('Formato inválido (use JPEG, PNG ou WebP).');
-  if (size > MAX_BYTES) throw new Error('Imagem maior que 12 MB.');
+  if (!ALLOWED.includes(mimetype)) throw new PublicError('Formato inválido (use JPEG, PNG ou WebP).');
+  if (size > MAX_BYTES) throw new PublicError('Imagem maior que 12 MB.');
 
   const main = await sharp(buffer).rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
   const thumb = await sharp(buffer).rotate().resize(400, 400, { fit: 'cover' }).jpeg({ quality: 75 }).toBuffer();

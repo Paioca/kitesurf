@@ -51,22 +51,24 @@ export async function searchListings(p: SearchParams) {
   const orderBy: Prisma.ListingOrderByWithRelationInput =
     p.sort === 'price_asc' ? { price: 'asc' } : p.sort === 'price_desc' ? { price: 'desc' } : { createdAt: 'desc' };
 
-  const page = Math.max(1, p.page ?? 1);
-  const [items, total] = await db.$transaction([
-    db.listing.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      include: {
-        images: { orderBy: { position: 'asc' }, take: 1 },
-        brand: true,
-        model: true,
-        category: true,
-      },
-    }),
-    db.listing.count({ where }),
-  ]);
+  // Paginação defensiva: page inteiro positivo (?? não pega NaN) e clamp ao total
+  // (?page=abc / negativo / gigante não geram skip=NaN nem páginas vazias).
+  const total = await db.listing.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const reqPage = Number.isFinite(p.page) ? Math.floor(p.page as number) : 1;
+  const page = Math.min(totalPages, Math.max(1, reqPage));
+  const items = await db.listing.findMany({
+    where,
+    orderBy,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+    include: {
+      images: { orderBy: { position: 'asc' }, take: 1 },
+      brand: true,
+      model: true,
+      category: true,
+    },
+  });
   return { items, total, page, pageSize: PAGE_SIZE };
 }
 

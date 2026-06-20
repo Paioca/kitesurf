@@ -1,12 +1,9 @@
 import 'server-only';
 import { db } from './db';
 import { notifyNewRequest } from './notify';
+import { PublicError } from './http';
 
-export class RequestError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
-  }
-}
+export class RequestError extends PublicError {}
 
 // Telefone (E.164) → link de WhatsApp. Só revelado quando o vendedor aceita.
 export function waLink(phone: string) {
@@ -46,6 +43,17 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
   }
   await db.request.update({ where: { id }, data: { status } });
   return { ok: true, status };
+}
+
+// Comprador retira a própria oferta/visita enquanto ainda está pendente. Apagamos
+// o pedido (o upsert deixa re-ofertar depois). Não dá pra retirar já aceito/recusado.
+export async function cancelRequest(userId: string, id: string) {
+  const r = await db.request.findUnique({ where: { id } });
+  if (!r) throw new RequestError('Pedido não encontrado.', 404);
+  if (r.buyerId !== userId) throw new RequestError('Sem permissão.', 403);
+  if (r.status !== 'pending') throw new RequestError('Só dá pra cancelar um pedido ainda pendente.', 400);
+  await db.request.delete({ where: { id } });
+  return { ok: true };
 }
 
 function listingShape(l: any) {
