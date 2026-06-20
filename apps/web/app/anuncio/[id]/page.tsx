@@ -22,13 +22,13 @@ export const dynamic = 'force-dynamic';
 // Preview rico ao compartilhar o link (WhatsApp/IG): foto, título e preço.
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const l = await getListing(params.id);
-  if (!l) return { title: 'Anúncio não encontrado — Vaya' };
+  if (!l) return { title: 'Anúncio não encontrado — Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
   const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
   const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
   const price = formatBRL(l.price);
-  const title = `${name} — ${price} · Vaya`;
-  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Contato verificado, sem golpe — na Vaya.`;
+  const title = `${name} — ${price} · Kitetropos`;
+  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Contato verificado, sem golpe — na Kitetropos.`;
   const img = (l.images ?? [])[0]?.url;
   const images = img ? [img] : undefined;
   return {

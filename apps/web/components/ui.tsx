@@ -5,16 +5,17 @@
 import { color, font, radius } from '../lib/tokens';
 
 /* ---------- Logo ---------- */
+// Marca Kitetropos (Design Book): losango (único ícone) + wordmark numa palavra, dois tons.
+// Claro: losango pinheiro · "Kite" verde-profundo · "tropos" pinheiro.
+// Escuro: losango dourado · "Kite" branco · "tropos" verde-água.
 export function Logo({ size = 18, onDark = false }: { size?: number; onDark?: boolean }) {
-  const c = onDark ? '#fff' : color.primary;
-  const m = Math.round(size + 4);
+  const d = Math.round(size * 0.86); // losango
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
-      <svg width={m} height={m} viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }} aria-hidden="true">
-        <circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.8" />
-        <line x1="1.5" y1="12" x2="22.5" y2="12" stroke={c} strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-      <span style={{ fontFamily: font.sans, fontWeight: 800, fontSize: size + 6, letterSpacing: '-0.5px', color: onDark ? '#fff' : color.ink }}>Vaya</span>
+      <span aria-hidden="true" style={{ width: d, height: d, background: onDark ? color.accent : color.primary, transform: 'rotate(45deg)', borderRadius: Math.max(2, Math.round(d * 0.14)), flex: 'none' }} />
+      <span style={{ fontFamily: font.sans, fontWeight: 900, fontSize: size + 3, letterSpacing: '-0.5px', textTransform: 'uppercase', lineHeight: 1 }}>
+        <span style={{ color: onDark ? '#fff' : color.dark }}>Kite</span><span style={{ color: onDark ? color.aqua : color.primary }}>tropos</span>
+      </span>
     </span>
   );
 }

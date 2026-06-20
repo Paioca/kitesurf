@@ -9,7 +9,7 @@ import 'server-only';
 //     TWILIO_WHATSAPP_FROM = whatsapp:+55...   (sender WhatsApp Business aprovado)
 //     TWILIO_CONTENT_SID   = HX...             (template UTILITY aprovado, 5 variáveis)
 //   Template sugerido (cadastrar no Twilio Content Builder, categoria UTILITY):
-//     "Olá! {{1}} fez {{2}} no seu anúncio \"{{3}}\" na Vaya. Fale com o comprador no
+//     "Olá! {{1}} fez {{2}} no seu anúncio \"{{3}}\" na Kitetropos. Fale com o comprador no
 //      WhatsApp: {{4}} — ou gerencie em {{5}}. Bons ventos!"
 //
 //   SMS (fallback). Usado quando o WhatsApp não está configurado:
@@ -51,7 +51,7 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
     body = new URLSearchParams({
       From: smsFrom,
       To: to,
-      Body: `Vaya: ${who} ${what} no anúncio "${opts.listingTitle}".${contato} Veja em ${url}`,
+      Body: `Kitetropos: ${who} ${what} no anúncio "${opts.listingTitle}".${contato} Veja em ${url}`,
     });
   } else {
     return; // nenhum canal configurado

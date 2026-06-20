@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'),
-  title: 'Vaya — More than kites',
+  title: 'Kitetropos — More than kites',
   description: 'Compra e venda de equipamento de kitesurf com confiança. Cumbuco.',
 };
 

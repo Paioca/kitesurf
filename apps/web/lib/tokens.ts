@@ -1,5 +1,6 @@
-// Design system Kite Life — fonte única da verdade.
-// Extraído do handoff Claude Design (os *.dc.html). Não inventar valores fora daqui.
+// Design system Kitetropos — fonte única da verdade.
+// Conforme o Design Book v2 (handoff Claude Design). A paleta não mudou no rebrand.
+// Não inventar valores fora daqui.
 
 export const color = {
   bg: '#f6f3ec', // creme — fundo do app
@@ -12,8 +13,9 @@ export const color = {
   inkFaint3: '#a8b1aa',
   primary: '#1f6b5c', // verde-petróleo (ações)
   primaryDeep: 'rgba(20,72,62,0.92)', // badges sobre foto
-  accent: '#d9a86b', // areia (CTA secundário / Anunciar)
+  accent: '#d9a86b', // areia (CTA secundário / Anunciar) · losango da marca no escuro
   accentInk: '#3a2e18',
+  aqua: '#7fbcae', // verde-água — "tropos" do logo sobre fundo escuro
   gold: '#e7c79a', // sobre fundo escuro
   heart: '#c0492f',
   // linhas / bordas

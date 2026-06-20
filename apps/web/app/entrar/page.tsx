@@ -159,7 +159,7 @@ export default function Entrar() {
               <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                 {loading ? '...' : 'Enviar código'}
               </button>
-              <p style={terms}>Ao continuar, você concorda com os <a href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</a> e a <a href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</a> da Vaya.</p>
+              <p style={terms}>Ao continuar, você concorda com os <a href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</a> e a <a href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</a> da Kitetropos.</p>
             </>
           )}
 
@@ -224,7 +224,7 @@ export default function Entrar() {
           {step === 'done' && (
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
-              <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Vaya!</h1>
+              <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Sua conta está pronta e verificada. Bons ventos. 🪁</p>
               <a href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</a>
               <a href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</a>

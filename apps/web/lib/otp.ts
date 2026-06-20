@@ -47,7 +47,7 @@ async function sendOtpSms(phone: string, code: string) {
   const body = new URLSearchParams({
     From: from,
     To: to,
-    Body: `Vaya: seu código é ${code}. Expira em ${Math.round(TTL / 60)} min. Não compartilhe.`,
+    Body: `Kitetropos: seu código é ${code}. Expira em ${Math.round(TTL / 60)} min. Não compartilhe.`,
   });
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {

@@ -1,7 +1,7 @@
 // Política de Privacidade — versão inicial (Fase 0). Texto jurídico final entra depois.
 import { LegalPage, type LegalSection } from '../../components/LegalPage';
 
-export const metadata = { title: 'Política de Privacidade — Vaya' };
+export const metadata = { title: 'Política de Privacidade — Kitetropos' };
 
 const sections: LegalSection[] = [
   { id: 'dados', title: 'Dados que coletamos', body: 'Telefone (obrigatório, para login e verificação), nome e foto de perfil. E-mail e Instagram são opcionais. Dos anúncios: fotos e a ficha do equipamento. As fotos têm os metadados de localização (GPS) removidos automaticamente no envio.' },
@@ -18,7 +18,7 @@ export default function Privacidade() {
     <LegalPage
       title="Política de privacidade"
       updated="Versão inicial · junho de 2026 · Fase 0"
-      intro="Esta política explica quais dados a Vaya coleta, como usamos e o que fica público. Será revisada e adequada à LGPD antes da abertura ao público."
+      intro="Esta política explica quais dados a Kitetropos coleta, como usamos e o que fica público. Será revisada e adequada à LGPD antes da abertura ao público."
       sections={sections}
       crossLabel="Termos de uso"
       crossHref="/termos"

@@ -1,4 +1,4 @@
-// Perfil público — handoff Claude Design (Perfil.dc.html), marca Vaya. Server-rendered.
+// Perfil público — handoff Claude Design (Perfil.dc.html), marca Kitetropos. Server-rendered.
 // Reputação real: stats e avaliações vêm de Deals/Reviews concluídos.
 import { notFound } from 'next/navigation';
 import { getProfile } from '../../../lib/profile';
@@ -52,7 +52,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 14, color: color.inkMute }}>
               {user.instagramHandle && <><span>@{user.instagramHandle}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
               {sellerCity && <><span>{sellerCity}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
-              <span>na Vaya desde {since}</span>
+              <span>na Kitetropos desde {since}</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, paddingBottom: 4 }}>
