@@ -284,21 +284,39 @@ export async function getBrowseData(sp: SP) {
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
   const where = buildWhere(f, persp);
-  const orderBy: Prisma.ListingOrderByWithRelationInput =
-    f.sort === 'price_asc' ? { price: 'asc' } : f.sort === 'price_desc' ? { price: 'desc' } : { createdAt: 'desc' };
+  const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } };
 
-  const [raw, total, rows] = await Promise.all([
-    db.listing.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      relationLoadStrategy: 'join',
-      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } },
-    }),
-    db.listing.count({ where }),
-    loadActiveRows(),
-  ]);
+  // Preço efetivo POR PERSPECTIVA (barra: barraPrice; kite: kitePrice; senão price)
+  // — o mesmo que o card mostra. Ordenar por ele exige COALESCE, que o orderBy do
+  // Prisma não expressa, então a ordenação por preço é feita em memória sobre um
+  // select leve (paginação preservada). Sem isso, a barra ordenava pelo preço do kit.
+  const priceSort = f.sort === 'price_asc' || f.sort === 'price_desc';
+
+  let raw: any[];
+  let total: number;
+  let rows: ActiveRow[];
+  if (priceSort) {
+    const [lite, activeRows] = await Promise.all([
+      db.listing.findMany({ where, select: { id: true, price: true, kitePrice: true, barraPrice: true, createdAt: true } }),
+      loadActiveRows(),
+    ]);
+    rows = activeRows;
+    total = lite.length;
+    const eff = (r: { price: number; kitePrice: number | null; barraPrice: number | null }) =>
+      persp === 'barra' ? r.barraPrice ?? r.price : persp === 'kite' ? r.kitePrice ?? r.price : r.price;
+    const dir = f.sort === 'price_asc' ? 1 : -1;
+    lite.sort((a, b) => (eff(a) - eff(b)) * dir || b.createdAt.getTime() - a.createdAt.getTime());
+    const pageIds = lite.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((r) => r.id);
+    const recs = await db.listing.findMany({ where: { id: { in: pageIds } }, relationLoadStrategy: 'join', include });
+    const pos = new Map(pageIds.map((id, i) => [id, i]));
+    raw = recs.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
+  } else {
+    [raw, total, rows] = await Promise.all([
+      db.listing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, relationLoadStrategy: 'join', include }),
+      db.listing.count({ where }),
+      loadActiveRows(),
+    ]);
+  }
   const fac = computeFacets(rows, f, persp);
 
   const items = raw.map((l) => toCard(l, persp));
