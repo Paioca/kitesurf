@@ -184,9 +184,12 @@ export default function Criar() {
         <H1>Anunciar</H1>
         <Lead>Numa tela só. No kit (kite + barra) você descreve as duas peças e decide se vende avulso.</Lead>
 
-        <div style={{ background: '#fef6e7', border: '1.5px solid #f0d79a', borderRadius: 12, padding: '13px 16px', margin: '0 0 24px' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#a9791a', marginBottom: 4 }}>Atenção</div>
-          <div style={{ fontSize: 13, lineHeight: 1.5, color: '#6b5618' }}>Descreva o equipamento com honestidade. Caso sua reputação seja afetada por omissão de informações, você poderá ser banido da plataforma.</div>
+        <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 24px' }}>
+          <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção — descreva fielmente</div>
+            <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Omitir defeito (furo, reparo, bladder, troca de mangueira) leva a banimento. Honestidade gera avaliação boa e protege a comunidade.</p>
+          </div>
         </div>
 
         <UpLabel>O que você está vendendo?</UpLabel>

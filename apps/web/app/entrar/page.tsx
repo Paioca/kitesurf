@@ -117,6 +117,7 @@ export default function Entrar() {
     <div style={shell}>
       {/* LEFT imagery (desktop) */}
       <div className="only-desktop" style={imagery}>
+        <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={imageryOverlay} />
         <div style={imageryInner}>
           <a href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></a>
@@ -199,7 +200,12 @@ export default function Entrar() {
               </div>
 
               <label style={lbl}>Nome</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 18 }} />
+              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 14 }} />
+
+              <div style={{ fontSize: 12.5, color: '#9aa49d', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ width: 13, height: 13, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none', marginTop: 2 }} />
+                E-mail e Instagram você adiciona depois, no seu perfil.
+              </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 26 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 600, color: '#48564f' }}>Idioma</span>
