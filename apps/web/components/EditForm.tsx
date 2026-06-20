@@ -14,7 +14,6 @@ const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Semin
 export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSchema: Schema; barraSchema: Schema | null }) {
   const isKit = !!data.hasBarra;
   const [title, setTitle] = useState<string>(data.title ?? '');
-  const [description, setDescription] = useState<string>(data.description ?? '');
   const [attrs, setAttrs] = useState<Record<string, any>>(data.attributes ?? {});
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>(data.barraAttributes ?? {});
   const [images, setImages] = useState<Img[]>(data.images ?? []);
@@ -57,7 +56,7 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
     setSaving(true); setError('');
     try {
       const body: any = {
-        title, description: description || null, price: Math.round(Number(price) * 100),
+        title, price: Math.round(Number(price) * 100),
         city, spot: spot || null, shippable, attributes: attrs, images,
       };
       if (isKit) {
@@ -117,10 +116,6 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
         ) : (
           <PriceInput value={price} onChange={setPrice} />
         )}
-      </Section>
-
-      <Section title="Descrição">
-        <textarea className="kl-input" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} style={{ resize: 'vertical', minHeight: 90 }} />
       </Section>
 
       <Section title="Entrega e local">

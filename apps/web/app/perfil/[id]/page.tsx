@@ -14,6 +14,14 @@ function stars(n: number) {
   return '★'.repeat(n) + '☆'.repeat(5 - n);
 }
 
+// Cor estável por avaliador (paleta do handoff) — dá vida ao bloco de avaliações.
+const AV_COLORS = ['#c08f4f', '#5a7d72', '#1f6b5c', '#a06a4a'];
+function avColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AV_COLORS[h % AV_COLORS.length];
+}
+
 export default async function PerfilPage({ params }: { params: { id: string } }) {
   const data = await getProfile(params.id);
   if (!data) notFound();
@@ -103,7 +111,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             {reviews.map((r) => (
               <div key={r.id} style={card}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 11 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 999, background: color.primary, color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{r.reviewerName.slice(0, 2).toUpperCase()}</div>
+                  <div style={{ width: 40, height: 40, borderRadius: 999, background: avColor(r.reviewerName), color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{r.reviewerName.slice(0, 2).toUpperCase()}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14.5, fontWeight: 700 }}>{r.reviewerName}</div>
                     <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>{r.gear ? `${r.gear} · ` : ''}{new Date(r.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</div>

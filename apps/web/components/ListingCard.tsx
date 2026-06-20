@@ -8,7 +8,7 @@ const HATCH = 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc
 export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?: number }) {
   return (
     // Favoritar fora do <a> (evita interativo aninhado / clique conflitante; melhora leitor de tela).
-    <div style={{ ...card, position: 'relative' }}>
+    <div className="listing-card" style={{ ...card, position: 'relative' }}>
       <a href={`/anuncio/${item.id}`} aria-label={`${item.brand} ${item.model}`} style={cardLink}>
         <div style={{ ...img, height: imgHeight }}>
           {item.photo ? (
@@ -28,10 +28,13 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
           <div style={{ fontSize: 13, fontWeight: 600, color: color.inkFaint2, marginBottom: 4 }}>
             {item.brand}{item.year ? ` · ${item.year}` : ''}
           </div>
-          <div style={{ fontFamily: font.serif, fontSize: 20, fontWeight: 600, letterSpacing: '-0.2px', marginBottom: item.condLabel ? 10 : 12, lineHeight: 1.1 }}>{item.model}</div>
-          {item.condLabel && <div style={{ marginBottom: 12 }}><span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{item.condLabel}</span></div>}
+          <div style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, letterSpacing: '-0.2px', marginBottom: 12, lineHeight: 1.1 }}>{item.model}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: color.primary, background: color.chipSoftBg, padding: '4px 10px', borderRadius: 999 }}>{item.cat}</span>
+            {item.condLabel && <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{item.condLabel}</span>}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 'auto' }}>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>{item.priceLabel}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>{item.priceLabel}</div>
             <div style={{ fontSize: 12.5, color: color.inkFaint }}>📍 {item.city}</div>
           </div>
         </div>

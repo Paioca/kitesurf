@@ -54,9 +54,12 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     } else {
       review = (
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Avalie {reviewing}:</div>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
-            {[1, 2, 3, 4, 5].map((n) => <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, lineHeight: 1, color: n <= rating ? '#e6a817' : '#d9d2c2', padding: 0 }}>★</button>)}
+          {deal.status === 'completed'
+            ? <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa — é o que constrói a reputação da comunidade.</div>
+            : null}
+          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Avalie {reviewing}</div>
+          <div style={{ display: 'flex', gap: 6, margin: '10px 0' }}>
+            {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`${n} de 5 estrelas`} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, lineHeight: 1, color: n <= rating ? color.accent : color.lineInput, padding: 0 }}>★</button>)}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
             {tagOptions.map((t) => {
@@ -79,8 +82,11 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     </div>
   ) : null;
 
+  const liberado = !deal || deal.status !== 'completed';
+
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {liberado && <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Aceito — contato liberado</div>}
       {confirm}
       {review && <div style={confirm ? { paddingTop: 12, borderTop: `1px solid ${color.line}` } : undefined}>{review}</div>}
       {note}

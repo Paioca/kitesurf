@@ -22,7 +22,7 @@ function typeLabel(t: string, amount: number | null) {
 }
 
 function Thumb({ src }: { src: string | null }) {
-  return <div style={{ width: 56, height: 56, borderRadius: 10, flex: 'none', backgroundImage: src ? `url("${src}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', border: `1px solid ${color.line}` }} />;
+  return <div style={{ width: 84, height: 84, borderRadius: 13, flex: 'none', backgroundImage: src ? `url("${src}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', border: `1px solid ${color.line}` }} />;
 }
 
 export default async function Pedidos({ searchParams }: { searchParams: { tab?: string } }) {
@@ -55,7 +55,7 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
               </div>
             </a>
             {r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
-            {r.status === 'pending' && <RequestActions id={r.id} />}
+            {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
           </Row>
         ))
@@ -95,12 +95,12 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
 }
 
 const rowLink: React.CSSProperties = { display: 'flex', gap: 12, alignItems: 'center', textDecoration: 'none', color: 'inherit' };
-const titleTxt: React.CSSProperties = { fontFamily: font.serif, fontSize: 16, fontWeight: 600, lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+const titleTxt: React.CSSProperties = { fontFamily: font.serif, fontSize: 19, fontWeight: 600, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 const okTag: React.CSSProperties = { marginTop: 12, fontSize: 13, fontWeight: 600, color: color.primary };
 function Row({ children }: { children: React.ReactNode }) { return <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 14, marginBottom: 12 }}>{children}</div>; }
 function TypeTag({ type }: { type: string }) {
   const offer = type === 'offer';
-  return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#fdf0e1', color: offer ? color.primary : '#b06a1f' }}>{offer ? 'Oferta' : 'Visita'}</span>;
+  return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#f3e7d3', color: offer ? color.primary : '#8a6a3a' }}>{offer ? 'Oferta' : 'Visita'}</span>;
 }
 function StatusBadge({ status, completed, received }: { status: string; completed?: boolean; received?: boolean }) {
   let label = '', fg = '', bg = '';
