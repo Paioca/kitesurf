@@ -79,11 +79,20 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   summaryParts.push(`em ${l.city}${l.spot ? ` (${l.spot})` : ''}`);
   const visitSummary = summaryParts.join(', ');
 
-  const summary: { k: string; v: string }[] = [
-    { k: 'Categoria', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? '—' },
-    { k: 'Local', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` },
-    { k: 'Entrega', v: [l.pickup && 'Retirada', l.shippable && 'Envio'].filter(Boolean).join(' + ') || 'Retirada local' },
-  ];
+  // Ficha completa estruturada (seção "100% estruturado" do design).
+  const ficha: { k: string; v: string }[] = [];
+  ficha.push({ k: 'Tipo', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? '—' });
+  if (l.brand?.name) ficha.push({ k: 'Marca', v: l.brand.name });
+  if (l.model?.name) ficha.push({ k: 'Modelo', v: l.model.name });
+  if (l.year) ficha.push({ k: 'Ano', v: String(l.year) });
+  if (sizeM2) ficha.push({ k: 'Tamanho', v: sizeM2 });
+  if (a.condition) ficha.push({ k: 'Condição', v: CONDITION[a.condition] ?? a.condition });
+  if (a.microfuros != null) ficha.push({ k: 'Micro furos', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
+  if (a.reparos != null) ficha.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
+  if (a.bladder) ficha.push({ k: 'Bladder', v: CONDITION[a.bladder] ?? a.bladder });
+  if (a.mangueiras) ficha.push({ k: 'Mangueiras', v: CONDITION[a.mangueiras] ?? a.mangueiras });
+  ficha.push({ k: 'Spot', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` });
+  ficha.push({ k: 'Entrega', v: [l.pickup && 'Retirada', l.shippable && 'Envio'].filter(Boolean).join(' + ') || 'Retirada local' });
 
   return (
     <>
@@ -204,22 +213,23 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
         </div>
       </main>
 
-      {/* SUMMARY (+ descrição quando houver — anúncios são estruturados, sem texto livre) */}
-      <section className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '56px 24px' }}>
-        {l.description && (
-          <div>
-            <h2 style={{ fontFamily: font.serif, fontSize: 28, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 16px' }}>Descrição</h2>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: color.inkSoft, margin: 0, whiteSpace: 'pre-line' }}>{l.description}</p>
+      {/* FICHA COMPLETA — 100% estruturado (handoff Anuncio.dc.html) */}
+      <section style={{ maxWidth: 1240, margin: '56px auto 0', padding: '0 24px' }}>
+        <div style={{ background: '#ece3d2', borderRadius: 22, padding: 'clamp(28px, 4vw, 44px) clamp(22px, 4vw, 48px)' }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 6 }}>100% estruturado — sem texto solto</div>
+          <h2 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 28px' }}>Ficha completa</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1, background: '#dccdb2', border: '1px solid #dccdb2', borderRadius: 16, overflow: 'hidden' }}>
+            {ficha.map((f) => (
+              <div key={f.k} style={{ background: color.bg, padding: '18px 20px' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 6 }}>{f.k}</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: color.ink }}>{f.v}</div>
+              </div>
+            ))}
           </div>
-        )}
-        <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 20, alignSelf: 'start' }}>
-          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 14 }}>Resumo</div>
-          {summary.map((r, i) => (
-            <div key={r.k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: i < summary.length - 1 ? '1px solid #f0ebde' : 'none' }}>
-              <span style={{ fontSize: 14, color: color.inkFaint }}>{r.k}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: color.ink, textAlign: 'right' }}>{r.v}</span>
-            </div>
-          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 22, fontSize: 13.5, color: '#6b6353' }}>
+            <span style={{ width: 9, height: 9, borderRadius: 999, background: color.primary, flex: 'none' }} />
+            Toda a ficha vem de listas controladas. Sem campo de descrição livre — é o que mantém a busca confiável.
+          </div>
         </div>
       </section>
 

@@ -12,6 +12,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   const [state, setState] = useState<State>(initial);
   const [showOffer, setShowOffer] = useState(false);
   const [confirmVisit, setConfirmVisit] = useState(false);
+  const [ciente, setCiente] = useState(false); // gate anti-spam do design
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -25,7 +26,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
       if (type === 'offer') setState((s) => ({ ...s, offer: { status: 'pending', amount: amountCents ?? null } }));
       else setState((s) => ({ ...s, visit: { status: 'pending' } }));
-      setShowOffer(false); setConfirmVisit(false); setAmount('');
+      setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount('');
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }
 
@@ -43,7 +44,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   return (
     <div style={{ marginBottom: 24 }}>
       {!showOffer ? (
-        <button onClick={() => setShowOffer(true)} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
+        <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
       ) : (
         <div style={{ border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ position: 'relative', marginBottom: 12 }}>
@@ -51,32 +52,30 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
             <input autoFocus type="text" inputMode="numeric" value={amount ? Number(amount).toLocaleString('pt-BR') : ''} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Sua oferta" style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 11, padding: '14px 14px 14px 40px', fontSize: 16, fontWeight: 700, fontFamily: font.sans }} />
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
-            Estou ciente de que {itemNoun} é: <strong>{visitSummary}</strong>. E faço esta oferta com intenção real de comprar.
+            {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
           </div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#8a5a1f', background: '#fdf0e1', borderRadius: 9, padding: '9px 12px', marginTop: 11 }}>
-            Evite fazer ofertas sem interesse real de compra. Se for reportado como spam, você pode ser banido.
-          </div>
+          <WarnBox>Oferta é compromisso real. Proposta falsa, spam ou no-show levam a bloqueio na plataforma.</WarnBox>
+          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e quero enviar minha oferta de verdade." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
-            <button onClick={() => { setShowOffer(false); setAmount(''); }} disabled={busy === 'offer'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
-            <button onClick={() => Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !(Number(amount) > 0)} style={{ ...btnPrimary, flex: 1 }}>{busy === 'offer' ? '…' : 'Confirmar oferta'}</button>
+            <button onClick={() => { setShowOffer(false); setAmount(''); setCiente(false); }} disabled={busy === 'offer'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
+            <button onClick={() => ciente && Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !ciente || !(Number(amount) > 0)} style={{ ...btnPrimary, flex: 1, ...((!ciente || !(Number(amount) > 0)) ? disabledBtn : {}) }}>{busy === 'offer' ? '…' : 'Confirmar oferta'}</button>
           </div>
         </div>
       )}
       {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
 
       {!confirmVisit ? (
-        <button onClick={() => setConfirmVisit(true)} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
+        <button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
-            Estou ciente de que {itemNoun} é: <strong>{visitSummary}</strong>. E estou solicitando um agendamento para ir ver {itemNoun} pessoalmente.
+            Vou ver e testar pessoalmente. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
           </div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#8a5a1f', background: '#fdf0e1', borderRadius: 9, padding: '9px 12px', marginTop: 11 }}>
-            Evite chamar só pra perguntar o que já está no anúncio. Se for reportado como spam, você pode ser banido.
-          </div>
+          <WarnBox>Combine só se for comparecer. Pedir visita só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
+          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
-            <button onClick={() => setConfirmVisit(false)} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
-            <button onClick={() => send('visit')} disabled={busy === 'visit'} style={{ ...btnPrimary, flex: 1 }}>{busy === 'visit' ? '…' : 'Confirmar agendamento'}</button>
+            <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
+            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Confirmar agendamento'}</button>
           </div>
         </div>
       )}
@@ -92,6 +91,27 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
 
 const btnPrimary: React.CSSProperties = { display: 'block', width: '100%', background: color.primary, color: '#fff', border: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
 const btnOutline: React.CSSProperties = { display: 'block', width: '100%', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineCard}`, textAlign: 'center', padding: 15, borderRadius: 12, fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
+const disabledBtn: React.CSSProperties = { background: '#dfe3df', color: color.inkFaint2, cursor: 'not-allowed' };
+
+// Caixa de aviso (vermelho do design — anti-spam).
+function WarnBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: 11, background: '#fbeae4', border: '1px solid #f0c9bd', borderRadius: 12, padding: '13px 15px', marginTop: 11 }}>
+      <span style={{ width: 20, height: 20, borderRadius: 6, background: '#c0492f', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
+      <p style={{ fontSize: 12.5, lineHeight: 1.5, color: '#9a5040', margin: 0 }}>{children}</p>
+    </div>
+  );
+}
+
+// Checkbox "estou ciente" que destrava o confirmar.
+function CienteCheck({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+  return (
+    <button onClick={onToggle} aria-pressed={on} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', width: '100%', marginTop: 16, fontFamily: "'Archivo',sans-serif" }}>
+      <span style={{ width: 21, height: 21, borderRadius: 7, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1, background: on ? color.primary : '#fff', border: `1.5px solid ${on ? color.primary : '#cbc3b2'}` }}>{on && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: color.inkSoft }}>{label}</span>
+    </button>
+  );
+}
 
 // Status destacado do pedido enviado (pendente / recusado).
 function SentBox({ title, status }: { title: string; status: string }) {
