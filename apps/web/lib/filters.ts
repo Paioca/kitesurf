@@ -2,6 +2,13 @@
 // busca server-rendered, compartilhável e indexável.
 export type SP = Record<string, string | string[] | undefined>;
 
+// Taxonomia controlada (lista fechada) — usada na busca-builder do hero, onde se
+// oferece o vocabulário completo, não só os valores presentes no banco (facetas).
+export const SIZES = ['5', '6', '7', '8', '9', '10', '11', '12', '14', '17'];
+export const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
+// Tipos de anúncio. 'kit' = kite com barra (hasBarra) — não é uma categoria, é o combo.
+export const CAT_LABEL: Record<string, string> = { kite: 'Kite', barra: 'Barra', kit: 'Kite + Barra' };
+
 export const PRICE_RANGES: Record<string, [number, number]> = {
   p1: [0, 50000],
   p2: [50000, 200000],

@@ -1,8 +1,8 @@
 // Home / Busca — Server Component. Anúncios renderizados no servidor (rápido +
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import { color, font } from '../lib/tokens';
-import { getBrowseData, type Facets } from '../lib/browse';
-import { setHref, clearHref, pageHref, toggleHref, hasAnyFilter, type SP } from '../lib/filters';
+import { getBrowseData } from '../lib/browse';
+import { setHref, clearHref, pageHref, toggleHref, hasAnyFilter, SIZES, SPOTS, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -22,6 +22,12 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
   const landing = !hasAnyFilter(sp);
+  // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
+  const typeChips = [
+    { value: 'kite', label: 'Kite', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
+    { value: 'kit', label: 'Kite + Barra', count: facets.withbar[0]?.count ?? 0 },
+    { value: 'barra', label: 'Barra', count: facets.category.find((c) => c.value === 'barra')?.count ?? 0 },
+  ].filter((t) => t.count > 0);
 
   const sorts: [string, string][] = [['recent', 'Recentes'], ['price_asc', 'Menor preço'], ['price_desc', 'Maior preço']];
 
@@ -47,11 +53,11 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
           </div>
 
           {/* chips de categoria (scroll) */}
-          {facets.category.length > 0 && (
+          {typeChips.length > 0 && (
             <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 18px 6px' }}>
               <a href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</a>
-              {facets.category.map((o) => (
-                <a key={o.value} href={setHref(sp, 'cat', o.value, true)} style={catChip(filters.cat === o.value)}>{o.label}</a>
+              {typeChips.map((t) => (
+                <a key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</a>
               ))}
             </div>
           )}
@@ -93,7 +99,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         <SiteHeader />
         {landing ? (
           <>
-            <Hero facets={facets} />
+            <Hero />
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
@@ -107,11 +113,11 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
                 </div>
               </div>
 
-              {facets.category.length > 0 && (
+              {typeChips.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 36 }}>
-                  <a href={clearHref(sp)} style={catChip(true)}>Todos <span style={{ opacity: 0.5, fontWeight: 500 }}>{totalAll}</span></a>
-                  {facets.category.map((o) => (
-                    <a key={o.value} href={setHref(sp, 'cat', o.value, true)} style={catChip(false)}>{o.label} <span style={{ opacity: 0.5, fontWeight: 500 }}>{o.count}</span></a>
+                  <a href={clearHref(sp)} style={catChip(!filters.cat)}>Todos <span style={{ opacity: 0.5, fontWeight: 500 }}>{totalAll}</span></a>
+                  {typeChips.map((t) => (
+                    <a key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label} <span style={{ opacity: 0.5, fontWeight: 500 }}>{t.count}</span></a>
                   ))}
                 </div>
               )}
@@ -166,7 +172,12 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 }
 
 // ---------- HERO (landing) — busca estruturada (form GET → filtra "/") ----------
-function Hero({ facets }: { facets: Facets }) {
+// Busca-builder: oferece a taxonomia COMPLETA (não só o que existe no banco).
+const TYPE_OPTS = [{ value: 'kite', label: 'Kite' }, { value: 'kit', label: 'Kite + Barra' }, { value: 'barra', label: 'Barra' }];
+const SIZE_OPTS = SIZES.map((s) => ({ value: s, label: `${s} m²` }));
+const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
+
+function Hero() {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
       <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -177,9 +188,9 @@ function Hero({ facets }: { facets: Facets }) {
           <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
           <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 520 }}>Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário e sem chat de spam.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
-            <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={facets.category} />
-            <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={facets.size} accent />
-            <HeroSelect name="city" label="Spot" placeholder="Todos" options={facets.city} last />
+            <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
+            <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
+            <HeroSelect name="city" label="Spot" placeholder="Todos" options={SPOT_OPTS} last />
             <button type="submit" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
           </form>
         </div>

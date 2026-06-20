@@ -59,7 +59,8 @@ function pickPhoto(images: any[], component: string): string | null {
 
 type Perspective = 'kite' | 'barra' | 'all';
 function perspectiveOf(f: Filters): Perspective {
-  return f.cat === 'barra' ? 'barra' : f.cat === 'kite' ? 'kite' : 'all';
+  // 'kit' = kite + barra → perspectiva de kite (filtra hasBarra no WHERE)
+  return f.cat === 'barra' ? 'barra' : f.cat === 'kite' || f.cat === 'kit' ? 'kite' : 'all';
 }
 
 const COND_LABEL: Record<string, string> = {
@@ -149,6 +150,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
     return { ...BASE, AND: and };
   }
   if (persp === 'kite') and.push({ category: { slug: 'kite' } });
+  if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
   if (f.city.length) and.push({ city: { in: f.city } });
   if (f.size.length) and.push({ OR: f.size.map((s) => ({ attributes: { path: ['size_m2'], equals: Number(s) } })) });
@@ -228,7 +230,8 @@ const loadFacets = unstable_cache(
           const count = slug === 'barra' ? g._count._all + kitBarraR : g._count._all;
           return { value: slug, label: catMap.get(g.categoryId)?.namePt ?? '', count };
         })
-        .filter((o) => o.value)
+        // Fase 0: só kite e barra (sem acessórios/twintip/foil). 'kit' é o combo (withbar).
+        .filter((o) => o.value === 'kite' || o.value === 'barra')
         .sort((a, b) => a.label.localeCompare(b.label)),
       size: sizeR
         .filter((r) => r.v)

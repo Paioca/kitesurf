@@ -11,6 +11,7 @@ import { ContactActions } from '../../../components/ContactActions';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
+import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
 import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
 import { ReportButton } from '../../../components/ReportButton';
@@ -96,7 +97,8 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
 
   return (
     <>
-      <SiteHeader />
+      <div className="only-mobile"><MobileAppBar /></div>
+      <div className="only-desktop"><SiteHeader /></div>
 
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -233,7 +235,9 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      <Footer />
+      <div className="only-mobile" style={{ height: 84 }} />
+      <div className="only-desktop"><Footer /></div>
+      <div className="only-mobile"><MobileTabBar /></div>
     </>
   );
 }

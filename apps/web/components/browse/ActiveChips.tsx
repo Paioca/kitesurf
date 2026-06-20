@@ -1,7 +1,7 @@
 // Faixa de filtros ativos — pílulas removíveis acima do grid (handoff v2).
 // Cada pílula leva ao href que desliga aquele valor; "Limpar tudo" zera (preserva sort).
 import { color, font } from '../../lib/tokens';
-import { toggleHref, setHref, clearHref, PRICE_LABELS, type SP } from '../../lib/filters';
+import { toggleHref, setHref, clearHref, PRICE_LABELS, CAT_LABEL, type SP } from '../../lib/filters';
 import type { Facets, Facet } from '../../lib/browse';
 
 type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[]; cond: string[]; bladder: string[]; mang: string[]; delivery: string[] };
@@ -21,7 +21,7 @@ export function ActiveChips({ sp, facets, filters }: { sp: SP; facets: Facets; f
   };
 
   const chips: { key: string; label: string; href: string }[] = [];
-  if (filters.cat) chips.push({ key: `cat-${filters.cat}`, label: labelFor('category', filters.cat), href: setHref(sp, 'cat', filters.cat, true) });
+  if (filters.cat) chips.push({ key: `cat-${filters.cat}`, label: CAT_LABEL[filters.cat] ?? labelFor('category', filters.cat), href: setHref(sp, 'cat', filters.cat, true) });
   for (const [fk, facetKey] of MULTI) {
     for (const v of filters[fk]) chips.push({ key: `${fk}-${v}`, label: labelFor(facetKey, v), href: toggleHref(sp, fk, v) });
   }
