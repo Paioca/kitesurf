@@ -27,6 +27,7 @@ const CONDITION_LABEL: Record<string, string> = {
 const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
 const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
 const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
+const DRAFT_KEY = 'vaya:anunciar-draft';
 
 type Kind = '' | 'kite' | 'barra' | 'kit';
 type Img = { url: string; thumbUrl?: string; component: 'kite' | 'barra' };
@@ -56,13 +57,46 @@ export default function Criar() {
   const [error, setError] = useState('');
   const [createdId, setCreatedId] = useState('');
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
+  const [restored, setRestored] = useState(false); // rascunho recuperado
   const fileRef = useRef<HTMLInputElement>(null);
+  const hydrated = useRef(false);
 
   useEffect(() => {
     fetch('/api/auth/me').then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => setAuthed(false));
     fetch('/api/catalog/categories').then((r) => r.json()).then(setCategories).catch(() => {});
     fetch('/api/catalog/brands').then((r) => r.json()).then(setBrands).catch(() => {});
   }, []);
+
+  // --- rascunho/autosave (localStorage): não perde o anúncio meio-preenchido ---
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && d.kind) {
+          setKind(d.kind); setBrandId(d.brandId ?? ''); setModelId(d.modelId ?? ''); setYear(d.year ?? '');
+          setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
+          setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
+          setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
+          setCity(d.city ?? 'Cumbuco'); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
+          setStep(typeof d.step === 'number' ? d.step : 0);
+          setRestored(true);
+        }
+      }
+    } catch {}
+    hydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current || !kind) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ kind, brandId, modelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step }));
+    } catch {}
+  }, [kind, brandId, modelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
+
+  useEffect(() => { if (createdId) { try { localStorage.removeItem(DRAFT_KEY); } catch {} } }, [createdId]);
+
+  function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} window.location.reload(); }
 
   const kiteCat = useMemo(() => categories.find((c) => c.slug === 'kite'), [categories]);
   const barraCat = useMemo(() => categories.find((c) => c.slug === 'barra'), [categories]);
@@ -207,6 +241,13 @@ export default function Criar() {
   return (
     <Shell>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
+      {restored && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#e8f1ec', border: '1px solid #cfe3d9', borderRadius: 12, padding: '11px 15px', marginBottom: 20, fontSize: 13.5, color: color.ink }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: color.primary, flex: 'none' }} />
+          <span>Rascunho recuperado — continue de onde parou.</span>
+          <button onClick={clearDraft} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: color.primary, fontWeight: 700, cursor: 'pointer', fontFamily: font.sans, fontSize: 13.5 }}>Começar do zero</button>
+        </div>
+      )}
       <div className="criar-grid">
         {/* STEP RAIL (desktop) */}
         <div className="only-desktop" style={{ position: 'sticky', top: 24 }}>

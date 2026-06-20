@@ -33,9 +33,26 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
             <span style={{ fontSize: 11.5, fontWeight: 600, color: color.primary, background: color.chipSoftBg, padding: '4px 10px', borderRadius: 999 }}>{item.cat}</span>
             {item.condLabel && <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{item.condLabel}</span>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 'auto' }}>
+          <div style={{ marginTop: 'auto' }}>
             <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>{item.priceLabel}</div>
-            <div style={{ fontSize: 12.5, color: color.inkFaint }}>📍 {item.city}</div>
+            {item.seller ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid #f0ebde` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                  <div style={{ width: 31, height: 31, borderRadius: 999, flex: 'none', background: item.seller.avatar ? `center/cover url("${item.seller.avatar}")` : color.primary, color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {!item.seller.avatar && item.seller.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.seller.name}</div>
+                    <div style={{ fontSize: 11.5, color: color.inkFaint2, lineHeight: 1.2 }}>{item.seller.ig ? `@${item.seller.ig}` : `📍 ${item.city}`}</div>
+                  </div>
+                </div>
+                {item.seller.rating != null && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 13.5, fontWeight: 700, flex: 'none' }}><span style={{ color: color.accent }}>★</span>{item.seller.rating.toFixed(1)}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12.5, color: color.inkFaint, marginTop: 6 }}>📍 {item.city}</div>
+            )}
           </div>
         </div>
       </a>

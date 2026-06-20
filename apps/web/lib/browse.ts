@@ -31,6 +31,8 @@ export type Card = {
   partOfKit: boolean; // barra mostrada na busca de barra que faz parte de um kit
   favorited: boolean; // o usuário logado já favoritou
   photo: string | null;
+  // vendedor (só na busca; ausente em perfil/meus anúncios). rating = média de reviews públicas.
+  seller?: { id: string; name: string; avatar: string | null; ig: string | null; rating: number | null; ratingCount: number } | null;
 };
 
 export type Facet = { value: string; label: string; count: number };
@@ -76,6 +78,8 @@ const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas:
 // a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
 function toCard(l: any, persp: Perspective): Card {
   const showBarra = persp === 'barra' || (persp === 'all' && l.category?.slug === 'barra');
+  // vendedor (quando a query incluiu l.user). rating preenchido em getBrowseData (batch).
+  const seller = l.user ? { id: l.user.id, name: l.user.name ?? '', avatar: l.user.avatarUrl ?? null, ig: l.user.instagramHandle ?? null, rating: null as number | null, ratingCount: 0 } : null;
 
   if (showBarra) {
     const kit = l.hasBarra === true;
@@ -101,6 +105,7 @@ function toCard(l: any, persp: Perspective): Card {
       partOfKit: kit,
       favorited: false,
       photo: pickPhoto(l.images, 'barra'),
+      seller,
     };
   }
 
@@ -127,6 +132,7 @@ function toCard(l: any, persp: Perspective): Card {
     partOfKit: false,
     favorited: false,
     photo: pickPhoto(l.images, 'kite'),
+    seller,
   };
 }
 
@@ -286,13 +292,21 @@ export async function getBrowseData(sp: SP) {
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       relationLoadStrategy: 'join',
-      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true },
+      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } },
     }),
     db.listing.count({ where }),
     loadFacets(),
   ]);
 
   const items = raw.map((l) => toCard(l, persp));
+  // reputação do vendedor (média de reviews de negócios concluídos) — 1 query batch
+  const sellerIds = [...new Set(items.map((i) => i.seller?.id).filter(Boolean))] as string[];
+  if (sellerIds.length) {
+    const revs = await db.review.findMany({ where: { reviewedId: { in: sellerIds }, deal: { status: 'completed' } }, select: { reviewedId: true, rating: true } });
+    const agg = new Map<string, { sum: number; n: number }>();
+    for (const r of revs) { const e = agg.get(r.reviewedId) ?? { sum: 0, n: 0 }; e.sum += r.rating; e.n++; agg.set(r.reviewedId, e); }
+    for (const it of items) { const e = it.seller && agg.get(it.seller.id); if (it.seller && e) { it.seller.rating = e.sum / e.n; it.seller.ratingCount = e.n; } }
+  }
   // marca quais o usuário logado já favoritou (1 query)
   const me = await getCurrentUser();
   if (me && items.length) {
