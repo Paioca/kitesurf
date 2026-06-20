@@ -22,7 +22,7 @@ export function Gallery({ photos }: { photos: string[] }) {
       </div>
       {photos.length > 1 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 12 }}>
-          {photos.slice(0, 6).map((p, i) => (
+          {photos.map((p, i) => (
             <button
               key={p}
               onClick={() => setSel(i)}
