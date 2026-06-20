@@ -30,7 +30,11 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
   if (!user) redirect('/entrar?next=%2Fpedidos');
   const { incoming, outgoing } = await getRequestsForUser(user.id);
   const novos = incoming.filter((r) => r.status === 'pending').length;
-  const tab: 'received' | 'sent' = searchParams?.tab === 'sent' ? 'sent' : 'received';
+  // sem ?tab explícito, abre na aba que tem conteúdo (comprador cai em "Enviados").
+  const tab: 'received' | 'sent' =
+    searchParams?.tab === 'sent' ? 'sent'
+    : searchParams?.tab === 'received' ? 'received'
+    : incoming.length === 0 && outgoing.length > 0 ? 'sent' : 'received';
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -39,8 +43,8 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
 
       {/* abas */}
       <div style={{ display: 'flex', gap: 6, background: '#ece3d2', borderRadius: 13, padding: 5, marginBottom: 24, maxWidth: 380 }}>
-        <a href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 && <span style={tabBadge}>{novos}</span>}</a>
-        <a href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados</a>
+        <a href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 ? <span style={tabBadge}>{novos}</span> : incoming.length > 0 ? <span style={tabCount}>{incoming.length}</span> : null}</a>
+        <a href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados{outgoing.length > 0 && <span style={tabCount}>{outgoing.length}</span>}</a>
       </div>
 
       {tab === 'received' ? (
@@ -114,3 +118,4 @@ function Empty({ children }: { children: React.ReactNode }) { return <div style=
 const segOn: React.CSSProperties = { flex: 1, textAlign: 'center', background: '#fff', color: color.ink, borderRadius: 9, padding: 11, fontFamily: font.sans, fontSize: 14, fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
 const segOff: React.CSSProperties = { ...segOn, background: 'transparent', color: color.inkMute, fontWeight: 600, boxShadow: 'none' };
 const tabBadge: React.CSSProperties = { background: '#c0492f', color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
+const tabCount: React.CSSProperties = { background: color.chipSoftBg, color: color.primary, fontSize: 11, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
