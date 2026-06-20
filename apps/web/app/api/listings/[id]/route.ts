@@ -7,6 +7,7 @@ import { getListing } from '../../../../lib/queries';
 import { LISTINGS_TAG } from '../../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
+import { isOfficialImageUrl } from '../../../../lib/storage';
 
 export const runtime = 'nodejs';
 
@@ -53,6 +54,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
+
+    if (dto.images !== undefined && dto.images.some((i) => !isOfficialImageUrl(i.url) || (i.thumbUrl != null && !isOfficialImageUrl(i.thumbUrl)))) {
+      return NextResponse.json({ message: 'Imagem inválida.' }, { status: 400 });
+    }
 
     const data: Prisma.ListingUpdateInput = {};
     if (dto.status) data.status = dto.status;

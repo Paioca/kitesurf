@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../../lib/db';
 import { verifyOtp } from '../../../../../lib/otp';
+import { isOfficialImageUrl } from '../../../../../lib/storage';
 import { setSession } from '../../../../../lib/session';
 import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
 
@@ -22,6 +23,11 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
   const dto = parsed.data;
+
+  // Avatar (quando enviado) só do nosso storage — não confiar na URL do cliente.
+  if (dto.avatarUrl !== undefined && !isOfficialImageUrl(dto.avatarUrl)) {
+    return NextResponse.json({ message: 'Foto de perfil inválida.' }, { status: 400 });
+  }
 
   // anti brute-force do código (além do limite de 5 tentativas por código)
   if (!(await rateLimit(`otp:verify:${clientIp(req)}`, 20, 3600))) return tooMany();

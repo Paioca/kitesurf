@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { getCurrentUser, requireUser, clearSession, UnauthorizedError } from '../../../../lib/session';
+import { isOfficialImageUrl } from '../../../../lib/storage';
 
 export const runtime = 'nodejs';
 
@@ -35,6 +36,9 @@ export async function PATCH(req: Request) {
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
+    if (dto.avatarUrl !== undefined && !isOfficialImageUrl(dto.avatarUrl)) {
+      return NextResponse.json({ message: 'Foto de perfil inválida.' }, { status: 400 });
+    }
     const ig = dto.instagramHandle === undefined ? undefined : dto.instagramHandle ? dto.instagramHandle.replace(/^@/, '').trim() || null : null;
     // e-mail novo zera a verificação (será confirmado depois); null limpa o campo
     const email = dto.email === undefined ? undefined : (dto.email ? dto.email.toLowerCase().trim() : null);

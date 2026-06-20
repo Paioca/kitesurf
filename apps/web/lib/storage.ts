@@ -31,6 +31,37 @@ export interface ProcessedImage {
   thumbUrl: string;
 }
 
+// Host oficial do storage (derivado do SUPABASE_URL).
+function officialImageHost(): string | null {
+  const u = process.env.SUPABASE_URL;
+  if (!u) return null;
+  try {
+    return new URL(u).hostname;
+  } catch {
+    return null;
+  }
+}
+
+// true só se a URL é https, aponta pro host do NOSSO Supabase e está no caminho
+// público de storage. Bloqueia o cliente de persistir URL de imagem/avatar
+// apontando pra fora (host externo, tracker, payload de CSS injection).
+export function isOfficialImageUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  // Sem caracteres que quebrem o url("...") do CSS onde a URL é interpolada
+  // (a string crua é o que persiste; new URL() normalizaria e mascararia isso).
+  if (/[\s"'()\\<>]/.test(value)) return false;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+  const host = officialImageHost();
+  if (!host || url.hostname !== host) return false;
+  return url.pathname.startsWith('/storage/v1/object/public/');
+}
+
 // Valida, REMOVE EXIF/GPS (sharp descarta metadados), resize + thumbnail.
 export async function processImage(
   buffer: Buffer,

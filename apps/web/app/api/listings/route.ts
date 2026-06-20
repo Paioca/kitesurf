@@ -6,6 +6,7 @@ import { searchListings } from '../../../lib/queries';
 import { LISTINGS_TAG } from '../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
+import { isOfficialImageUrl } from '../../../lib/storage';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
 import { Prisma } from '@prisma/client';
 
@@ -60,6 +61,10 @@ export async function POST(req: Request) {
     const parsed = createSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
+
+    // Imagens só do nosso storage (cliente reenvia as URLs do upload — não confiar).
+    const badImage = dto.images.some((i) => !isOfficialImageUrl(i.url) || (i.thumbUrl != null && !isOfficialImageUrl(i.thumbUrl)));
+    if (badImage) return NextResponse.json({ message: 'Imagem inválida.' }, { status: 400 });
 
     const category = await db.category.findUnique({ where: { id: dto.categoryId } });
     if (!category) return NextResponse.json({ message: 'Categoria inválida.' }, { status: 400 });
