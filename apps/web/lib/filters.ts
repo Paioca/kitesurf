@@ -35,6 +35,10 @@ export function parseFilters(sp: SP) {
     price: list(sp, 'price'),
     repair: list(sp, 'repair'),
     withbar: list(sp, 'withbar'),
+    cond: list(sp, 'cond'),
+    bladder: list(sp, 'bladder'),
+    mang: list(sp, 'mang'),
+    delivery: list(sp, 'delivery'),
     sort: one(sp, 'sort') || 'recent',
   };
 }
@@ -48,7 +52,7 @@ function toQuery(sp: Record<string, string>): string {
 
 function current(sp: SP): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'sort']) {
+  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort']) {
     const v = one(sp, k);
     if (v) out[k] = v;
   }
@@ -89,5 +93,5 @@ export function clearHref(sp: SP): string {
 
 export function hasAnyFilter(sp: SP): boolean {
   const f = parseFilters(sp);
-  return !!(f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length);
+  return !!(f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length || f.cond.length || f.bladder.length || f.mang.length || f.delivery.length);
 }

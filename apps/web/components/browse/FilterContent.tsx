@@ -6,7 +6,7 @@ import { clearHref, setHref, toggleHref, type SP } from '../../lib/filters';
 import type { Facets } from '../../lib/browse';
 import { SectionLabel } from '../ui';
 
-type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[] };
+type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[]; cond: string[]; bladder: string[]; mang: string[]; delivery: string[] };
 
 export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets; filters: Filters }) {
   return (
@@ -33,6 +33,30 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
               <ChipLink key={o.value} href={toggleHref(sp, 'size', o.value)} on={filters.size.includes(o.value)} label={o.label} />
             ))}
           </Chips>
+        </Block>
+      )}
+
+      {facets.cond.length > 0 && (
+        <Block title="Condição">
+          {facets.cond.map((o) => (
+            <RowLink key={o.value} href={toggleHref(sp, 'cond', o.value)} on={filters.cond.includes(o.value)} label={o.label} count={o.count} />
+          ))}
+        </Block>
+      )}
+
+      {facets.bladder.length > 0 && (
+        <Block title="Bladder">
+          {facets.bladder.map((o) => (
+            <RowLink key={o.value} href={toggleHref(sp, 'bladder', o.value)} on={filters.bladder.includes(o.value)} label={o.label} count={o.count} />
+          ))}
+        </Block>
+      )}
+
+      {facets.mang.length > 0 && (
+        <Block title="Mangueiras">
+          {facets.mang.map((o) => (
+            <RowLink key={o.value} href={toggleHref(sp, 'mang', o.value)} on={filters.mang.includes(o.value)} label={o.label} count={o.count} />
+          ))}
         </Block>
       )}
 
@@ -72,6 +96,14 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
         <Block title="Reparo">
           {facets.repair.map((o) => (
             <RowLink key={o.value} href={toggleHref(sp, 'repair', o.value)} on={filters.repair.includes(o.value)} label={o.label} count={o.count} />
+          ))}
+        </Block>
+      )}
+
+      {facets.delivery.length > 0 && (
+        <Block title="Entrega">
+          {facets.delivery.map((o) => (
+            <RowLink key={o.value} href={toggleHref(sp, 'delivery', o.value)} on={filters.delivery.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}

@@ -42,6 +42,10 @@ export type Facets = {
   price: Facet[];
   repair: Facet[];
   withbar: Facet[]; // kites que acompanham barra (kit)
+  cond: Facet[]; // condição (ficha)
+  bladder: Facet[];
+  mang: Facet[]; // mangueiras
+  delivery: Facet[]; // retirada / envio
 };
 
 function brl(cents: number) {
@@ -63,6 +67,9 @@ const COND_LABEL: Record<string, string> = {
   semi_desgaste: 'Seminovo · desgaste', usado_desgaste: 'Usado · desgaste',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
 };
+const COND_ORDER = Object.keys(COND_LABEL);
+const BLADDER_LABEL: Record<string, string> = { zero: 'Bladder zero', microfuro_adesivado: 'Microfuro adesivado' };
+const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas: 'Já trocadas' };
 
 // Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
 // a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
@@ -133,6 +140,12 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   if (persp === 'barra') {
     and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
     if (f.city.length) and.push({ city: { in: f.city } });
+    if (f.delivery.length) {
+      const opts: Prisma.ListingWhereInput[] = [];
+      if (f.delivery.includes('local')) opts.push({ pickup: true });
+      if (f.delivery.includes('ship')) opts.push({ shippable: true });
+      if (opts.length) and.push({ OR: opts });
+    }
     return { ...BASE, AND: and };
   }
   if (persp === 'kite') and.push({ category: { slug: 'kite' } });
@@ -151,6 +164,15 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
     const rep: Prisma.ListingWhereInput = { attributes: { path: ['repairs_count'], gt: 0 } };
     and.push(f.repair[0] === 'rep' ? rep : { NOT: rep });
   }
+  if (f.cond.length) and.push({ OR: f.cond.map((c) => ({ attributes: { path: ['condition'], equals: c } })) });
+  if (f.bladder.length) and.push({ OR: f.bladder.map((b) => ({ attributes: { path: ['bladder'], equals: b } })) });
+  if (f.mang.length) and.push({ OR: f.mang.map((m) => ({ attributes: { path: ['mangueiras'], equals: m } })) });
+  if (f.delivery.length) {
+    const opts: Prisma.ListingWhereInput[] = [];
+    if (f.delivery.includes('local')) opts.push({ pickup: true });
+    if (f.delivery.includes('ship')) opts.push({ shippable: true });
+    if (opts.length) and.push({ OR: opts });
+  }
   if (f.withbar.includes('1')) and.push({ hasBarra: true });
   return { ...BASE, AND: and };
 }
@@ -159,7 +181,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
 // com barra avulsa (que aparecem na busca de barra).
 const loadFacets = unstable_cache(
   async (): Promise<{ facets: Facets; totalAll: number }> => {
-    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR, kitBarraR] = await Promise.all([
+    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR, kitBarraR, condR, bladderR, mangR, pickupCount, shipCount] = await Promise.all([
       db.listing.groupBy({ by: ['categoryId'], where: BASE, _count: { _all: true } }),
       db.listing.groupBy({ by: ['brandId'], where: { ...BASE, brandId: { not: null } }, _count: { _all: true } }),
       db.listing.groupBy({ by: ['city'], where: BASE, _count: { _all: true } }),
@@ -179,6 +201,20 @@ const loadFacets = unstable_cache(
         FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
       db.listing.count({ where: { ...BASE, hasBarra: true } }),
       db.listing.count({ where: { ...BASE, hasBarra: true, barraPrice: { not: null } } }),
+      db.$queryRaw<{ v: string; count: number }[]>`
+        SELECT attributes->>'condition' AS v, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'condition' IS NOT NULL
+        GROUP BY 1`,
+      db.$queryRaw<{ v: string; count: number }[]>`
+        SELECT attributes->>'bladder' AS v, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'bladder' IS NOT NULL
+        GROUP BY 1`,
+      db.$queryRaw<{ v: string; count: number }[]>`
+        SELECT attributes->>'mangueiras' AS v, COUNT(*)::int AS count
+        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'mangueiras' IS NOT NULL
+        GROUP BY 1`,
+      db.listing.count({ where: { ...BASE, pickup: true } }),
+      db.listing.count({ where: { ...BASE, shippable: true } }),
     ]);
 
     const catMap = new Map(cats.map((c) => [c.id, c]));
@@ -211,6 +247,16 @@ const loadFacets = unstable_cache(
         .sort((a, b) => a.value.localeCompare(b.value)),
       repair: repairR.map((r) => ({ value: r.k, label: r.k === 'rep' ? 'Com reparo' : 'Sem reparo', count: Number(r.count) })),
       withbar: Number(withbarR) > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: Number(withbarR) }] : [],
+      cond: condR
+        .filter((r) => r.v)
+        .map((r) => ({ value: r.v, label: COND_LABEL[r.v] ?? r.v, count: Number(r.count) }))
+        .sort((a, b) => (COND_ORDER.indexOf(a.value) + 1 || 99) - (COND_ORDER.indexOf(b.value) + 1 || 99)),
+      bladder: bladderR.filter((r) => r.v).map((r) => ({ value: r.v, label: BLADDER_LABEL[r.v] ?? r.v, count: Number(r.count) })),
+      mang: mangR.filter((r) => r.v).map((r) => ({ value: r.v, label: MANG_LABEL[r.v] ?? r.v, count: Number(r.count) })),
+      delivery: [
+        ...(Number(pickupCount) > 0 ? [{ value: 'local', label: 'Retirada', count: Number(pickupCount) }] : []),
+        ...(Number(shipCount) > 0 ? [{ value: 'ship', label: 'Envio', count: Number(shipCount) }] : []),
+      ],
     };
 
     const totalAll = priceR.reduce((s, r) => s + Number(r.count), 0);
@@ -253,7 +299,7 @@ export async function getBrowseData(sp: SP) {
   }
   // Na busca de barra, mostra só categoria + cidade (resto é kite-específico).
   const facets: Facets =
-    persp === 'barra' ? { ...fac.facets, size: [], brand: [], price: [], repair: [], withbar: [] } : fac.facets;
+    persp === 'barra' ? { ...fac.facets, size: [], brand: [], price: [], repair: [], withbar: [], cond: [], bladder: [], mang: [] } : fac.facets;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
 }
