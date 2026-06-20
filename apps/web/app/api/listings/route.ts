@@ -68,6 +68,18 @@ export async function POST(req: Request) {
 
     const category = await db.category.findUnique({ where: { id: dto.categoryId } });
     if (!category) return NextResponse.json({ message: 'Categoria inválida.' }, { status: 400 });
+    if (!category.active) return NextResponse.json({ message: 'Categoria indisponível.' }, { status: 400 });
+
+    // Marca/modelo: existir, casar entre si e com a categoria do anúncio.
+    if (dto.modelId && !dto.brandId) return NextResponse.json({ message: 'Modelo informado sem marca.' }, { status: 400 });
+    if (dto.brandId && !(await db.brand.findUnique({ where: { id: dto.brandId } }))) {
+      return NextResponse.json({ message: 'Marca inválida.' }, { status: 400 });
+    }
+    if (dto.modelId) {
+      const model = await db.model.findUnique({ where: { id: dto.modelId } });
+      if (!model || model.brandId !== dto.brandId) return NextResponse.json({ message: 'Modelo inválido para a marca.' }, { status: 400 });
+      if (model.categoryId && model.categoryId !== dto.categoryId) return NextResponse.json({ message: 'Modelo não pertence a esta categoria.' }, { status: 400 });
+    }
 
     const attributes = validateAttributes(category.attributeSchema as any, dto.attributes);
 
