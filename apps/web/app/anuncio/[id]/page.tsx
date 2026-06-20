@@ -1,5 +1,6 @@
 // Detalhe do anúncio — design Kite Life (handoff Anuncio.dc.html). Server-rendered.
 // Adaptação Fase 0: sem escrow/checkout. CTA = conversar. Sem rating falso.
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
 import { getCurrentUser } from '../../../lib/session';
@@ -17,6 +18,26 @@ import { Gallery } from '../../../components/Gallery';
 import { ReportButton } from '../../../components/ReportButton';
 
 export const dynamic = 'force-dynamic';
+
+// Preview rico ao compartilhar o link (WhatsApp/IG): foto, título e preço.
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const l = await getListing(params.id);
+  if (!l) return { title: 'Anúncio não encontrado — Vaya' };
+  const a = (l.attributes ?? {}) as Record<string, any>;
+  const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
+  const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
+  const price = formatBRL(l.price);
+  const title = `${name} — ${price} · Vaya`;
+  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Contato verificado, sem golpe — na Vaya.`;
+  const img = (l.images ?? [])[0]?.url;
+  const images = img ? [img] : undefined;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'website', images },
+    twitter: { card: 'summary_large_image', title, description, images },
+  };
+}
 
 // Labels das opções de enum da ficha (condição kite/barra, bladder, mangueiras).
 const CONDITION: Record<string, string> = {

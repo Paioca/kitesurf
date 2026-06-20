@@ -2,8 +2,10 @@
 
 // Contato estruturado no anúncio: Fazer oferta (valor) | Agendar visita.
 // Vendedor aceita → libera o WhatsApp (vem do servidor em initial.whatsapp).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
+
+const PENDING_KEY = (id: string) => `vaya:pending-request:${id}`;
 
 type State = { offer: { status: string; amount: number | null } | null; visit: { status: string } | null; whatsapp: string | null };
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -17,11 +19,29 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
 
+  // Retoma a oferta/visita guardada antes do login (re-dispara assim que volta logado).
+  useEffect(() => {
+    let raw: string | null = null;
+    try { raw = sessionStorage.getItem(PENDING_KEY(listingId)); } catch {}
+    if (!raw) return;
+    try { sessionStorage.removeItem(PENDING_KEY(listingId)); } catch {}
+    let pend: { type: 'offer' | 'visit'; amount: number | null };
+    try { pend = JSON.parse(raw); } catch { return; }
+    if (pend.type === 'offer' && !initial.offer) send('offer', pend.amount ?? undefined);
+    else if (pend.type === 'visit' && !initial.visit) send('visit');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function send(type: 'offer' | 'visit', amountCents?: number) {
     setBusy(type); setErr('');
     try {
       const res = await fetch(`/api/listings/${listingId}/request`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, amount: amountCents }) });
-      if (res.status === 401) { window.location.href = `/entrar?next=${encodeURIComponent(`/anuncio/${listingId}`)}`; return; }
+      if (res.status === 401) {
+        // guarda a oferta/visita digitada pra re-disparar depois do login (não perder)
+        try { sessionStorage.setItem(PENDING_KEY(listingId), JSON.stringify({ type, amount: amountCents ?? null })); } catch {}
+        window.location.href = `/entrar?next=${encodeURIComponent(`/anuncio/${listingId}`)}`;
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
       if (type === 'offer') setState((s) => ({ ...s, offer: { status: 'pending', amount: amountCents ?? null } }));

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { Prisma } from '@prisma/client';
 import { db } from './db';
 
@@ -69,7 +70,8 @@ export async function searchListings(p: SearchParams) {
   return { items, total, page, pageSize: PAGE_SIZE };
 }
 
-export async function getListing(id: string) {
+// cache(): generateMetadata + a página do anúncio compartilham uma única query/request.
+export const getListing = cache(async (id: string) => {
   return db.listing.findFirst({
     where: { id, deletedAt: null },
     include: {
@@ -89,4 +91,4 @@ export async function getListing(id: string) {
       },
     },
   });
-}
+});
