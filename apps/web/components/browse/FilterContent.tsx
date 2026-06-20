@@ -45,7 +45,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       )}
 
       {facets.city.length > 0 && (
-        <Block title="Cidade">
+        <Block title="Spot">
           {facets.city.map((o) => (
             <RowLink key={o.value} href={toggleHref(sp, 'city', o.value)} on={filters.city.includes(o.value)} label={o.label} count={o.count} />
           ))}

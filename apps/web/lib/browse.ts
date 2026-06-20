@@ -25,6 +25,7 @@ export type Card = {
   city: string;
   sizeM2: string | null;
   sizeLabel: string;
+  condLabel: string | null; // rótulo da condição (pill no card)
   repair: boolean;
   includesBar: boolean; // kite que vem com barra (badge "+ Barra")
   partOfKit: boolean; // barra mostrada na busca de barra que faz parte de um kit
@@ -57,6 +58,12 @@ function perspectiveOf(f: Filters): Perspective {
   return f.cat === 'barra' ? 'barra' : f.cat === 'kite' ? 'kite' : 'all';
 }
 
+const COND_LABEL: Record<string, string> = {
+  novo_lacrado: 'Novo (lacrado)', novo_10x: 'Novo · pouco uso', semi_otimo: 'Seminovo · ótimo',
+  semi_desgaste: 'Seminovo · desgaste', usado_desgaste: 'Usado · desgaste',
+  novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+};
+
 // Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
 // a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
 function toCard(l: any, persp: Perspective): Card {
@@ -80,6 +87,7 @@ function toCard(l: any, persp: Perspective): Card {
       city: l.city,
       sizeM2: null,
       sizeLabel: len ? `linhas ${len} m` : 'Barra',
+      condLabel: ba.condition ? (COND_LABEL[ba.condition] ?? ba.condition) : null,
       repair: false,
       includesBar: false,
       partOfKit: kit,
@@ -105,6 +113,7 @@ function toCard(l: any, persp: Perspective): Card {
     city: l.city,
     sizeM2,
     sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || '—',
+    condLabel: a.condition ? (COND_LABEL[a.condition] ?? a.condition) : null,
     repair: Number(a.repairs_count ?? 0) > 0,
     includesBar: l.hasBarra === true,
     partOfKit: false,
