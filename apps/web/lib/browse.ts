@@ -185,95 +185,97 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   return { ...BASE, AND: and };
 }
 
-// Facetas sobre TODOS os ativos → cacheáveis. A contagem de "Barra" inclui os kits
-// com barra avulsa (que aparecem na busca de barra).
-const loadFacets = unstable_cache(
-  async (): Promise<{ facets: Facets; totalAll: number }> => {
-    const [catG, brandG, cityG, cats, brands, sizeR, priceR, repairR, withbarR, kitBarraR, condR, bladderR, mangR, pickupCount, shipCount] = await Promise.all([
-      db.listing.groupBy({ by: ['categoryId'], where: BASE, _count: { _all: true } }),
-      db.listing.groupBy({ by: ['brandId'], where: { ...BASE, brandId: { not: null } }, _count: { _all: true } }),
-      db.listing.groupBy({ by: ['city'], where: BASE, _count: { _all: true } }),
-      db.category.findMany({ select: { id: true, slug: true, namePt: true } }),
-      db.brand.findMany({ select: { id: true, name: true } }),
-      db.$queryRaw<{ v: string; count: number }[]>`
-        SELECT attributes->>'size_m2' AS v, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'size_m2' IS NOT NULL
-        GROUP BY 1`,
-      db.$queryRaw<{ k: string; count: number }[]>`
-        SELECT CASE WHEN price < 50000 THEN 'p1' WHEN price < 200000 THEN 'p2'
-                    WHEN price < 500000 THEN 'p3' ELSE 'p4' END AS k, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
-      db.$queryRaw<{ k: string; count: number }[]>`
-        SELECT CASE WHEN (attributes->>'repairs_count') ~ '^[0-9]+$' AND (attributes->>'repairs_count')::int > 0
-                    THEN 'rep' ELSE 'norep' END AS k, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL GROUP BY 1`,
-      db.listing.count({ where: { ...BASE, hasBarra: true } }),
-      db.listing.count({ where: { ...BASE, hasBarra: true, barraPrice: { not: null } } }),
-      db.$queryRaw<{ v: string; count: number }[]>`
-        SELECT attributes->>'condition' AS v, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'condition' IS NOT NULL
-        GROUP BY 1`,
-      db.$queryRaw<{ v: string; count: number }[]>`
-        SELECT attributes->>'bladder' AS v, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'bladder' IS NOT NULL
-        GROUP BY 1`,
-      db.$queryRaw<{ v: string; count: number }[]>`
-        SELECT attributes->>'mangueiras' AS v, COUNT(*)::int AS count
-        FROM "Listing" WHERE status='active' AND "deletedAt" IS NULL AND attributes->>'mangueiras' IS NOT NULL
-        GROUP BY 1`,
-      db.listing.count({ where: { ...BASE, pickup: true } }),
-      db.listing.count({ where: { ...BASE, shippable: true } }),
-    ]);
-
-    const catMap = new Map(cats.map((c) => [c.id, c]));
-    const brandMap = new Map(brands.map((b) => [b.id, b.name]));
-
-    const facets: Facets = {
-      category: catG
-        .map((g) => {
-          const slug = catMap.get(g.categoryId)?.slug ?? '';
-          // barras compráveis = barra-only + kits com barra avulsa
-          const count = slug === 'barra' ? g._count._all + kitBarraR : g._count._all;
-          return { value: slug, label: catMap.get(g.categoryId)?.namePt ?? '', count };
-        })
-        // Fase 0: só kite e barra (sem acessórios/twintip/foil). 'kit' é o combo (withbar).
-        .filter((o) => o.value === 'kite' || o.value === 'barra')
-        .sort((a, b) => a.label.localeCompare(b.label)),
-      size: sizeR
-        .filter((r) => r.v)
-        .map((r) => ({ value: r.v, label: `${r.v} m²`, count: Number(r.count) }))
-        .sort((a, b) => Number(a.value) - Number(b.value)),
-      brand: brandG
-        .map((g) => ({ value: brandMap.get(g.brandId!) ?? '', label: brandMap.get(g.brandId!) ?? '', count: g._count._all }))
-        .filter((o) => o.value)
-        .sort((a, b) => a.label.localeCompare(b.label)),
-      city: cityG
-        .map((g) => ({ value: g.city, label: g.city, count: g._count._all }))
-        .filter((o) => o.value)
-        .sort((a, b) => a.label.localeCompare(b.label)),
-      price: priceR
-        .map((r) => ({ value: r.k, label: PRICE_LABELS[r.k] ?? r.k, count: Number(r.count) }))
-        .sort((a, b) => a.value.localeCompare(b.value)),
-      repair: repairR.map((r) => ({ value: r.k, label: r.k === 'rep' ? 'Com reparo' : 'Sem reparo', count: Number(r.count) })),
-      withbar: Number(withbarR) > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: Number(withbarR) }] : [],
-      cond: condR
-        .filter((r) => r.v)
-        .map((r) => ({ value: r.v, label: COND_LABEL[r.v] ?? r.v, count: Number(r.count) }))
-        .sort((a, b) => (COND_ORDER.indexOf(a.value) + 1 || 99) - (COND_ORDER.indexOf(b.value) + 1 || 99)),
-      bladder: bladderR.filter((r) => r.v).map((r) => ({ value: r.v, label: BLADDER_LABEL[r.v] ?? r.v, count: Number(r.count) })),
-      mang: mangR.filter((r) => r.v).map((r) => ({ value: r.v, label: MANG_LABEL[r.v] ?? r.v, count: Number(r.count) })),
-      delivery: [
-        ...(Number(pickupCount) > 0 ? [{ value: 'local', label: 'Retirada', count: Number(pickupCount) }] : []),
-        ...(Number(shipCount) > 0 ? [{ value: 'ship', label: 'Envio', count: Number(shipCount) }] : []),
-      ],
-    };
-
-    const totalAll = priceR.reduce((s, r) => s + Number(r.count), 0);
-    return { facets, totalAll };
+// Dataset cru (leve) de TODOS os ativos — cacheável. As facetas são calculadas
+// a partir daqui em JS, de forma CONTEXTUAL (refletindo os filtros ativos).
+type ActiveRow = {
+  price: number; city: string; hasBarra: boolean; barraPrice: number | null;
+  pickup: boolean; shippable: boolean; catSlug: string;
+  brandName: string | null; size: string | null; cond: string | null;
+  bladder: string | null; mang: string | null; repair: boolean;
+};
+const loadActiveRows = unstable_cache(
+  async (): Promise<ActiveRow[]> => {
+    const rows = await db.listing.findMany({
+      where: BASE,
+      select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
+    });
+    return rows.map((r) => {
+      const a = (r.attributes ?? {}) as Record<string, any>;
+      return {
+        price: r.price, city: r.city, hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
+        pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
+        size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
+        bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
+      };
+    });
   },
-  ['browse:facets'],
+  ['browse:active-rows'],
   { revalidate: 60, tags: [LISTINGS_TAG] },
 );
+
+const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 500000 ? 'p3' : 'p4');
+
+// Facetas CONTEXTUAIS: cada dimensão é contada aplicando todos os filtros ativos
+// EXCETO o dela própria (padrão de busca facetada — a contagem bate com o resultado).
+function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { facets: Facets; totalAll: number } {
+  const inPersp = (r: ActiveRow) =>
+    persp === 'barra' ? r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null)
+      : persp === 'kite' ? r.catSlug === 'kite' && (f.cat === 'kit' ? r.hasBarra : true)
+        : true;
+
+  const P = {
+    size: (r: ActiveRow) => !f.size.length || (r.size != null && f.size.includes(r.size)),
+    cond: (r: ActiveRow) => !f.cond.length || (r.cond != null && f.cond.includes(r.cond)),
+    bladder: (r: ActiveRow) => !f.bladder.length || (r.bladder != null && f.bladder.includes(r.bladder)),
+    mang: (r: ActiveRow) => !f.mang.length || (r.mang != null && f.mang.includes(r.mang)),
+    brand: (r: ActiveRow) => !f.brand.length || (r.brandName != null && f.brand.includes(r.brandName)),
+    city: (r: ActiveRow) => !f.city.length || f.city.includes(r.city),
+    price: (r: ActiveRow) => !f.price.length || f.price.includes(priceBucket(r.price)),
+    repair: (r: ActiveRow) => !f.repair.length || f.repair.includes(r.repair ? 'rep' : 'norep'),
+    withbar: (r: ActiveRow) => !f.withbar.includes('1') || r.hasBarra,
+    delivery: (r: ActiveRow) => !f.delivery.length || (f.delivery.includes('local') && r.pickup) || (f.delivery.includes('ship') && r.shippable),
+  };
+  type DimKey = keyof typeof P;
+  const keys = Object.keys(P) as DimKey[];
+  const setExcept = (except: DimKey) => rows.filter((r) => inPersp(r) && keys.every((k) => k === except || P[k](r)));
+  const tally = (set: ActiveRow[], val: (r: ActiveRow) => string | null) => {
+    const m = new Map<string, number>();
+    for (const r of set) { const v = val(r); if (v) m.set(v, (m.get(v) ?? 0) + 1); }
+    return m;
+  };
+  const list = (m: Map<string, number>, label: (v: string) => string) => [...m].map(([value, count]) => ({ value, label: label(value), count }));
+
+  const dM = setExcept('delivery');
+  const wM = setExcept('withbar');
+  // categoria conta sobre filtros cross-categoria (city/price/delivery/brand), sem restrição de perspectiva
+  const catSet = rows.filter((r) => P.city(r) && P.price(r) && P.delivery(r) && P.brand(r));
+  const kiteCount = catSet.filter((r) => r.catSlug === 'kite').length;
+  const barraCount = catSet.filter((r) => r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null)).length;
+  const withbarCount = wM.filter((r) => r.hasBarra).length;
+  const pickupCount = dM.filter((r) => r.pickup).length;
+  const shipCount = dM.filter((r) => r.shippable).length;
+
+  const facets: Facets = {
+    category: [
+      ...(kiteCount > 0 ? [{ value: 'kite', label: 'Kite', count: kiteCount }] : []),
+      ...(barraCount > 0 ? [{ value: 'barra', label: 'Barra', count: barraCount }] : []),
+    ],
+    size: list(tally(setExcept('size'), (r) => r.size), (v) => `${v} m²`).sort((a, b) => Number(a.value) - Number(b.value)),
+    brand: list(tally(setExcept('brand'), (r) => r.brandName), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
+    city: list(tally(setExcept('city'), (r) => r.city), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
+    price: list(tally(setExcept('price'), (r) => priceBucket(r.price)), (v) => PRICE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
+    repair: list(tally(setExcept('repair'), (r) => (r.repair ? 'rep' : 'norep')), (v) => (v === 'rep' ? 'Com reparo' : 'Sem reparo')),
+    withbar: withbarCount > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: withbarCount }] : [],
+    cond: list(tally(setExcept('cond'), (r) => r.cond), (v) => COND_LABEL[v] ?? v).sort((a, b) => (COND_ORDER.indexOf(a.value) + 1 || 99) - (COND_ORDER.indexOf(b.value) + 1 || 99)),
+    bladder: list(tally(setExcept('bladder'), (r) => r.bladder), (v) => BLADDER_LABEL[v] ?? v),
+    mang: list(tally(setExcept('mang'), (r) => r.mang), (v) => MANG_LABEL[v] ?? v),
+    delivery: [
+      ...(pickupCount > 0 ? [{ value: 'local', label: 'Retirada', count: pickupCount }] : []),
+      ...(shipCount > 0 ? [{ value: 'ship', label: 'Envio', count: shipCount }] : []),
+    ],
+  };
+  return { facets, totalAll: rows.length };
+}
 
 export async function getBrowseData(sp: SP) {
   const f = parseFilters(sp);
@@ -285,7 +287,7 @@ export async function getBrowseData(sp: SP) {
   const orderBy: Prisma.ListingOrderByWithRelationInput =
     f.sort === 'price_asc' ? { price: 'asc' } : f.sort === 'price_desc' ? { price: 'desc' } : { createdAt: 'desc' };
 
-  const [raw, total, fac] = await Promise.all([
+  const [raw, total, rows] = await Promise.all([
     db.listing.findMany({
       where,
       orderBy,
@@ -295,8 +297,9 @@ export async function getBrowseData(sp: SP) {
       include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } },
     }),
     db.listing.count({ where }),
-    loadFacets(),
+    loadActiveRows(),
   ]);
+  const fac = computeFacets(rows, f, persp);
 
   const items = raw.map((l) => toCard(l, persp));
   // reputação do vendedor (média de reviews de negócios concluídos) — 1 query batch

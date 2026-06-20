@@ -35,7 +35,7 @@ export function ActiveChips({ sp, facets, filters }: { sp: SP; facets: Facets; f
           <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: 999, background: 'rgba(255,255,255,0.18)', fontSize: 12, lineHeight: 1 }}>×</span>
         </a>
       ))}
-      <a href={clearHref(sp)} style={{ fontFamily: font.sans, fontSize: 13, fontWeight: 600, color: color.inkMute, textDecoration: 'none', padding: '7px 4px' }}>Limpar tudo</a>
+      <a href={clearHref(sp)} style={{ fontFamily: font.sans, fontSize: 13, fontWeight: 700, color: color.primary, textDecoration: 'none', padding: '7px 13px', border: `1px solid ${color.lineChip}`, borderRadius: 999 }}>Limpar filtros</a>
     </div>
   );
 }

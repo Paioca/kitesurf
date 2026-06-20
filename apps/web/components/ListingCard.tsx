@@ -43,7 +43,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.seller.name}</div>
-                    <div style={{ fontSize: 11.5, color: color.inkFaint2, lineHeight: 1.2 }}>{item.seller.ig ? `@${item.seller.ig}` : `📍 ${item.city}`}</div>
+                    <div style={{ fontSize: 11.5, color: color.inkFaint2, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>📍 {item.city}{item.seller.ig ? ` · @${item.seller.ig}` : ''}</div>
                   </div>
                 </div>
                 {item.seller.rating != null && (
