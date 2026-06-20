@@ -1,8 +1,8 @@
-// Perfil público — design Kite Life (handoff Perfil.dc.html). Server-rendered.
+// Perfil público — handoff Claude Design (Perfil.dc.html), marca Vaya. Server-rendered.
 // Reputação real: stats e avaliações vêm de Deals/Reviews concluídos.
 import { notFound } from 'next/navigation';
 import { getProfile } from '../../../lib/profile';
-import { color, font, heroGradient } from '../../../lib/tokens';
+import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
 import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
@@ -20,12 +20,18 @@ export default async function PerfilPage({ params }: { params: { id: string } })
   const { user, stats, listings, reviews } = data;
   const initials = user.name.slice(0, 2).toUpperCase();
   const since = new Date(user.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+  const sinceFull = new Date(user.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const sellerCity = listings[0]?.city ?? null; // cidade derivada dos anúncios ativos
+  const lang = (user as any).locale === 'en' ? 'EN' : 'PT';
 
   return (
     <>
       <div className="only-mobile"><MobileAppBar /></div>
       <div className="only-desktop"><SiteHeader /></div>
-      <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: heroGradient }} />
+      <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: '#0c2520' }}>
+        <img src="/wind-texture.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.2),rgba(12,37,32,0.55))' }} />
+      </div>
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 90px' }}>
         {/* header */}
@@ -37,8 +43,13 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>{user.name}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 14, color: color.inkMute }}>
               {user.instagramHandle && <><span>@{user.instagramHandle}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
+              {sellerCity && <><span>{sellerCity}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
               <span>na Vaya desde {since}</span>
             </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, paddingBottom: 4 }}>
+            <a href="#anuncios" style={{ background: color.primary, color: '#fff', textDecoration: 'none', padding: '12px 22px', borderRadius: 11, fontSize: 14.5, fontWeight: 700 }}>Ver anúncios</a>
+            <span style={{ fontSize: 11.5, color: color.inkFaint2 }}>A conversa começa a partir de um anúncio</span>
           </div>
         </div>
 
@@ -48,18 +59,20 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>O que é verificado</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
               <VerifiedRow on={user.phoneVerified} title="Telefone verificado" desc="1 número = 1 conta · confirmado por código" />
-              <VerifiedRow on={!!user.instagramHandle} title="Instagram conectado" desc={user.instagramHandle ? `@${user.instagramHandle}` : 'não conectado'} />
+              <VerifiedRow on={user.emailVerified} title="E-mail verificado" desc="Para recuperar acesso e avisos" />
+              <VerifiedRow on={!!user.instagramHandle} title="Instagram conectado" desc={user.instagramHandle ? `@${user.instagramHandle}` : 'não conectado'} link={user.instagramHandle ? `https://instagram.com/${user.instagramHandle}` : undefined} />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>O número e o e-mail nunca aparecem para outros usuários — só o selo de "verificado".</p>
+              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>O número, o e-mail e o CPF nunca aparecem para outros usuários — só o selo de "verificado".</p>
             </div>
           </div>
           <div style={card}>
             <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Sobre o usuário</div>
-            <AboutRow k="Membro desde" v={since} />
-            <AboutRow k="Papel" v={user.role === 'business' ? 'Negócio' : 'Pessoa física'} />
-            {user.instagramHandle && <AboutRow k="Instagram" v={`@${user.instagramHandle}`} last />}
+            <AboutRow k="Membro desde" v={sinceFull} />
+            {sellerCity && <AboutRow k="Atua em" v={sellerCity} />}
+            <AboutRow k="Idiomas" v={lang} />
+            <AboutRow k="Papel" v={user.role === 'business' ? 'Negócio' : 'Pessoa física'} last />
           </div>
         </div>
 
@@ -74,7 +87,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
         {/* listings */}
         {listings.length > 0 && (
           <>
-            <h2 style={{ fontFamily: font.serif, fontSize: 26, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 18px' }}>Anúncios ativos</h2>
+            <h2 id="anuncios" style={{ fontFamily: font.serif, fontSize: 26, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 18px', scrollMarginTop: 24 }}>Anúncios ativos</h2>
             <div className="perfil-grid" style={{ display: 'grid', gap: 22, marginBottom: 48 }}>
               {listings.map((it) => <ListingCard key={it.id} item={it} imgHeight={170} />)}
             </div>
@@ -115,11 +128,12 @@ export default async function PerfilPage({ params }: { params: { id: string } })
 }
 
 const card: React.CSSProperties = { background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 22 };
-function VerifiedRow({ on, title, desc }: { on: boolean; title: string; desc: string }) {
+function VerifiedRow({ on, title, desc, link }: { on: boolean; title: string; desc: string; link?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11, opacity: on ? 1 : 0.5 }}>
       <span style={{ width: 26, height: 26, borderRadius: 999, background: '#e8f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><span style={{ color: color.primary, fontSize: 14 }}>{on ? '✓' : '—'}</span></span>
-      <div style={{ flex: 1 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: color.inkFaint }}>{desc}</div></div>
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: color.inkFaint }}>{desc}</div></div>
+      {on && link && <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: color.primary, textDecoration: 'none', flex: 'none' }}>Ver ›</a>}
     </div>
   );
 }
