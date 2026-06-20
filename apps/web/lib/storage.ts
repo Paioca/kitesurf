@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import { PublicError } from './http';
+import { db } from './db';
 
 const BUCKET = process.env.SUPABASE_BUCKET ?? 'listings';
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -30,6 +31,67 @@ async function save(buffer: Buffer): Promise<string> {
 export interface ProcessedImage {
   url: string;
   thumbUrl: string;
+}
+
+// Caminho dentro do bucket a partir da URL pública (ou null se não for nossa).
+function pathFromPublicUrl(u: string): string | null {
+  const marker = `/storage/v1/object/public/${BUCKET}/`;
+  const i = u.indexOf(marker);
+  return i === -1 ? null : u.slice(i + marker.length);
+}
+
+export type OrphanResult = { scanned: number; referenced: number; orphans: number; deleted: number; sample: string[] };
+
+// Acha (e opcionalmente apaga) objetos do bucket que NENHUM registro referencia
+// (ListingImage.url/thumbUrl + User.avatarUrl). Report-only por padrão; só apaga com
+// delete=true, e mesmo assim respeita uma carência (não toca em upload recente que
+// ainda não foi salvo no banco). Loga tudo — sem corte silencioso.
+export async function purgeOrphanImages(opts: { delete?: boolean; graceHours?: number } = {}): Promise<OrphanResult> {
+  const sb = supabase();
+  const cutoff = Date.now() - (opts.graceHours ?? 24) * 3600 * 1000;
+
+  const [imgs, users] = await Promise.all([
+    db.listingImage.findMany({ select: { url: true, thumbUrl: true } }),
+    db.user.findMany({ where: { avatarUrl: { not: null } }, select: { avatarUrl: true } }),
+  ]);
+  const referenced = new Set<string>();
+  const add = (u?: string | null) => { const p = u ? pathFromPublicUrl(u) : null; if (p) referenced.add(p); };
+  imgs.forEach((i) => { add(i.url); add(i.thumbUrl); });
+  users.forEach((u) => add(u.avatarUrl));
+
+  // Lista o bucket: pastas (ano) no topo, arquivos dentro de cada uma.
+  let scanned = 0;
+  const orphanPaths: string[] = [];
+  const folders = await sb.storage.from(BUCKET).list('', { limit: 1000 });
+  for (const folder of folders.data ?? []) {
+    if (folder.id !== null) continue; // null id = pasta
+    let offset = 0;
+    for (;;) {
+      const page = await sb.storage.from(BUCKET).list(folder.name, { limit: 1000, offset });
+      const files = page.data ?? [];
+      if (!files.length) break;
+      for (const f of files) {
+        if (f.id === null) continue;
+        scanned++;
+        const path = `${folder.name}/${f.name}`;
+        const createdMs = f.created_at ? new Date(f.created_at).getTime() : 0;
+        if (!referenced.has(path) && createdMs < cutoff) orphanPaths.push(path);
+      }
+      if (files.length < 1000) break;
+      offset += files.length;
+    }
+  }
+
+  let deleted = 0;
+  if (opts.delete && orphanPaths.length) {
+    // remove em lotes de 100
+    for (let i = 0; i < orphanPaths.length; i += 100) {
+      const batch = orphanPaths.slice(i, i + 100);
+      const { error } = await sb.storage.from(BUCKET).remove(batch);
+      if (!error) deleted += batch.length;
+    }
+  }
+  return { scanned, referenced: referenced.size, orphans: orphanPaths.length, deleted, sample: orphanPaths.slice(0, 10) };
 }
 
 // Host oficial do storage (derivado do SUPABASE_URL).

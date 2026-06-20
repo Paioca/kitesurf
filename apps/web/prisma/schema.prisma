@@ -165,9 +165,10 @@ model Listing {
   favoritedBy   Favorite[]
   requests      Request[]
 
+  @@index([userId]) // perfil, meus anúncios, ownership
   @@index([categoryId])
   @@index([city])
-  @@index([status])
+  @@index([status, deletedAt]) // filtro base de toda busca (active + não-excluído)
   @@index([attributes], type: Gin) // busca por tamanho etc.
 }
 
