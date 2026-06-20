@@ -25,50 +25,56 @@ function Thumb({ src }: { src: string | null }) {
   return <div style={{ width: 56, height: 56, borderRadius: 10, flex: 'none', backgroundImage: src ? `url("${src}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', border: `1px solid ${color.line}` }} />;
 }
 
-export default async function Pedidos() {
+export default async function Pedidos({ searchParams }: { searchParams: { tab?: string } }) {
   const user = await getCurrentUser();
   if (!user) redirect('/entrar?next=%2Fpedidos');
   const { incoming, outgoing } = await getRequestsForUser(user.id);
   const novos = incoming.filter((r) => r.status === 'pending').length;
+  const tab: 'received' | 'sent' = searchParams?.tab === 'sent' ? 'sent' : 'received';
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Pedidos</h1>
-      <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 24 }}>Ofertas e visitas. Ao aceitar, seu WhatsApp é liberado pro comprador.</div>
+      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
+      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px, 5vw, 38px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 22px' }}>Pedidos</h1>
 
-      <SectionTitle>Recebidos{novos > 0 ? ` · ${novos} novo${novos > 1 ? 's' : ''}` : ''}</SectionTitle>
-      {incoming.length === 0 ? <Empty>Nenhum pedido recebido ainda.</Empty> : incoming.map((r) => (
-        <Row key={r.id}>
-          <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ marginBottom: 5 }}><TypeTag type={r.type} /></div>
-              <div style={titleTxt}>{r.listing.title}</div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
-              <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name} · {ST[r.status]}</div>
-            </div>
-          </a>
-          {r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
-          {r.status === 'pending' && <RequestActions id={r.id} />}
-          {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
-        </Row>
-      ))}
+      {/* abas */}
+      <div style={{ display: 'flex', gap: 6, background: '#ece3d2', borderRadius: 13, padding: 5, marginBottom: 24, maxWidth: 380 }}>
+        <a href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 && <span style={tabBadge}>{novos}</span>}</a>
+        <a href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados</a>
+      </div>
 
-      <div style={{ height: 28 }} />
-      <SectionTitle>Enviados</SectionTitle>
-      {outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem pediu visitas.</Empty> : outgoing.map((r) => (
-        <Row key={r.id}>
-          <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ marginBottom: 5 }}><TypeTag type={r.type} /></div>
-              <div style={titleTxt}>{r.listing.title}</div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
-              <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name} · {STO[r.status]}</div>
-            </div>
-          </a>
-          {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
-          {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
-        </Row>
-      ))}
+      {tab === 'received' ? (
+        incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : incoming.map((r) => (
+          <Row key={r.id}>
+            <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} received /></div>
+                <div style={titleTxt}>{r.listing.title}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
+                <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
+              </div>
+            </a>
+            {r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
+            {r.status === 'pending' && <RequestActions id={r.id} />}
+            {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
+          </Row>
+        ))
+      ) : (
+        outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : outgoing.map((r) => (
+          <Row key={r.id}>
+            <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} /></div>
+                <div style={titleTxt}>{r.listing.title}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
+                <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
+              </div>
+            </a>
+            {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
+            {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
+          </Row>
+        ))
+      )}
     </div>
   );
 
@@ -96,5 +102,15 @@ function TypeTag({ type }: { type: string }) {
   const offer = type === 'offer';
   return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#fdf0e1', color: offer ? color.primary : '#b06a1f' }}>{offer ? 'Oferta' : 'Visita'}</span>;
 }
-function SectionTitle({ children }: { children: React.ReactNode }) { return <div style={{ fontFamily: font.serif, fontSize: 19, fontWeight: 600, marginBottom: 12 }}>{children}</div>; }
-function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px' }}>{children}</div>; }
+function StatusBadge({ status, completed, received }: { status: string; completed?: boolean; received?: boolean }) {
+  let label = '', fg = '', bg = '';
+  if (completed) { label = 'Concluído'; fg = '#15463b'; bg = '#cfe3d9'; }
+  else if (status === 'declined') { label = 'Recusada'; fg = '#9a5040'; bg = '#fbeae4'; }
+  else if (status === 'accepted') { label = 'Aceito'; fg = color.primary; bg = '#e8f1ec'; }
+  else { label = received ? 'Novo' : 'Enviado'; fg = '#8a6a3a'; bg = '#f3e7d3'; }
+  return <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, color: fg, background: bg }}>{label}</span>;
+}
+function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px', textAlign: 'center', border: '1px dashed #d3ccbd', borderRadius: 16 }}>{children}</div>; }
+const segOn: React.CSSProperties = { flex: 1, textAlign: 'center', background: '#fff', color: color.ink, borderRadius: 9, padding: 11, fontFamily: font.sans, fontSize: 14, fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
+const segOff: React.CSSProperties = { ...segOn, background: 'transparent', color: color.inkMute, fontWeight: 600, boxShadow: 'none' };
+const tabBadge: React.CSSProperties = { background: '#c0492f', color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };

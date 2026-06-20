@@ -15,17 +15,22 @@ export default async function Favoritos() {
   if (!user) redirect('/entrar?next=%2Ffavoritos');
   const items = await getFavorites(user.id);
 
+  const countLabel = items.length === 0 ? 'Nenhum anúncio salvo' : `${items.length} ${items.length === 1 ? 'anúncio salvo' : 'anúncios salvos'}`;
+
   const empty = (
-    <div style={{ textAlign: 'center', padding: '60px 20px', border: '1px dashed #d3ccbd', borderRadius: 16 }}>
-      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.inkFaint2, marginBottom: 14 }}>Você ainda não salvou nenhum anúncio.</div>
-      <a href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>Explorar equipamento</a>
+    <div style={{ textAlign: 'center', padding: '72px 20px', border: '1px dashed #d3ccbd', borderRadius: 18 }}>
+      <div style={{ fontSize: 40, color: color.accent, marginBottom: 14, lineHeight: 1 }}>♡</div>
+      <div style={{ fontFamily: font.serif, fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Nada salvo ainda</div>
+      <p style={{ fontSize: 15, color: color.inkMute, margin: '0 auto 24px', maxWidth: 360, lineHeight: 1.5 }}>Toque no coração de um anúncio pra guardar aqui e acompanhar o preço.</p>
+      <a href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700 }}>Explorar equipamento</a>
     </div>
   );
 
   const head = (
     <>
-      <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Favoritos</h1>
-      <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 20 }}>{items.length} salvo(s)</div>
+      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Seu radar de vento</div>
+      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(30px, 5vw, 42px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 6px' }}>Favoritos</h1>
+      <div style={{ fontSize: 15.5, color: color.inkMute, marginBottom: 28 }}>{countLabel}</div>
     </>
   );
 
