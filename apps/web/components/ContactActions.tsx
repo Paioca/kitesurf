@@ -19,7 +19,8 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
 
-  // Retoma a oferta/visita guardada antes do login (re-dispara assim que volta logado).
+  // Retoma a oferta/visita digitada antes do login. NÃO reenvia sozinho — restaura o
+  // formulário preenchido pra um clique explícito (não disparar dinheiro sem querer).
   useEffect(() => {
     let raw: string | null = null;
     try { raw = sessionStorage.getItem(PENDING_KEY(listingId)); } catch {}
@@ -27,8 +28,14 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
     try { sessionStorage.removeItem(PENDING_KEY(listingId)); } catch {}
     let pend: { type: 'offer' | 'visit'; amount: number | null };
     try { pend = JSON.parse(raw); } catch { return; }
-    if (pend.type === 'offer' && !initial.offer) send('offer', pend.amount ?? undefined);
-    else if (pend.type === 'visit' && !initial.visit) send('visit');
+    if (pend.type === 'offer' && !initial.offer) {
+      if (pend.amount != null) setAmount(String(Math.round(pend.amount / 100)));
+      setCiente(true); // já tinha concordado antes do login; falta só o clique de confirmar
+      setShowOffer(true);
+    } else if (pend.type === 'visit' && !initial.visit) {
+      setCiente(true);
+      setConfirmVisit(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
