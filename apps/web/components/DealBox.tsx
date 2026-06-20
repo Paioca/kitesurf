@@ -18,9 +18,11 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   const [tags, setTags] = useState<string[]>([]);
   const [comment, setComment] = useState('');
   const [err, setErr] = useState('');
+  // ação irreversível aguardando confirmação inline (marcar vendido / confirmar compra / cancelar)
+  const [pending, setPending] = useState<{ label: string; run: () => void } | null>(null);
 
   async function call(url: string, body?: any) {
-    setBusy(true); setErr('');
+    setBusy(true); setErr(''); setPending(null);
     try {
       const res = await fetch(url, { method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
       if (res.ok) window.location.reload();
@@ -28,27 +30,48 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     } catch { setErr('Sem conexão.'); setBusy(false); }
   }
 
+  const ask = (label: string, run: () => void) => { setErr(''); setPending({ label, run }); };
+
   const reviewing = role === 'seller' ? 'o comprador' : 'o vendedor';
   const tagOptions = role === 'seller' ? BUYER_TAGS : SELLER_TAGS;
   const toggleTag = (t: string) => setTags((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
 
   // --- confirmação (marcar vendido / confirmar compra) ---
+  // 'cancelled' = vendedor desmarcou; volta a se comportar como "sem negócio".
+  const noDeal = !deal || deal.status === 'cancelled';
   let confirm: React.ReactNode = null;
-  if (!deal) {
+  if (noDeal) {
     confirm = role === 'seller'
-      ? <button onClick={() => call(`/api/requests/${requestId}/sold`)} disabled={busy} style={btn}>Marcar como vendido</button>
+      ? <>
+          {deal?.status === 'cancelled' && <div style={muted}>Venda cancelada. Você pode marcar de novo quando quiser.</div>}
+          <button onClick={() => ask('Confirmar que vendeu este item? Isso inicia o negócio com este comprador.', () => call(`/api/requests/${requestId}/sold`))} disabled={busy} style={btn}>Marcar como vendido</button>
+        </>
       : <div style={muted}>Quando o vendedor marcar a venda, confirme aqui pra concluir o negócio.</div>;
   } else if (deal.status === 'completed') {
     confirm = <div style={{ fontSize: 13, fontWeight: 700, color: color.primary }}>Negócio concluído ✓</div>;
   } else if (deal.status === 'seller_confirmed') {
     confirm = role === 'seller'
-      ? <div style={muted}>Você marcou como vendido · aguardando o comprador confirmar.</div>
-      : <button onClick={() => call(`/api/deals/${deal.id}/confirm`)} disabled={busy} style={btn}>Confirmar que comprei</button>;
+      ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={muted}>Você marcou como vendido · aguardando o comprador confirmar.</div>
+          <button onClick={() => ask('Cancelar a venda marcada? O negócio volta atrás e você pode marcar de novo.', () => call(`/api/deals/${deal.id}/cancel`))} disabled={busy} style={btnGhost}>Cancelar venda</button>
+        </div>
+      : <button onClick={() => ask('Confirmar que você comprou? O anúncio será marcado como vendido — não dá pra desfazer.', () => call(`/api/deals/${deal.id}/confirm`))} disabled={busy} style={btn}>Confirmar que comprei</button>;
   }
 
-  // --- avaliação padronizada (liberada assim que o deal existe) ---
+  // barra de confirmação inline pra ações irreversíveis
+  const confirmBar = pending ? (
+    <div style={{ background: '#f3f1e9', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 12.5, color: color.ink, lineHeight: 1.4 }}>{pending.label}</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => pending.run()} disabled={busy} style={{ ...btn, marginTop: 0, flex: 1 }}>Sim, confirmar</button>
+        <button onClick={() => setPending(null)} disabled={busy} style={{ ...btnGhost, flex: 1 }}>Voltar</button>
+      </div>
+    </div>
+  ) : null;
+
+  // --- avaliação padronizada (liberada assim que o deal existe; não em cancelado) ---
   let review: React.ReactNode = null;
-  if (deal) {
+  if (deal && deal.status !== 'cancelled') {
     if (deal.myReviewDone) {
       review = <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ {deal.status === 'completed' ? '· já está pública' : '· fica pública quando os dois confirmarem'}</div>;
     } else {
@@ -87,7 +110,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {liberado && <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Aceito — contato liberado</div>}
-      {confirm}
+      {pending ? confirmBar : confirm}
       {review && <div style={confirm ? { paddingTop: 12, borderTop: `1px solid ${color.line}` } : undefined}>{review}</div>}
       {note}
       {err && <div style={errStyle}>{err}</div>}
@@ -96,5 +119,6 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
 }
 
 const btn: React.CSSProperties = { background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '11px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', marginTop: 4 };
+const btnGhost: React.CSSProperties = { background: '#fff', color: color.ink, border: `1.5px solid ${color.lineInput}`, borderRadius: 10, padding: '10px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer' };
 const muted: React.CSSProperties = { fontSize: 12.5, color: color.inkFaint2 };
 const errStyle: React.CSSProperties = { color: '#b3261e', fontSize: 12.5 };

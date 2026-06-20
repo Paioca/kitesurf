@@ -70,6 +70,18 @@ export async function confirmPurchase(userId: string, dealId: string) {
   });
 }
 
+// Vendedor desfaz uma venda marcada por engano (antes do comprador confirmar).
+// Zera os confirmados → o deal vira 'cancelled' e o vendedor pode marcar de novo
+// (confirmSaleFromRequest reativa um deal sem sellerConfirmedAt). Listing não muda:
+// só vira 'sold' no confirmPurchase, que aqui ainda não aconteceu.
+export async function cancelSale(userId: string, dealId: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.sellerId !== userId) throw new DealError('Só o vendedor pode cancelar a venda.', 403);
+  if (deal.status !== 'seller_confirmed') throw new DealError('Só dá pra cancelar uma venda ainda não concluída.', 400);
+  await db.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, buyerConfirmedAt: null } });
+}
+
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA
 // só quando o deal vira completed (os dois confirmam) — filtro em getProfile.
 export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {
