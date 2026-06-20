@@ -2,7 +2,7 @@
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, pageHref, toggleHref, hasAnyFilter, SIZES, SPOTS, type SP } from '../lib/filters';
+import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, SIZES, SPOTS, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -33,7 +33,8 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'} em Cumbuco e região`;
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
-  const landing = !hasAnyFilter(sp);
+  const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
+  const landing = !hasAnyFilter(sp) && !browseFlag;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
     { value: 'kite', label: 'Kite', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
@@ -200,6 +201,7 @@ function Hero() {
           <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
           <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 520 }}>Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário e sem chat de spam.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
+            <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
             <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
             <HeroSelect name="city" label="Spot" placeholder="Todos" options={SPOT_OPTS} last />
@@ -293,7 +295,7 @@ function EmptyState({ empty, sp, big }: { empty: boolean; sp: SP; big?: boolean 
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: big ? 19 : 16, color: color.inkFaint2, marginBottom: 14 }}>
         {empty ? 'Ainda não há anúncios por aqui.' : 'Nada com esses filtros.'}
       </div>
-      <a href={empty ? '/anunciar' : clearHref(sp)} style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>
+      <a href={empty ? '/anunciar' : clearFiltersHref(sp)} style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>
         {empty ? 'Anunciar o primeiro' : 'Limpar filtros'}
       </a>
     </div>

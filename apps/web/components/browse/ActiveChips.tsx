@@ -1,7 +1,7 @@
 // Faixa de filtros ativos — pílulas removíveis acima do grid (handoff v2).
 // Cada pílula leva ao href que desliga aquele valor; "Limpar tudo" zera (preserva sort).
 import { color, font } from '../../lib/tokens';
-import { toggleHref, setHref, clearHref, PRICE_LABELS, CAT_LABEL, type SP } from '../../lib/filters';
+import { toggleHref, setHref, clearFiltersHref, PRICE_LABELS, CAT_LABEL, type SP } from '../../lib/filters';
 import type { Facets, Facet } from '../../lib/browse';
 
 type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[]; cond: string[]; bladder: string[]; mang: string[]; delivery: string[] };
@@ -35,7 +35,7 @@ export function ActiveChips({ sp, facets, filters }: { sp: SP; facets: Facets; f
           <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: 999, background: 'rgba(255,255,255,0.18)', fontSize: 12, lineHeight: 1 }}>×</span>
         </a>
       ))}
-      <a href={clearHref(sp)} style={{ fontFamily: font.sans, fontSize: 13, fontWeight: 700, color: color.primary, textDecoration: 'none', padding: '7px 13px', border: `1px solid ${color.lineChip}`, borderRadius: 999 }}>Limpar filtros</a>
+      <a href={clearFiltersHref(sp)} style={{ fontFamily: font.sans, fontSize: 13, fontWeight: 700, color: color.primary, textDecoration: 'none', padding: '7px 13px', border: `1px solid ${color.lineChip}`, borderRadius: 999 }}>Limpar filtros</a>
     </div>
   );
 }

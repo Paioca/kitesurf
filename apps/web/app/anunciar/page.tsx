@@ -105,9 +105,7 @@ export default function Criar() {
   const isKit = kind === 'kit';
   const mainCat = kind === 'barra' ? barraCat : kiteCat; // categoria primária enviada
   const mainProps = mainCat?.attributeSchema?.properties ?? {};
-  const mainRequired = mainCat?.attributeSchema?.required ?? [];
   const barraProps = barraCat?.attributeSchema?.properties ?? {};
-  const barraRequired = barraCat?.attributeSchema?.required ?? [];
   const showKitePhotos = kind === 'kite' || kind === 'kit';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
   const kitePhotos = images.filter((i) => i.component === 'kite');
@@ -150,9 +148,12 @@ export default function Criar() {
     } catch (e: any) { setError(e.message); } finally { setUploading(false); }
   }
 
-  const fichaOk = !!kind
-    && mainRequired.every((k) => attrs[k] != null && attrs[k] !== '')
-    && (isKit ? barraRequired.every((k) => barraAttrs[k] != null && barraAttrs[k] !== '') : true);
+  // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
+  // além de marca, ano e modelo (modelo só quando a marca tem modelos cadastrados).
+  const headOk = !!brandId && (kind === 'barra' || (!!year && ((brand?.models?.length ?? 0) === 0 || !!modelId)));
+  const fichaOk = !!kind && headOk
+    && Object.keys(mainProps).every((k) => attrs[k] != null && attrs[k] !== '')
+    && (isKit ? Object.keys(barraProps).every((k) => barraAttrs[k] != null && barraAttrs[k] !== '') : true);
   const photosOk = images.length >= 3 && (isKit ? kitePhotos.length >= 1 && barraPhotos.length >= 1 : true);
   const priceOk = Number(price) > 0
     && (!sellKiteAlone || Number(kitePrice) > 0)
@@ -300,16 +301,16 @@ export default function Criar() {
               {kind && (
                 <>
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
-                    <Cell><Label>Marca</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
-                    {kind !== 'barra' && <Cell><Label>Modelo</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
-                    {kind !== 'barra' && <Cell><Label>Ano</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 16 }, (_, i) => 2027 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
+                    <Cell><Label>Marca *</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
+                    {kind !== 'barra' && <Cell><Label>Modelo *</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
+                    {kind !== 'barra' && <Cell><Label>Ano *</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 16 }, (_, i) => 2027 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
-                    <Fields props={mainProps} required={mainRequired} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
+                    <Fields props={mainProps} required={Object.keys(mainProps)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
                   </div>
                   {isKit && (
                     <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
                       <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
-                      <Fields props={barraProps} required={barraRequired} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                      <Fields props={barraProps} required={Object.keys(barraProps)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
                     </div>
                   )}
                   {autoTitle && (
@@ -452,8 +453,13 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
               </select>
             ) : spec.type === 'boolean' ? (
               <select className="kl-select" value={String(!!values[key])} onChange={(e) => onChange(key, e.target.value === 'true')}><option value="false">Não</option><option value="true">Sim</option></select>
+            ) : spec.type === 'number' || spec.type === 'integer' ? (
+              <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value === '' ? '' : Number(e.target.value))}>
+                <option value="">—</option>
+                {Array.from({ length: 11 }, (_, i) => i).map((n) => <option key={n} value={n}>{n === 0 ? 'Nenhum' : n}</option>)}
+              </select>
             ) : (
-              <input className="kl-input" type={spec.type === 'number' || spec.type === 'integer' ? 'number' : 'text'} value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
+              <input className="kl-input" type="text" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
             )}
           </Cell>
         );

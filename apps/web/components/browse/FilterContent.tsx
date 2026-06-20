@@ -2,7 +2,7 @@
 // e dentro do bottom sheet mobile. Tamanho + Categoria como chips (os "aha"),
 // resto como linhas com contador. Seções sem opção (count 0) não aparecem.
 import { color, font, radius } from '../../lib/tokens';
-import { clearHref, setHref, toggleHref, type SP } from '../../lib/filters';
+import { clearFiltersHref, setHref, toggleHref, type SP } from '../../lib/filters';
 import type { Facets } from '../../lib/browse';
 import { SectionLabel } from '../ui';
 
@@ -13,7 +13,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h2 style={{ fontFamily: font.serif, fontSize: 22, fontWeight: 600, margin: 0 }}>Filtros</h2>
-        <a href={clearHref(sp)} style={{ fontSize: 13, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Limpar</a>
+        <a href={clearFiltersHref(sp)} style={{ fontSize: 13, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Limpar</a>
       </div>
 
       {facets.category.length > 0 && (

@@ -59,7 +59,7 @@ function toQuery(sp: Record<string, string>): string {
 
 function current(sp: SP): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort']) {
+  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort', 'b']) {
     const v = one(sp, k);
     if (v) out[k] = v;
   }
@@ -93,9 +93,16 @@ export function pageHref(sp: SP, page: number): string {
   return toQuery(cur);
 }
 
+// limpa TUDO → volta à landing (usado pelo "Todos" da landing)
 export function clearHref(sp: SP): string {
   const sort = one(sp, 'sort');
   return toQuery(sort ? { sort } : {});
+}
+
+// limpa os filtros mas FICA na busca (grid + sidebar) — flag b=1 mantém a visão
+export function clearFiltersHref(sp: SP): string {
+  const sort = one(sp, 'sort');
+  return toQuery({ b: '1', ...(sort ? { sort } : {}) });
 }
 
 export function hasAnyFilter(sp: SP): boolean {
