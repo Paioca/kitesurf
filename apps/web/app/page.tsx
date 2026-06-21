@@ -56,7 +56,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <Image src="/hero-beach.jpg" alt="" fill priority sizes="430px" style={{ objectFit: 'cover' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.gold, marginBottom: 4 }}>Cumbuco · Ceará</div>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Cumbuco · Ceará</div>
               <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamento de kite<br />com confiança</h1>
               <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Contato pelo WhatsApp; pagamento e entrega são combinados entre as partes.</p>
             </div>
@@ -200,7 +200,7 @@ function Hero() {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.gold, marginBottom: 22 }}>Cumbuco · Ceará · o hub do kite no Brasil</div>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Cumbuco · Ceará · o hub do kite no Brasil</div>
           <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
           <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 560 }}>Compre e venda kite e barra com telefone verificado, ficha padronizada e histórico de negócios. O contato segue pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
@@ -208,7 +208,7 @@ function Hero() {
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
             <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
             <HeroSelect name="city" label="Cidade" placeholder="Todos" options={SPOT_OPTS} last />
-            <button type="submit" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
+            <button type="submit" className="kl-lift" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
           </form>
         </div>
       </div>
@@ -240,7 +240,7 @@ function Trust() {
     { title: 'Contato estruturado', desc: 'O comprador envia seu contato no pedido; o vendedor libera o WhatsApp ao demonstrar interesse.' },
   ];
   return (
-    <section id="trust" style={{ background: '#ece3d2' }}>
+    <section id="trust" className="kl-reveal" style={{ background: '#ece3d2' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 auto 60px', textAlign: 'center' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 14 }}>Por que é tranquilo</div>
@@ -270,7 +270,7 @@ function Flow() {
     { n: '4', title: 'Confirmem e avaliem', desc: 'Depois de fechar, os dois confirmam aqui. A venda entra no histórico e as avaliações podem ficar públicas.' },
   ];
   return (
-    <section style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,90px) 32px' }}>
+    <section className="kl-reveal" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,90px) 32px' }}>
       <div style={{ maxWidth: 600, margin: '0 0 40px' }}>
         <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Como funciona</div>
         <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(30px,4.2vw,44px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 16px', lineHeight: 1.02 }}>Do anúncio ao negócio fechado</h2>

@@ -30,5 +30,5 @@ export function FilterSheet({ activeCount, children }: { activeCount: number; ch
 }
 
 const trigger: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: color.primary, color: '#fff', border: 'none', borderRadius: radius.btn, padding: 13, fontFamily: font.sans, fontSize: 14, fontWeight: 700, cursor: 'pointer' };
-const badge: React.CSSProperties = { background: color.accent, color: color.accentInk, fontSize: 11, fontWeight: 800, minWidth: 19, height: 19, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
+const badge: React.CSSProperties = { background: color.primary, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 19, height: 19, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
 const sheet: React.CSSProperties = { position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, bottom: 0, zIndex: 41, background: color.bg, borderRadius: '22px 22px 0 0', maxHeight: '86%', overflowY: 'auto', padding: '8px 20px 24px' };

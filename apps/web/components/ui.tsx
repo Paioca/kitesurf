@@ -1,6 +1,6 @@
 'use client';
 
-// Primitivos do design system Kite Life. Telas compõem a partir daqui —
+// Primitivos do design system Kitetropos. Telas compõem a partir daqui —
 // nada de reescrever estilo inline solto. Tokens em lib/tokens.ts.
 import { color, font, radius } from '../lib/tokens';
 

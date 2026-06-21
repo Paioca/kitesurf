@@ -71,4 +71,4 @@ const img: React.CSSProperties = { position: 'relative', overflow: 'hidden', bac
 const body: React.CSSProperties = { padding: 16, display: 'flex', flexDirection: 'column', flex: 1 };
 const sizeBadge: React.CSSProperties = { position: 'absolute', top: 12, left: 12, background: color.primaryDeep, color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999 };
 const deliveryTag: React.CSSProperties = { position: 'absolute', bottom: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.94)', padding: '5px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: color.ink };
-const comboBadge: React.CSSProperties = { position: 'absolute', bottom: 12, right: 12, background: color.gold, color: color.primaryDeep, fontSize: 11.5, fontWeight: 800, padding: '5px 11px', borderRadius: 999, letterSpacing: '0.2px' };
+const comboBadge: React.CSSProperties = { position: 'absolute', bottom: 12, right: 12, background: color.primary, color: '#fff', fontSize: 11.5, fontWeight: 800, padding: '5px 11px', borderRadius: 999, letterSpacing: '0.2px' };

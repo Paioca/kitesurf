@@ -36,7 +36,7 @@ export function LegalPage({
       {/* Hero band */}
       <div style={{ background: color.dark, color: '#fff' }}>
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '54px 24px' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.gold, marginBottom: 12 }}>Documento legal</div>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 12 }}>Documento legal</div>
           <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(30px, 7vw, 46px)', fontWeight: 900, letterSpacing: '-1px', textTransform: 'uppercase', margin: '0 0 14px' }}>{title}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: '#9fb6ab' }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: color.accent }} />

@@ -1,4 +1,4 @@
-// Header desktop Kite Life. Server-compatible.
+// Header desktop Kitetropos. Server-compatible.
 import { color, radius } from '../lib/tokens';
 import { Logo } from './ui';
 import { AccountNav } from './AccountNav';
@@ -12,7 +12,7 @@ export function SiteHeader() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <HeaderNav />
           <AccountNav />
-          <a href="/anunciar" style={{ fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar</a>
+          <a href="/anunciar" className="kl-lift" style={{ display: 'inline-block', fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar</a>
         </div>
       </div>
     </header>

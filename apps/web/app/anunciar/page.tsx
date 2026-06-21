@@ -1,6 +1,6 @@
 'use client';
 
-// Criar anúncio — wizard, design Kite Life. MVP: Kite, Barra ou Kite+Barra (kit).
+// Criar anúncio — wizard, design Kitetropos (Design Book v2). MVP: Kite, Barra ou Kite+Barra (kit).
 // Kit = anúncio de kite com hasBarra: seções de ficha/fotos por peça + 3 preços
 // (conjunto / kite avulso / barra avulsa). Cookie auth. Fase 0 sem escrow.
 import { useEffect, useMemo, useRef, useState } from 'react';

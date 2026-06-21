@@ -1,6 +1,6 @@
 'use client';
 
-// Cadastro / Entrar — design Kite Life (handoff Entrar.dc.html).
+// Cadastro / Entrar — design Kitetropos (handoff Entrar.dc.html).
 // Fluxo: telefone -> OTP -> perfil (foto obrigatória) -> pronto. Sessão em cookie.
 import { useEffect, useRef, useState } from 'react';
 import { downscaleImage } from '../../lib/resizeImage';

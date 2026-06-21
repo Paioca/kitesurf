@@ -1,4 +1,4 @@
-// Detalhe do anúncio — design Kite Life (handoff Anuncio.dc.html). Server-rendered.
+// Detalhe do anúncio — design Kitetropos (handoff Anuncio.dc.html). Server-rendered.
 // Adaptação Fase 0: sem escrow/checkout. CTA = conversar. Sem rating falso.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -192,7 +192,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           {isKit && (
             <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-                <span style={{ background: color.gold, color: color.primaryDeep, fontSize: 11.5, fontWeight: 800, padding: '4px 10px', borderRadius: 999 }}>+ Barra</span>
+                <span style={{ background: '#e8f1ec', color: color.primary, fontSize: 11.5, fontWeight: 800, padding: '4px 10px', borderRadius: 999 }}>+ Barra</span>
                 <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600 }}>Barra que acompanha</div>
               </div>
               {barraPhotos.length > 0 && (
