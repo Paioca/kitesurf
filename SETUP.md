@@ -1,79 +1,59 @@
-# SETUP — rodar o Bloco 0 localmente
+# SETUP — rodar localmente
 
-Fundação do MVP: **monorepo npm workspaces** com `apps/api` (NestJS + Prisma) e
-`apps/web` (Next.js + Tailwind). Entrega do Bloco 0: **login OTP funciona + banco de pé**.
+App único **Next.js** (App Router + API routes + Prisma) em `apps/web`. O banco e o
+storage são o Supabase (mesmo de produção, no MVP — sem banco de staging ainda).
 
 ## Pré-requisitos
 
-- Node 20+ (você tem v25 ✅)
-- Postgres rodando localmente — duas opções abaixo.
+- Node 20+
+- Acesso ao Supabase do projeto (as URLs do banco)
 
-## 1. Subir o Postgres
-
-### Opção A — Docker (recomendado)
-```bash
-npm run db:up        # sobe Postgres via docker-compose
-```
-> Precisa do Docker Desktop instalado.
-
-### Opção B — Postgres.app (sem Docker, mais simples no Mac)
-1. Baixe https://postgresapp.com → inicie.
-2. Crie o banco: `createdb kite`
-3. Ajuste a `DATABASE_URL` no `.env` para o seu usuário:
-   `postgresql://SEU_USER@localhost:5432/kite?schema=public`
-
-## 2. Variáveis de ambiente
+## 1. Variáveis de ambiente
 
 ```bash
-cp .env.example .env
-cp .env.example apps/api/.env     # Prisma lê o .env da pasta da API
+cp .env.example apps/web/.env
 ```
-No MVP o OTP é **mockado**: o código aparece no log da API (`OTP_MOCK=true`).
 
-## 3. Instalar dependências
+Preencha `apps/web/.env` com as credenciais do Supabase (ver `.env.example`). No
+local o OTP é **mockado** (`OTP_MOCK=true`): o código aparece no log, sem SMS, e os
+números de teste (`+5585991000…`, `+5500…`) recebem o código direto na resposta.
+
+> Em produção `OTP_MOCK` e números de teste são ignorados — login exige SMS real
+> (Twilio).
+
+## 2. Instalar dependências
 
 ```bash
-npm install          # instala todos os workspaces
+npm install          # workspaces (só apps/web)
 ```
 
-## 4. Migrar + semear o banco
+## 3. Migrar + semear o banco
 
 ```bash
-npm run db:migrate   # cria as tabelas (Prisma)
-npm run db:seed      # popula taxonomia: 7 categorias + marcas/modelos
+cd apps/web
+npm run db:deploy    # aplica migrations (prod-safe) — ou db:migrate em dev
+npm run db:seed      # popula taxonomia + dados de exemplo
 ```
 
-## 5. Rodar
+## 4. Rodar
 
 ```bash
-npm run dev:api      # API em http://localhost:3001/api
-npm run dev:web      # Web em http://localhost:3000
-```
-(ou `npm run dev` pra subir os dois)
-
-## Testar o fluxo do Bloco 0
-
-1. Abra http://localhost:3000 → categorias aparecem (banco semeado ✅).
-2. Clique **Entrar** → informe um telefone com DDI (`+5585999999999`).
-3. Veja o código OTP no **log da API** → cole na tela.
-4. Conta nova → preenche nome/email/foto → conta criada, telefone verificado ✅.
-
-### Health check
-```bash
-curl http://localhost:3001/api/health    # {"status":"ok","db":"up"}
+npm run dev          # http://localhost:3000  (da raiz ou de apps/web)
 ```
 
----
+> `next dev` roda em modo development (o JWT usa fallback de dev). Já `npm run build`
+> roda como produção e **exige** `JWT_SECRET` forte no `.env` — senão trava no boot.
 
-## Onde isto está no roadmap
+## Testar o fluxo de login
 
-Bloco 0 (Semanas 1–2) de [docs/02-roadmap-12-semanas.md](docs/02-roadmap-12-semanas.md).
-Próximo: **Bloco 1 — Anúncios + Busca** (criação com taxonomia, upload com strip de
-EXIF/GPS, browse sem login, busca por tamanho).
+1. http://localhost:3000 → busca com anúncios semeados aparece.
+2. **Entrar** → telefone de teste `+5585991000001` (conta de demo seedada).
+3. O código OTP aparece no **log do dev server** (ou na resposta, p/ número de teste).
+4. Cole o código → logado.
 
-## Notas de decisão (defaults adotados)
+## Notas de decisão
 
-- **npm workspaces** em vez de pnpm (zero install extra).
-- **Prisma** como ORM (JSONB nativo pros `attributes` por categoria).
-- **PSP abstraído** — `PSP_PROVIDER=mock` até a escolha (Asaas/Pagar.me). O Bloco 3 pluga
-  o provider real sem reescrever o fluxo.
+- **npm workspaces** + **Prisma** (JSONB nativo pros `attributes` por categoria).
+- Sem chat/pagamento na plataforma (Fase 0): contato estruturado (oferta/visita) +
+  WhatsApp. `PSP_PROVIDER=mock`.
+- Deploy e variáveis de produção: ver [DEPLOY.md](DEPLOY.md).
