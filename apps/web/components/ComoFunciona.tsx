@@ -19,6 +19,7 @@ const SCENES = [
   { dur: 6200, no: '08', label: 'Avalie e gere reputação', sub: 'Confiança que fica pra comunidade' },
 ];
 const TOTAL = SCENES.reduce((a, s) => a + s.dur, 0);
+const SPEED = 1.3; // ritmo do loop (1 = original); >1 acelera tudo proporcionalmente
 
 const clamp = (x: number, a: number, b: number) => (x < a ? a : x > b ? b : x);
 const ease = (x: number) => { x = clamp(x, 0, 1); return (1 - Math.cos(Math.PI * x)) / 2; };
@@ -51,7 +52,7 @@ export function ComoFunciona() {
   }, []);
 
   // ---- timeline ----
-  const tt = t % TOTAL;
+  const tt = (t * SPEED) % TOTAL;
   let acc = 0, ci = 0, tin = 0;
   for (let i = 0; i < SCENES.length; i++) { if (tt < acc + SCENES[i].dur) { ci = i; tin = tt - acc; break; } acc += SCENES[i].dur; }
   const lp = tin / SCENES[ci].dur;
