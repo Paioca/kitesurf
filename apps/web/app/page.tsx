@@ -18,11 +18,11 @@ export const dynamic = 'force-dynamic';
 
 // OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
 export const metadata = {
-  title: 'Kitetropos — equipamento de kite, com confiança',
-  description: 'Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário, sem chat de spam. Começando em Cumbuco.',
+  title: 'Kitetropos — kite e barra com mais confiança',
+  description: 'Compre e venda kite e barra com telefone verificado, ficha padronizada e histórico de negócios. Contato pelo WhatsApp, começando em Cumbuco.',
   openGraph: {
-    title: 'Kitetropos — equipamento de kite, com confiança',
-    description: 'Marketplace de equipamento de kitesurf do Brasil. Compre e venda sem medo do golpe.',
+    title: 'Kitetropos — kite e barra com mais confiança',
+    description: 'Telefone verificado, anúncios padronizados e contato pelo WhatsApp. Começando em Cumbuco.',
     images: ['/hero-beach.jpg'],
     type: 'website',
   },
@@ -58,6 +58,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
               <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.gold, marginBottom: 4 }}>Cumbuco · Ceará</div>
               <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamento de kite<br />com confiança</h1>
+              <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Contato pelo WhatsApp; pagamento e entrega são combinados entre as partes.</p>
             </div>
           </div>
 
@@ -201,7 +202,7 @@ function Hero() {
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.gold, marginBottom: 22 }}>Cumbuco · Ceará · o hub do kite no Brasil</div>
           <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 520 }}>Compre e venda kite e barra sem medo do golpe. Telefone verificado, reputação real e contato direto — sem intermediário e sem chat de spam.</p>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 560 }}>Compre e venda kite e barra com telefone verificado, ficha padronizada e histórico de negócios. O contato segue pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
@@ -233,18 +234,18 @@ function HeroSelect({ name, label, placeholder, options, accent, last }: { name:
 // ---------- TRUST ----------
 function Trust() {
   const pillars = [
-    { title: 'Telefone verificado', desc: 'Um número, uma conta. Verificação por código (OTP).' },
-    { title: 'Instagram conectado', desc: 'A comunidade vive no IG. Um feed de kite de anos passa confiança de verdade.' },
-    { title: 'Reviews reais', desc: 'Só quem fechou negócio avalia. Reputação que não dá pra inflar.' },
-    { title: 'Contato sem spam', desc: 'Oferta e visita têm passo de ciência. Proposta falsa leva a bloqueio.' },
+    { title: 'Telefone verificado', desc: 'Confirmação por código enviado por SMS. Um número por conta.' },
+    { title: 'Cidade e país no perfil', desc: 'Você sabe de onde a pessoa é antes de combinar a negociação.' },
+    { title: 'Avaliações de negócios', desc: 'A avaliação fica pública conforme a confirmação do negócio na plataforma.' },
+    { title: 'Contato estruturado', desc: 'O comprador envia seu contato no pedido; o vendedor libera o WhatsApp ao demonstrar interesse.' },
   ];
   return (
     <section id="trust" style={{ background: '#ece3d2' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 auto 60px', textAlign: 'center' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 14 }}>Por que é tranquilo</div>
-          <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(32px,4.5vw,46px)', fontWeight: 600, letterSpacing: '-0.5px', color: color.ink, margin: '0 0 18px', lineHeight: 1.04 }}>Compre sem medo do golpe</h2>
-          <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Identidade verificada, contato estruturado e reputação que não dá pra inflar. Golpista não circula por aqui.</p>
+          <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(32px,4.5vw,46px)', fontWeight: 600, letterSpacing: '-0.5px', color: color.ink, margin: '0 0 18px', lineHeight: 1.04 }}>Mais contexto para negociar com confiança</h2>
+          <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Telefone verificado, foto de perfil obrigatória, anúncios padronizados e avaliações ligadas a negócios confirmados.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40 }}>
           {pillars.map((p) => (
@@ -264,16 +265,16 @@ function Trust() {
 function Flow() {
   const steps = [
     { n: '1', title: 'Anuncie ou ache', desc: 'Ficha estruturada com tamanho e condição. A busca por tamanho funciona de verdade.' },
-    { n: '2', title: 'Oferta ou visita', desc: 'Mande uma oferta de valor ou agende uma visita pra testar no spot.' },
-    { n: '3', title: 'Fechem no WhatsApp', desc: 'O vendedor recebe seu contato por SMS. Combinam pagamento e entrega direto.' },
-    { n: '4', title: 'Avaliem', desc: 'Negócio concluído vira reputação. Os dois confirmam e a review fica pública.' },
+    { n: '2', title: 'Oferta ou visita', desc: 'Faça uma oferta ou peça uma visita para conhecer e testar o equipamento.' },
+    { n: '3', title: 'Conversem no WhatsApp', desc: 'O comprador compartilha seu contato no pedido. O vendedor libera o WhatsApp ao demonstrar interesse.' },
+    { n: '4', title: 'Confirmem e avaliem', desc: 'Depois de fechar, os dois confirmam aqui. A venda entra no histórico e as avaliações podem ficar públicas.' },
   ];
   return (
     <section style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,90px) 32px' }}>
       <div style={{ maxWidth: 600, margin: '0 0 40px' }}>
         <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Como funciona</div>
         <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(30px,4.2vw,44px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 16px', lineHeight: 1.02 }}>Do anúncio ao negócio fechado</h2>
-        <p style={{ fontSize: 17, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Sem pagamento na plataforma e sem chat livre. O contato é estruturado: oferta ou visita, e o resto rola no WhatsApp.</p>
+        <p style={{ fontSize: 17, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Anunciar e negociar é gratuito na Fase 0. A Kitetropos não processa pagamento nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
         {steps.map((f) => (

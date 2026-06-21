@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
+import { COUNTRY_NAMES, UFS } from '../../lib/geo';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 
@@ -20,6 +21,10 @@ export default function Entrar() {
   const [dial, setDial] = useState('+55'); // DDI do país — default Brasil
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [country, setCountry] = useState('Brasil');
+  const [city, setCity] = useState('');
+  const [uf, setUf] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [lang, setLang] = useState<'pt' | 'en'>('pt');
   const [error, setError] = useState('');
@@ -68,7 +73,7 @@ export default function Entrar() {
     setLoading(true);
     try {
       const body: any = { phone, code };
-      if (withProfile) Object.assign(body, { name, avatarUrl, locale: lang });
+      if (withProfile) Object.assign(body, { name, lastName, country, city, state: country === 'Brasil' ? uf : '', avatarUrl, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,8 +115,15 @@ export default function Entrar() {
     }
   }
 
-  // Foto obrigatória (anti-fake) + nome. E-mail é opcional — pedido depois, dentro da plataforma.
-  const canFinish = !!avatarUrl && name.trim().length >= 2;
+  // Foto obrigatória (anti-fake) + nome/sobrenome + país e cidade (estado/UF só pra Brasil).
+  // E-mail é opcional — pedido depois, dentro da plataforma.
+  const canFinish =
+    !!avatarUrl &&
+    name.trim().length >= 2 &&
+    lastName.trim().length >= 1 &&
+    !!country &&
+    city.trim().length >= 1 &&
+    (country !== 'Brasil' || !!uf);
 
   return (
     <div style={shell}>
@@ -184,7 +196,7 @@ export default function Entrar() {
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />Telefone verificado
               </div>
               <h1 style={h1}>Complete seu perfil</h1>
-              <p style={sub}>É o que dá cara de gente de verdade pro seu perfil.</p>
+              <p style={sub}>Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.</p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
                 <button onClick={() => fileRef.current?.click()} style={{ ...avatarBtn, ...(avatarUrl ? { border: 'none', backgroundImage: `url("${avatarUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}>
@@ -199,12 +211,41 @@ export default function Entrar() {
                 </div>
               </div>
 
-              <label style={lbl}>Nome</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Seu nome" style={{ ...input, width: '100%', marginBottom: 14 }} />
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={lbl}>Nome</label>
+                  <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" placeholder="Seu nome" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={lbl}>Sobrenome</label>
+                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" placeholder="Seu sobrenome" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              <label style={lbl}>País</label>
+              <select value={country} onChange={(e) => { setCountry(e.target.value); if (e.target.value !== 'Brasil') setUf(''); }} aria-label="País" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
+                {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: country === 'Brasil' ? 2 : 1, minWidth: 0 }}>
+                  <label style={lbl}>Cidade</label>
+                  <input value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" placeholder="Sua cidade" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+                </div>
+                {country === 'Brasil' && (
+                  <div style={{ flex: 'none', width: 96 }}>
+                    <label style={lbl}>Estado</label>
+                    <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado (UF)" style={{ ...input, width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}>
+                      <option value="">UF</option>
+                      {UFS.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
 
               <div style={{ fontSize: 12.5, color: '#9aa49d', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{ width: 13, height: 13, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none', marginTop: 2 }} />
-                E-mail e Instagram você adiciona depois, no seu perfil.
+                O e-mail você adiciona depois, no seu perfil.
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 26 }}>
@@ -216,7 +257,7 @@ export default function Entrar() {
               </div>
 
               <button onClick={() => verify(true)} disabled={!canFinish || loading} style={canFinish ? primaryBtn : disabledBtn}>
-                {loading ? '...' : canFinish ? 'Criar conta' : 'Adicione foto e nome'}
+                {loading ? '...' : canFinish ? 'Criar conta' : 'Complete seu perfil'}
               </button>
             </>
           )}
@@ -225,7 +266,7 @@ export default function Entrar() {
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
               <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Sua conta está pronta e verificada. Bons ventos. 🪁</p>
+              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta. Anunciar e negociar é gratuito na Fase 0.</p>
               <a href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</a>
               <a href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</a>
             </div>

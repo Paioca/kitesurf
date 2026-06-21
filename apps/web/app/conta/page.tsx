@@ -20,11 +20,12 @@ export default async function Conta() {
   // Conta = administrativo. Marketplace (Pedidos, Anúncios, Favoritos) fica no header/abas.
   const contact: { k: string; v: string; verified?: boolean; muted?: boolean }[] = [
     { k: 'Telefone / WhatsApp', v: user.phone, verified: user.phoneVerified },
+    { k: 'Cidade', v: [user.city, user.state].filter(Boolean).join(' · ') || 'não informado', muted: !user.city },
+    { k: 'País', v: user.country || 'não informado', muted: !user.country },
     { k: 'E-mail', v: user.email || 'não informado', muted: !user.email },
-    { k: 'Instagram', v: user.instagramHandle ? `@${user.instagramHandle}` : 'não informado', muted: !user.instagramHandle },
   ];
   const links: { href: string; label: string; desc: string }[] = [
-    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, e-mail, Instagram, idioma' },
+    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, cidade, e-mail, idioma' },
     { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar — editar, pausar, excluir (inclui pausados)' },
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
   ];
@@ -40,7 +41,7 @@ export default async function Conta() {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{user.name}</div>
           <div style={{ fontSize: 13, color: color.inkFaint2, marginTop: 2 }}>
-            {user.instagramHandle ? `@${user.instagramHandle} · ` : ''}membro desde {memberSince}
+            membro desde {memberSince}
           </div>
         </div>
       </div>
@@ -56,7 +57,7 @@ export default async function Conta() {
             </span>
           </div>
         ))}
-        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login e não muda. E-mail e Instagram você ajusta em Editar perfil.</div>
+        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login e não muda. Cidade e e-mail você ajusta em Editar perfil.</div>
       </div>
 
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>Conta</div>

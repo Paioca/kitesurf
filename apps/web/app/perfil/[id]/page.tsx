@@ -63,7 +63,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
           <div style={{ flex: 1, minWidth: 240, paddingBottom: 4 }}>
             <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>{user.name}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 14, color: color.inkMute }}>
-              {user.instagramHandle && <><span>@{user.instagramHandle}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
+              {/* Instagram oculto na Fase 0 (coluna preservada pra reativar) */}
               {sellerCity && <><span>{sellerCity}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
               <span>na Kitetropos desde {since}</span>
             </div>
@@ -81,7 +81,6 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
               <VerifiedRow on={user.phoneVerified} title="Telefone verificado" desc="1 número = 1 conta · confirmado por código" />
               <VerifiedRow on={user.emailVerified} title="E-mail verificado" desc="Para recuperar acesso e avisos" />
-              <VerifiedRow on={!!user.instagramHandle} title="Instagram informado" desc={user.instagramHandle ? `@${user.instagramHandle}` : 'não informado'} link={user.instagramHandle ? `https://instagram.com/${user.instagramHandle}` : undefined} />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>
