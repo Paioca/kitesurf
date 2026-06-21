@@ -247,19 +247,23 @@ function Trust() {
   return (
     <section id="trust" className="kl-reveal" style={{ background: '#ece3d2' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,96px) 32px' }}>
-        <div style={{ maxWidth: 620, margin: '0 auto 60px', textAlign: 'center' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 14 }}>Mais contexto antes de negociar</div>
-          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', color: color.ink, margin: '0 0 18px', lineHeight: 0.98 }}>Mais confiança em cada etapa</h2>
-          <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Telefone verificado, foto de perfil obrigatória, anúncios estruturados e avaliações ligadas a negócios confirmados.</p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40 }}>
-          {pillars.map((p) => (
-            <div key={p.title} style={{ textAlign: 'center' }}>
-              <div style={{ width: 46, height: 46, borderRadius: 999, background: '#fff', border: '1px solid #ddd2bd', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Diamond size={13} c={color.primary} r={2} /></div>
-              <div style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, color: color.ink, marginBottom: 10, letterSpacing: '-0.2px' }}>{p.title}</div>
-              <p style={{ fontSize: 14.5, lineHeight: 1.6, color: '#7c857c', margin: 0 }}>{p.desc}</p>
-            </div>
-          ))}
+        <div className="trust-grid">
+          {/* manchete editorial — à esquerda, dominante */}
+          <div>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.primary, marginBottom: 16 }}>Mais contexto antes de negociar</div>
+            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(38px,5.4vw,62px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.8px', color: color.ink, margin: '0 0 20px', lineHeight: 0.94 }}>Mais confiança em cada etapa</h2>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0, maxWidth: 420 }}>Telefone verificado, foto de perfil obrigatória, anúncios estruturados e avaliações ligadas a negócios confirmados.</p>
+          </div>
+          {/* pilares — grade 2×2 à direita, alinhados à esquerda, losango como bullet */}
+          <div className="trust-pillars">
+            {pillars.map((p) => (
+              <div key={p.title}>
+                <Diamond size={13} c={color.primary} r={2} />
+                <div style={{ fontFamily: font.serif, fontSize: 20, fontWeight: 600, color: color.ink, margin: '12px 0 8px', letterSpacing: '-0.2px' }}>{p.title}</div>
+                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: '#7c857c', margin: 0 }}>{p.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

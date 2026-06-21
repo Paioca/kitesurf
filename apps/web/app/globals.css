@@ -163,6 +163,29 @@ a {
   box-shadow: 0 0 0 3px rgba(31, 107, 92, 0.1);
 }
 
+/* Seção de confiança (home) — assimétrica: manchete editorial à esquerda, pilares
+   à direita (auditoria Premium: quebrar a simetria, alinhar à esquerda, escala). */
+.trust-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 44px;
+}
+.trust-pillars {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px 36px;
+}
+@media (min-width: 900px) {
+  .trust-grid {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 64px;
+    align-items: start;
+  }
+  .trust-pillars {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* NAV do Criar — fixa no rodapé no mobile (auditoria #05); inline no desktop */
 .criar-nav {
   position: fixed;
