@@ -16,7 +16,7 @@ export default function NotFound() {
       <main style={{ maxWidth: 560, margin: '0 auto', padding: 'clamp(60px,12vw,120px) 24px', textAlign: 'center' }}>
         <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Página não encontrada</div>
         <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(44px,9vw,72px)', fontWeight: 900, letterSpacing: '-2px', textTransform: 'uppercase', margin: '0 0 16px', lineHeight: 1 }}>404</h1>
-        <p style={{ fontSize: 16, lineHeight: 1.6, color: color.inkMute, margin: '0 0 28px' }}>Esse anúncio pode ter sido vendido ou removido. Bora te levar de volta pra busca.</p>
+        <p style={{ fontSize: 16, lineHeight: 1.6, color: color.inkMute, margin: '0 0 28px' }}>Esta página não está disponível. O anúncio pode ter sido vendido, arquivado ou removido.</p>
         <a href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', padding: '14px 26px', borderRadius: 12, fontSize: 15, fontWeight: 700 }}>Voltar à busca</a>
       </main>
       <Footer />

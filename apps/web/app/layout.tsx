@@ -6,8 +6,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'),
-  title: 'Kitetropos — More than kites',
-  description: 'Compra e venda de equipamento de kitesurf com confiança. Cumbuco.',
+  title: 'Kitetropos — kite e barra com mais confiança',
+  description: 'Compre e venda kite e barra com telefone verificado, ficha padronizada e contato pelo WhatsApp. Começando em Cumbuco.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
