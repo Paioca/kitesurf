@@ -43,8 +43,6 @@ model User {
   name            String
   lastName        String? // sobrenome (coletado no cadastro; legados ficam null)
   spot            String? // spot de interesse (lista controlada SPOTS) — perfil
-  city            String? // VESTIGIAL: substituído por spot (mantido nullable; podar depois)
-  state           String? // VESTIGIAL: substituído por spot (mantido nullable; podar depois)
   email           String?    @unique // opcional no cadastro; pedido depois
   emailVerified   Boolean    @default(false)
   phone           String     @unique
