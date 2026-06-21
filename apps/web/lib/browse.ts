@@ -137,7 +137,9 @@ function toCard(l: any, persp: Perspective): Card {
 }
 
 type Filters = ReturnType<typeof parseFilters>;
-const BASE: Prisma.ListingWhereInput = { status: 'active', deletedAt: null };
+// `category.active: true` esconde anúncios de categoria fora do MVP (desativada)
+// de toda busca/faceta — sem isso, desativar uma categoria não tira os anúncios dela do ar.
+const BASE: Prisma.ListingWhereInput = { status: 'active', deletedAt: null, category: { is: { active: true } } };
 
 // WHERE por perspectiva. Barra: barras compráveis (avulsa OU kit com barra avulsa),
 // filtro só por cidade (preço/marca/tamanho da barra ficam pra depois). Kite/all:
@@ -361,7 +363,7 @@ export async function getMyListings(userId: string): Promise<(Card & { status: s
 // Anúncios favoritados (ativos) do usuário, como cards.
 export async function getFavorites(userId: string): Promise<Card[]> {
   const favs = await db.favorite.findMany({
-    where: { userId, listing: { status: 'active', deletedAt: null } },
+    where: { userId, listing: { status: 'active', deletedAt: null, category: { is: { active: true } } } },
     orderBy: { createdAt: 'desc' },
     include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true } } },
   });

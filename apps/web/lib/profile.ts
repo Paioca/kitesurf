@@ -16,6 +16,8 @@ export const getProfile = cache(async (id: string) => {
   if (!user) return null;
 
   const reviewWhere = { reviewedId: id, deal: { status: 'completed' as const } };
+  // Mesma regra do browse: ativo, não-excluído e em categoria ainda ativa (fora do MVP some).
+  const publicListingWhere = { userId: id, status: 'active' as const, deletedAt: null, category: { is: { active: true } } };
   const [reviewsRaw, ratingAgg, salesCount, purchasesCount, listingsRaw, activeCount] = await Promise.all([
     // só reviews de negócios concluídos (os dois confirmaram) ficam públicas.
     // take: 30 é SÓ pra exibição — a nota/contagem agregam sobre TODAS (ratingAgg).
@@ -29,12 +31,12 @@ export const getProfile = cache(async (id: string) => {
     db.deal.count({ where: { sellerId: id, status: 'completed' } }),
     db.deal.count({ where: { buyerId: id, status: 'completed' } }),
     db.listing.findMany({
-      where: { userId: id, status: 'active', deletedAt: null },
+      where: publicListingWhere,
       orderBy: { createdAt: 'desc' },
       take: 12, // só exibição; o total é activeCount
       include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
     }),
-    db.listing.count({ where: { userId: id, status: 'active', deletedAt: null } }),
+    db.listing.count({ where: publicListingWhere }),
   ]);
 
   const ratingCount = ratingAgg._count.rating;
