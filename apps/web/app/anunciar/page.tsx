@@ -166,7 +166,23 @@ export default function Criar() {
   // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
   // além de marca, ano e modelo (modelo só quando a marca tem modelos cadastrados).
   const headOk = !!brandId && (kind === 'barra' || (!!year && ((brand?.models?.length ?? 0) === 0 || !!modelId)));
-  const fichaOk = !!kind && headOk
+  // Erro de faixa dos campos numéricos (ex.: tamanho 3–20), client-side: bloqueia o
+  // avanço de passo ANTES do publish — o erro não fica só na tela final.
+  const numError = (props: Record<string, any>, vals: Record<string, any>): string => {
+    for (const [k, spec] of Object.entries(props)) {
+      if (spec?.type !== 'number') continue;
+      const raw = vals[k];
+      if (raw == null || raw === '') continue;
+      const n = Number(String(raw).replace(',', '.'));
+      const lbl = spec.label ?? k;
+      if (Number.isNaN(n)) return `${lbl}: informe um número válido (use ponto, ex.: 8.1).`;
+      if (spec.min != null && n < spec.min) return `${lbl}: mínimo ${spec.min}.`;
+      if (spec.max != null && n > spec.max) return `${lbl}: máximo ${spec.max}.`;
+    }
+    return '';
+  };
+  const attrErr = numError(mainProps, attrs) || (isKit ? numError(barraProps, barraAttrs) : '');
+  const fichaOk = !!kind && headOk && !attrErr
     && Object.keys(mainProps).every((k) => attrs[k] != null && attrs[k] !== '')
     && (isKit ? Object.keys(barraProps).every((k) => barraAttrs[k] != null && barraAttrs[k] !== '') : true);
   const photosOk = images.length >= 3 && (isKit ? kitePhotos.length >= 1 && barraPhotos.length >= 1 : true);
@@ -175,7 +191,7 @@ export default function Criar() {
     && (!sellBarraAlone || Number(barraPrice) > 0);
   const deliveryOk = pickup || shippable;
   const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading;
-  const missing = !kind ? 'Escolha o tipo' : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
+  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
 
   // wizard: validade e mensagem por passo
   const RAIL = ['Tipo & ficha', 'Fotos guiadas', 'Preço & entrega', 'Revisão'];
@@ -187,7 +203,7 @@ export default function Criar() {
   ];
   const stepValid = [!!kind && fichaOk, photosOk, priceOk && deliveryOk && !!city, canPublish];
   const stepMissing = [
-    !kind ? 'Escolha o tipo' : !fichaOk ? 'Complete a ficha' : '',
+    !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : '',
     !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : '',
     !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
     missing,
@@ -249,7 +265,7 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Anúncio publicado!</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Ofertas e pedidos de visita aparecem em Pedidos; as notificações dependem do canal disponível.</p>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Ofertas e pedidos de visita aparecem em Minhas negociações; as notificações dependem do canal disponível.</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
             <a href="/" style={outline}>Voltar à busca</a>
@@ -518,7 +534,25 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
             ) : spec.type === 'integer' ? (
               <ChipSelect options={Array.from({ length: 11 }, (_, i) => i)} value={values[key]} onChange={(v) => onChange(key, Number(v))} labels={{ '0': 'Nenhum' }} />
             ) : spec.type === 'number' ? (
-              <input className="kl-input" type="text" inputMode="decimal" value={values[key] ?? ''} placeholder="Ex.: 9 ou 8.1" onChange={(e) => onChange(key, e.target.value)} />
+              <>
+                <input
+                  className="kl-input"
+                  type="text"
+                  inputMode="decimal"
+                  value={values[key] ?? ''}
+                  placeholder={spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
+                  onChange={(e) => {
+                    // máscara: vírgula→ponto, só dígitos e UM ponto (sem letras, sem 1.000)
+                    let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+                    const parts = v.split('.');
+                    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+                    onChange(key, v);
+                  }}
+                />
+                {spec.min != null && spec.max != null && (
+                  <Helper>Use ponto para decimais (ex.: 8.1). Entre {spec.min} e {spec.max}.</Helper>
+                )}
+              </>
             ) : (
               <input className="kl-input" type="text" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
             )}

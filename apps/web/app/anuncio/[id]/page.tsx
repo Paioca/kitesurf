@@ -7,7 +7,6 @@ import { getCurrentUser } from '../../../lib/session';
 import { db } from '../../../lib/db';
 import { getListingRequestState } from '../../../lib/requests';
 import { OwnerControls } from '../../../components/OwnerControls';
-import { FavoriteButton } from '../../../components/FavoriteButton';
 import { ContactActions, type Target } from '../../../components/ContactActions';
 import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
 import { formatBRL } from '../../../lib/api';
@@ -144,7 +143,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
       </div>
 
       <main className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
-        <Gallery photos={photos} />
+        <Gallery photos={photos} listingId={l.id} favorited={favorited} />
 
         <div>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 8 }}>
@@ -223,7 +222,6 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
                   {l.status === 'sold' ? 'Este item já foi vendido.' : 'Este anúncio está indisponível no momento.'}
                 </div>
               )}
-              <div style={{ marginBottom: 24 }}><FavoriteButton listingId={l.id} initial={favorited} variant="inline" /></div>
             </>
           )}
 
