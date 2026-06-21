@@ -41,6 +41,9 @@ enum ListingStatus {
 model User {
   id              String     @id @default(uuid())
   name            String
+  lastName        String? // sobrenome (coletado no cadastro; legados ficam null)
+  city            String? // cidade do usuário (perfil)
+  state           String? // estado/UF (só BR; gringo fica null)
   email           String?    @unique // opcional no cadastro; pedido depois
   emailVerified   Boolean    @default(false)
   phone           String     @unique
