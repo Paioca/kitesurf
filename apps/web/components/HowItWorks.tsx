@@ -4,11 +4,15 @@
 // o slot mostra um placeholder; passe `src` (YouTube/Vimeo embed ou .mp4) e ele
 // pluga direto — sem mexer no resto.
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { color, font } from '../lib/tokens';
 import { ComoFunciona } from './ComoFunciona';
 
 export function HowItWorks({ src, label = 'Veja como funciona' }: { src?: string; label?: string }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Esc fecha + trava o scroll do body enquanto aberto.
   useEffect(() => {
@@ -20,6 +24,18 @@ export function HowItWorks({ src, label = 'Veja como funciona' }: { src?: string
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [open]);
 
+  // Portal pro <body>: o hero tem ancestrais com `transform`/`animation`, que
+  // viram containing block de `position:fixed` — sem o portal o modal encolhe e
+  // gruda no canto em vez de cobrir a viewport inteira.
+  const modal = (
+    <div onClick={() => setOpen(false)} role="dialog" aria-modal="true" aria-label={label} style={backdrop}>
+      <div onClick={(e) => e.stopPropagation()} style={frame}>
+        <Player src={src} />
+      </div>
+      <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" style={closeBtn}>✕</button>
+    </div>
+  );
+
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} style={btn} className="kl-howbtn">
@@ -27,14 +43,7 @@ export function HowItWorks({ src, label = 'Veja como funciona' }: { src?: string
         {label}
       </button>
 
-      {open && (
-        <div onClick={() => setOpen(false)} role="dialog" aria-modal="true" aria-label={label} style={backdrop}>
-          <div onClick={(e) => e.stopPropagation()} style={frame}>
-            <Player src={src} />
-          </div>
-          <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" style={closeBtn}>✕</button>
-        </div>
-      )}
+      {open && mounted && createPortal(modal, document.body)}
     </>
   );
 }
