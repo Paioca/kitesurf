@@ -13,6 +13,8 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   const [spot, setSpot] = useState(initial.spot);
   const [country, setCountry] = useState(initial.country || 'Brasil');
   const [email, setEmail] = useState(initial.email);
+  const [savedEmail, setSavedEmail] = useState(initial.email);
+  const [emailVerified, setEmailVerified] = useState(initial.emailVerified);
   const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl);
   const [locale, setLocale] = useState(initial.locale || 'pt');
   const [uploading, setUploading] = useState(false);
@@ -36,10 +38,25 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   }
 
   async function save() {
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setEmailMessage('');
     try {
       const res = await fetch('/api/auth/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, lastName: lastName.trim() || null, spot: spot || null, country, email: email.trim() || null, avatarUrl, locale }) });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro ao salvar.');
+      const saved = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(saved.message ?? 'Erro ao salvar.');
+
+      setSavedEmail(saved.email ?? '');
+      setEmailVerified(!!saved.emailVerified);
+
+      // E-mail novo ou ainda não confirmado: salvar e enviar a confirmação no
+      // mesmo fluxo. Usuários antigos não precisam descobrir um segundo passo.
+      if (saved.email && !saved.emailVerified) {
+        const verifyRes = await fetch('/api/auth/email/verification/request', { method: 'POST' });
+        const verification = await verifyRes.json().catch(() => ({}));
+        if (!verifyRes.ok) throw new Error(`Perfil salvo, mas ${verification.message?.toLowerCase() ?? 'não foi possível enviar a confirmação.'}`);
+        setEmailMessage(verification.message ?? 'Perfil salvo. Enviamos a confirmação para seu e-mail.');
+        setSaving(false);
+        return;
+      }
       window.location.href = '/conta';
     } catch (e: any) { setError(e.message); setSaving(false); }
   }
@@ -94,8 +111,8 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
       </Field>
       <Field label="E-mail de segurança (opcional)">
         <input className="kl-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailMessage(''); }} placeholder="voce@email.com" />
-        {email && email.trim().toLowerCase() === initial.email.trim().toLowerCase() ? (
-          initial.emailVerified ? (
+        {email && email.trim().toLowerCase() === savedEmail.trim().toLowerCase() ? (
+          emailVerified ? (
             <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 700, marginTop: 8 }}>E-mail confirmado para recuperação da conta.</div>
           ) : (
             <button type="button" onClick={sendEmailVerification} disabled={sendingEmail} style={{ background: 'none', border: 'none', color: color.primary, fontSize: 13, fontWeight: 700, padding: '9px 0 0', cursor: sendingEmail ? 'wait' : 'pointer' }}>
