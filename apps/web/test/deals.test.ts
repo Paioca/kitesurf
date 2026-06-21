@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockDb } = vi.hoisted(() => ({
   mockDb: {
-    deal: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
-    request: { findUnique: vi.fn(), updateMany: vi.fn() },
+    deal: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
+    request: { findUnique: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
     listing: { findFirst: vi.fn(), updateMany: vi.fn() },
     review: { upsert: vi.fn() },
     $transaction: vi.fn(),
@@ -11,7 +11,7 @@ const { mockDb } = vi.hoisted(() => ({
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
 
-import { confirmPurchase, cancelSale, createReview, confirmSaleFromRequest } from '../lib/deals';
+import { confirmPurchase, cancelSale, createReview, confirmSaleFromRequest, openNegotiationExists } from '../lib/deals';
 
 const dealMock = (over: Record<string, unknown> = {}) => ({ id: 'D', listingId: 'L', sellerId: 'S', buyerId: 'B', status: 'seller_confirmed', component: 'conjunto', ...over });
 const listingMock = (over: Record<string, unknown> = {}) => ({ status: 'active', hasBarra: false, price: 620000, kitePrice: null, barraPrice: null, kiteSoldAt: null, barraSoldAt: null, ...over });
@@ -22,6 +22,7 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (fn: any) => fn(mockDb));
   mockDb.listing.updateMany.mockResolvedValue({ count: 1 });
   mockDb.deal.update.mockResolvedValue({});
+  mockDb.deal.updateMany.mockResolvedValue({ count: 0 });
   mockDb.request.updateMany.mockResolvedValue({ count: 0 });
 });
 
@@ -40,13 +41,23 @@ describe('confirmPurchase', () => {
     mockDb.listing.updateMany.mockResolvedValue({ count: 0 });
     await expect(confirmPurchase('B', 'D')).rejects.toThrow(/já foi vendida/);
   });
-  it('vender o conjunto fecha o anúncio e recusa todos os outros', async () => {
+  it('vender o conjunto fecha o anúncio e encerra todos os outros', async () => {
     mockDb.deal.findUnique.mockResolvedValue(dealMock({ component: 'conjunto' }));
     mockDb.listing.findFirst.mockResolvedValue(kit());
     await confirmPurchase('B', 'D');
     expect(mockDb.listing.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'sold' }) }));
-    // recusa sem filtro de componente (fechou tudo)
-    expect(mockDb.request.updateMany.mock.calls[0][0].where.component).toBeUndefined();
+    // encerra sem filtro de componente (fechou tudo) e como sold_elsewhere (não declined)
+    const ru = mockDb.request.updateMany.mock.calls[0][0];
+    expect(ru.where.component).toBeUndefined();
+    expect(ru.data.status).toBe('sold_elsewhere');
+  });
+  it('invalida Deals seller_confirmed concorrentes ao concluir (voided)', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock({ component: 'conjunto' }));
+    mockDb.listing.findFirst.mockResolvedValue(kit());
+    await confirmPurchase('B', 'D');
+    const du = mockDb.deal.updateMany.mock.calls[0][0];
+    expect(du.where).toEqual(expect.objectContaining({ status: 'seller_confirmed', id: { not: 'D' }, buyerId: { not: 'B' } }));
+    expect(du.data.status).toBe('voided');
   });
   it('vender a barra NÃO fecha o kit; seta barraSoldAt; recusa só barra+conjunto', async () => {
     mockDb.deal.findUnique.mockResolvedValue(dealMock({ component: 'barra' }));
@@ -111,5 +122,23 @@ describe('confirmSaleFromRequest', () => {
   it('exige o pedido aceito antes de marcar vendido', async () => {
     mockDb.request.findUnique.mockResolvedValue({ id: 'R', sellerId: 'S', status: 'pending', listingId: 'L', buyerId: 'B', component: 'conjunto' });
     await expect(confirmSaleFromRequest('S', 'R')).rejects.toThrow(/[Aa]ceite o pedido/);
+  });
+});
+
+describe('openNegotiationExists', () => {
+  it('true quando há pedido aceito', async () => {
+    mockDb.request.count.mockResolvedValue(1);
+    mockDb.deal.count.mockResolvedValue(0);
+    expect(await openNegotiationExists('L', 'kite')).toBe(true);
+  });
+  it('true quando há deal seller_confirmed', async () => {
+    mockDb.request.count.mockResolvedValue(0);
+    mockDb.deal.count.mockResolvedValue(1);
+    expect(await openNegotiationExists('L', 'barra')).toBe(true);
+  });
+  it('false quando não há nenhum dos dois', async () => {
+    mockDb.request.count.mockResolvedValue(0);
+    mockDb.deal.count.mockResolvedValue(0);
+    expect(await openNegotiationExists('L', 'conjunto')).toBe(false);
   });
 });

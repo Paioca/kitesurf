@@ -10,6 +10,8 @@ import { requireUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
 import { canTransition, isEditable, type ListingStatus } from '../../../../lib/listing-status';
+import { openNegotiationExists } from '../../../../lib/deals';
+import { type Component } from '../../../../lib/components';
 
 export const runtime = 'nodejs';
 
@@ -84,6 +86,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data.attributes = validateAttributes(listing!.category.attributeSchema as any, dto.attributes) as Prisma.InputJsonValue;
     }
     if (listing!.hasBarra) {
+      // Proteção de disponibilidade por peça: não dá pra mexer numa peça já vendida,
+      // nem REMOVER (preço → null) uma peça com negociação aberta (pedido aceito /
+      // venda aguardando confirmação). Trocar o preço de uma peça em negociação é ok.
+      const guards: Array<[Component, Date | null, number | null | undefined, number | null]> = [
+        ['kite', listing!.kiteSoldAt, dto.kitePrice, listing!.kitePrice],
+        ['barra', listing!.barraSoldAt, dto.barraPrice, listing!.barraPrice],
+      ];
+      for (const [comp, soldAt, newPrice, curPrice] of guards) {
+        if (newPrice === undefined) continue;
+        if (soldAt != null) return NextResponse.json({ message: `Esta peça (${comp}) já foi vendida; não dá pra alterar sua disponibilidade.` }, { status: 409 });
+        if (newPrice === null && curPrice != null && (await openNegotiationExists(listing!.id, comp))) {
+          return NextResponse.json({ message: `Há uma negociação em andamento para esta peça (${comp}). Conclua ou cancele antes de removê-la.` }, { status: 409 });
+        }
+      }
       if (dto.kitePrice !== undefined) data.kitePrice = dto.kitePrice;
       if (dto.barraPrice !== undefined) data.barraPrice = dto.barraPrice;
       if (dto.barraAttributes !== undefined) {

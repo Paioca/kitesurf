@@ -85,13 +85,20 @@ export async function confirmPurchase(userId: string, dealId: string) {
     const updated = await tx.listing.updateMany({ where, data });
     if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
     await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
-    // Recusa cirúrgica dos pedidos de OUTROS compradores: se fechou o anúncio, recusa
-    // todos; se vendeu só uma peça, recusa a MESMA peça + os de conjunto (kit incompleto),
-    // preservando a outra peça ainda à venda.
+    // Encerra cirurgicamente o que ficou incompatível com OUTROS compradores: se fechou
+    // o anúncio, tudo; se vendeu só uma peça, a MESMA peça + conjunto (kit incompleto),
+    // preservando a outra peça ainda à venda. Pedidos viram `sold_elsewhere` (não
+    // `declined` — recusa é decisão do vendedor; aqui foi vendido a outro).
     const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
     await tx.request.updateMany({
       where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter },
-      data: { status: 'declined' },
+      data: { status: 'sold_elsewhere' },
+    });
+    // Invalida Deals `seller_confirmed` concorrentes (o vendedor pode ter marcado
+    // vendido pra mais de um) — senão ficam órfãos esperando uma confirmação impossível.
+    await tx.deal.updateMany({
+      where: { listingId: deal.listingId, id: { not: dealId }, buyerId: { not: deal.buyerId }, status: 'seller_confirmed', ...compFilter },
+      data: { status: 'voided' },
     });
   });
 }
@@ -124,6 +131,17 @@ export async function createReview(userId: string, dealId: string, rating: numbe
     update: { rating, comment: comment ?? null, tags: cleanTags },
     create: { dealId, reviewerId: userId, reviewedId, rating, comment: comment ?? null, tags: cleanTags },
   });
+}
+
+// Há negociação ABERTA pra um componente? (pedido aceito OU venda aguardando
+// confirmação). Usado pra travar a remoção/edição de disponibilidade de uma peça
+// com negócio em andamento — a transição de domínio fica centralizada aqui, não no route.
+export async function openNegotiationExists(listingId: string, component: Component): Promise<boolean> {
+  const [acceptedReq, openDeal] = await Promise.all([
+    db.request.count({ where: { listingId, component, status: 'accepted' } }),
+    db.deal.count({ where: { listingId, component, status: 'seller_confirmed' } }),
+  ]);
+  return acceptedReq > 0 || openDeal > 0;
 }
 
 // Estado do deal para mostrar a ação certa no chat.

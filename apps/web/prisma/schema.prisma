@@ -75,6 +75,8 @@ model User {
   reviewsReceived Review[] @relation("reviewsReceived")
   reportsMade     Report[] @relation("reportsMade")
 
+  notifications Notification[] @relation("userNotifications")
+
   @@index([phone])
 }
 
@@ -238,7 +240,8 @@ model Message {
 enum DealStatus {
   seller_confirmed
   completed
-  cancelled
+  cancelled // desfeito pelo vendedor (cancelSale) ou pelo comprador ("não comprei")
+  voided // invalidado: peça vendida a outro comprador / componente indisponível
 }
 
 // Qual peça de um kit está sendo negociada/vendida. Peça única / kite-only /
@@ -335,7 +338,11 @@ enum RequestType {
 enum RequestStatus {
   pending
   accepted
-  declined
+  declined // recusado pelo vendedor
+  withdrawn // retirado/encerrado pelo comprador (inclui "não comprei")
+  listing_removed // anúncio excluído pelo dono
+  sold_elsewhere // peça vendida a outro comprador
+  expired // reservado: expiração ainda não implementada (sem job)
 }
 
 // Contato estruturado (substitui chat livre). Comprador faz oferta (valor) ou
@@ -373,4 +380,35 @@ model Favorite {
 
   @@unique([userId, listingId])
   @@index([userId])
+}
+
+// Tipos de evento da notificação in-app (emissão no commit de notificações).
+enum NotificationType {
+  request_new // vendedor: novo pedido recebido
+  request_accepted // comprador: vendedor liberou o WhatsApp
+  request_declined // comprador: vendedor recusou
+  sale_marked // comprador: vendedor marcou vendido — falta você confirmar
+  purchase_confirmed // vendedor: comprador confirmou a compra
+  purchase_denied // vendedor: comprador respondeu "não comprei"
+  sold_elsewhere // comprador: a peça foi vendida a outra pessoa
+  listing_removed // comprador: o anúncio foi removido
+}
+
+// Notificação in-app persistente. `read` por readAt. Refs opcionais pro deep-link.
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String // destinatário
+  type       NotificationType
+  listingId  String?
+  requestId  String?
+  dealId     String?
+  actorId    String? // quem disparou (outro lado da negociação)
+  data       Json? // título/valor já resolvidos pra render sem N joins
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
