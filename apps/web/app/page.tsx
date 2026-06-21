@@ -10,6 +10,7 @@ import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
 import { Diamond, DiamondTrail } from '../components/ui';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
+import { HowItWorks } from '../components/HowItWorks';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
 import { ActiveChips } from '../components/browse/ActiveChips';
@@ -215,6 +216,9 @@ function Hero() {
             <HeroSelect name="city" label="Cidade" placeholder="Todos" options={SPOT_OPTS} last />
             <button type="submit" className="kl-lift" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
           </form>
+          <div style={{ marginTop: 22 }}>
+            <HowItWorks />
+          </div>
         </div>
       </div>
     </section>
