@@ -37,6 +37,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
             {item.condLabel && <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{item.condLabel}</span>}
           </div>
           <div style={{ marginTop: 'auto' }}>
+            {item.priceNote && <div style={{ fontSize: 11.5, fontWeight: 600, color: color.inkFaint2, lineHeight: 1, marginBottom: 2 }}>{item.priceNote}</div>}
             <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>{item.priceLabel}</div>
             {item.seller ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid #f0ebde` }}>

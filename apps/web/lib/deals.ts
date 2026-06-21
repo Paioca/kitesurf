@@ -2,6 +2,7 @@ import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, type ListingLike, type Component } from './components';
+import { emit, emitMany, affectedBuyerIds } from './notifications';
 
 export class DealError extends PublicError {}
 
@@ -29,20 +30,25 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
   if (r.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
   if (r.status !== 'accepted') throw new DealError('Aceite o pedido antes de marcar como vendido.', 400);
 
-  const listing = await db.listing.findFirst({ where: { id: r.listingId, deletedAt: null }, select: sellableSel });
+  const listing = await db.listing.findFirst({ where: { id: r.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
   if (!listing) throw new DealError('Anúncio não encontrado.', 404);
   if (listing.status !== 'active' && listing.status !== 'paused') throw new DealError('Anúncio não está disponível.', 400);
   const sell = sellables(listing as ListingLike).find((s) => s.component === r.component);
   if (!sell?.available) throw new DealError('Esta peça já foi vendida.', 409);
 
   // 1 negócio por listing+comprador+COMPONENTE (kite e barra do mesmo kit são deals distintos).
-  let deal = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId, component: r.component } });
-  if (!deal) {
-    deal = await db.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
-  } else if (deal.status !== 'completed' && !deal.sellerConfirmedAt) {
-    deal = await db.deal.update({ where: { id: deal.id }, data: { status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
-  }
-  return deal.id;
+  const existing = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId, component: r.component } });
+  // Notifica o comprador (sale_marked) só quando o deal PASSA a aguardar confirmação.
+  const becomesPending = !existing || (existing.status !== 'completed' && !existing.sellerConfirmedAt);
+  if (existing && !becomesPending) return existing.id;
+
+  return db.$transaction(async (tx) => {
+    const deal = existing
+      ? await tx.deal.update({ where: { id: existing.id }, data: { status: 'seller_confirmed', sellerConfirmedAt: new Date() } })
+      : await tx.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
+    await emit(tx, { userId: r.buyerId, type: 'sale_marked', listingId: r.listingId, requestId: r.id, dealId: deal.id, actorId: r.sellerId, data: { title: listing.title } });
+    return deal.id;
+  });
 }
 
 // Comprador confirma a compra → completa o negócio + marca anúncio vendido.
@@ -52,7 +58,7 @@ export async function confirmPurchase(userId: string, dealId: string) {
   if (deal.buyerId !== userId) throw new DealError('Só o comprador confirma a compra.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Negócio não está aguardando confirmação.', 400);
 
-  const listing = await db.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: sellableSel });
+  const listing = await db.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
   if (!listing) throw new DealError('Anúncio não encontrado.', 404);
   const comp = deal.component;
   if (!sellables(listing as ListingLike).find((s) => s.component === comp)?.available) {
@@ -90,6 +96,9 @@ export async function confirmPurchase(userId: string, dealId: string) {
     // preservando a outra peça ainda à venda. Pedidos viram `sold_elsewhere` (não
     // `declined` — recusa é decisão do vendedor; aqui foi vendido a outro).
     const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
+    // Captura os compradores afetados ANTES de mudar o status (depois o filtro
+    // pending/accepted não os pega mais) — pra notificar `sold_elsewhere`.
+    const affected = await affectedBuyerIds(tx, deal.listingId, { excludeBuyerId: deal.buyerId, components: close ? undefined : ['conjunto', comp] });
     await tx.request.updateMany({
       where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter },
       data: { status: 'sold_elsewhere' },
@@ -100,6 +109,9 @@ export async function confirmPurchase(userId: string, dealId: string) {
       where: { listingId: deal.listingId, id: { not: dealId }, buyerId: { not: deal.buyerId }, status: 'seller_confirmed', ...compFilter },
       data: { status: 'voided' },
     });
+    // Notifica: vendedor (compra confirmada) + compradores afetados (vendido a outro).
+    await emit(tx, { userId: deal.sellerId, type: 'purchase_confirmed', listingId: deal.listingId, dealId, actorId: deal.buyerId, data: { title: listing.title } });
+    await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'sold_elsewhere' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
   });
 }
 
@@ -122,13 +134,14 @@ export async function denyPurchase(userId: string, dealId: string) {
   if (!deal) throw new DealError('Negócio não encontrado.', 404);
   if (deal.buyerId !== userId) throw new DealError('Só o comprador pode responder a esta venda.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Esta venda não está aguardando sua confirmação.', 400);
-  await db.$transaction([
-    db.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null } }),
-    db.request.updateMany({
+  await db.$transaction(async (tx) => {
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null } });
+    await tx.request.updateMany({
       where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: { in: ['pending', 'accepted'] } },
       data: { status: 'withdrawn' },
-    }),
-  ]);
+    });
+    await emit(tx, { userId: deal.sellerId, type: 'purchase_denied', listingId: deal.listingId, dealId, actorId: deal.buyerId });
+  });
 }
 
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA

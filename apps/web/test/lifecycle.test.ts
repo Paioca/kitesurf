@@ -4,8 +4,9 @@ const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     listing: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     deal: { count: vi.fn() },
-    request: { updateMany: vi.fn() },
+    request: { updateMany: vi.fn(), findMany: vi.fn() },
     user: { update: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -17,9 +18,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.request.updateMany.mockResolvedValue({ count: 0 });
+  mockDb.request.findMany.mockResolvedValue([]);
   mockDb.listing.update.mockResolvedValue({});
   mockDb.listing.updateMany.mockResolvedValue({ count: 0 });
   mockDb.user.update.mockResolvedValue({});
+  mockDb.notification.createMany.mockResolvedValue({ count: 0 });
 });
 
 describe('removeListing', () => {

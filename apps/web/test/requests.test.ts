@@ -6,6 +6,8 @@ const { mockDb } = vi.hoisted(() => ({
     user: { findUnique: vi.fn() },
     request: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
     deal: { count: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
@@ -22,7 +24,13 @@ const listingMock = (over: Record<string, unknown> = {}) => ({
 });
 const reqMock = (over: Record<string, unknown> = {}) => ({ id: 'R', sellerId: 'S', buyerId: 'B', status: 'pending', component: 'conjunto', listingId: 'L', ...over });
 
-beforeEach(() => { vi.clearAllMocks(); mockDb.user.findUnique.mockResolvedValue({ name: 'Bruno', phone: '+5588' }); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockDb.user.findUnique.mockResolvedValue({ name: 'Bruno', phone: '+5588' });
+  mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
+  mockDb.notification.create.mockResolvedValue({});
+  mockDb.listing.findUnique.mockResolvedValue({ title: 't' });
+});
 
 describe('createRequest', () => {
   it('rejeita anúncio não-ativo', async () => {

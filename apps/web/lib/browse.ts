@@ -19,6 +19,7 @@ export type Card = {
   year: number | null;
   priceCents: number;
   priceLabel: string;
+  priceNote: string | null; // contexto do preço no card: "só o kite" / "só a barra" / "a partir de" / "kit completo"
   cat: string;
   catSlug: string;
   ship: boolean;
@@ -93,6 +94,7 @@ function toCard(l: any, persp: Perspective): Card {
       year: null,
       priceCents: price,
       priceLabel: brl(price),
+      priceNote: kit ? 'só a barra' : null, // a barra é uma peça do kit, não o conjunto
       cat: 'Barra',
       catSlug: 'barra',
       ship: !!l.shippable,
@@ -113,6 +115,14 @@ function toCard(l: any, persp: Perspective): Card {
   const a = l.attributes ?? {};
   const sizeM2 = a.size_m2 != null ? String(a.size_m2) : null;
   const price = l.hasBarra ? l.kitePrice ?? l.price : l.price;
+  // Rótulo do preço num kit (a peça mostrada ≠ o conjunto do detalhe — evita o
+  // "card R$4.800 vs detalhe R$6.200"). Peça avulsa: nota explícita por perspectiva.
+  let priceNote: string | null = null;
+  if (l.hasBarra) {
+    if (l.kitePrice == null) priceNote = 'kit completo'; // sem avulso → preço é o conjunto
+    else if (persp === 'kite') priceNote = 'só o kite';
+    else priceNote = 'a partir de'; // 'all': o kit começa no preço da peça mais barata
+  }
   return {
     id: l.id,
     brand: l.brand?.name ?? '',
@@ -120,6 +130,7 @@ function toCard(l: any, persp: Perspective): Card {
     year: l.year ?? null,
     priceCents: price,
     priceLabel: brl(price),
+    priceNote,
     cat: l.category?.namePt ?? '',
     catSlug: l.category?.slug ?? '',
     ship: !!l.shippable,

@@ -1,6 +1,7 @@
 import 'server-only';
 import { db } from './db';
 import { notifyNewRequest } from './notify';
+import { emit } from './notifications';
 import { PublicError } from './http';
 import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from './components';
 
@@ -32,13 +33,17 @@ export async function createRequest(userId: string, listingId: string, type: 'of
     if (amount > sell.price * 3) throw new RequestError('Valor muito acima do anúncio — confira.', 400); // teto anti-erro de digitação
   }
   const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
-  const r = await db.request.upsert({
-    where: { listingId_buyerId_type_component: { listingId, buyerId: userId, type, component } },
-    update: { amount: type === 'offer' ? amount! : null, status: 'pending' },
-    create: { listingId, buyerId: userId, sellerId: listing.userId, type, amount: type === 'offer' ? amount! : null, component },
+  const title = component === 'conjunto' ? listing.title : `${listing.title} · ${COMPONENT_LABEL[component]}`;
+  const r = await db.$transaction(async (tx) => {
+    const req = await tx.request.upsert({
+      where: { listingId_buyerId_type_component: { listingId, buyerId: userId, type, component } },
+      update: { amount: type === 'offer' ? amount! : null, status: 'pending' },
+      create: { listingId, buyerId: userId, sellerId: listing.userId, type, amount: type === 'offer' ? amount! : null, component },
+    });
+    await emit(tx, { userId: listing.userId, type: 'request_new', listingId, requestId: req.id, actorId: userId, data: { title, requestType: type, amount: amount ?? null } });
+    return req;
   });
   // avisa o vendedor já com o contato do comprador (pode chamar direto). no-op se Twilio off.
-  const title = component === 'conjunto' ? listing.title : `${listing.title} · ${COMPONENT_LABEL[component]}`;
   await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: title, buyerName: buyer?.name ?? 'Um comprador', buyerPhone: buyer?.phone ?? '' });
   return r;
 }
@@ -55,7 +60,16 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
     const sell = sellables(listing as ListingLike).find((s) => s.component === r.component);
     if (!sell?.available) throw new RequestError('Esta peça já foi vendida.', 409);
   }
-  await db.request.update({ where: { id }, data: { status } });
+  const lst = await db.listing.findUnique({ where: { id: r.listingId }, select: { title: true } });
+  await db.$transaction(async (tx) => {
+    await tx.request.update({ where: { id }, data: { status } });
+    await emit(tx, {
+      userId: r.buyerId,
+      type: status === 'accepted' ? 'request_accepted' : 'request_declined',
+      listingId: r.listingId, requestId: r.id, actorId: userId,
+      data: { title: lst?.title ?? '' },
+    });
+  });
   return { ok: true, status };
 }
 

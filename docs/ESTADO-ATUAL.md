@@ -3,6 +3,20 @@
 > Marketplace de equipamento de kitesurf, Cumbuco. **Fase 0 no ar.**
 > Última atualização: jun/2026. Ponto de partida pra continuar. **LER inteiro antes de mexer.**
 
+## Ciclo de negociação formalizado (2026-06-21)
+
+Os caminhos de exceção (pausa, exclusão, desistência, "não comprei", concorrência) foram
+fechados com transições **centralizadas e transacionais** em `lib/requests.ts`,
+`lib/deals.ts`, `lib/lifecycle.ts`. A máquina de estados completa (Listing/Request/Deal +
+eventos de notificação) está em **`docs/STATE-MACHINE.md`** — referência canônica. Resumo:
+`sold` é terminal; excluir anúncio encerra pedidos como `listing_removed` e bloqueia se há
+venda aguardando confirmação; comprador pode desistir (`withdrawn`) e responder "não comprei"
+(`denyPurchase`); concluir venda invalida deals concorrentes (`voided`) e marca os outros
+pedidos `sold_elsewhere` (não `declined`). Notificação in-app persistente (`Notification`)
+emitida dentro das transações; badge da aba Pedidos = não-lidas (os dois lados). NOTA: a copy
+de "Agendar visita" abaixo está desatualizada — o código já diz **"Pedir visita"**.
+Onboarding/copy segue num passe separado do dono (ver `docs/COPY-CONTRATO.md`).
+
 ## Mudança mais importante (pivot de contato — jun/2026)
 
 **Não existe mais chat livre.** O contato é **estruturado**:

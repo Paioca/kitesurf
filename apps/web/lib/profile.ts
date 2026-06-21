@@ -47,7 +47,7 @@ export const getProfile = cache(async (id: string) => {
     const sizeM2 = a.size_m2 != null ? String(a.size_m2) : null;
     return {
       id: l.id, brand: l.brand?.name ?? '', model: l.model?.name ?? l.title, year: l.year ?? null,
-      priceCents: l.price, priceLabel: brl(l.price), cat: l.category?.namePt ?? '', catSlug: l.category?.slug ?? '',
+      priceCents: l.price, priceLabel: brl(l.price), priceNote: l.hasBarra ? 'kit completo' : null, cat: l.category?.namePt ?? '', catSlug: l.category?.slug ?? '',
       ship: l.shippable, city: l.city, sizeM2, sizeLabel: sizeM2 ? `${sizeM2} m²` : (a.harness_size || l.category?.namePt || '—'), condLabel: null,
       repair: Number(a.repairs_count ?? 0) > 0, includesBar: l.hasBarra === true, partOfKit: false, favorited: false, photo: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null,
     };

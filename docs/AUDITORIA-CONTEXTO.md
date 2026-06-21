@@ -12,6 +12,23 @@ travadas do dono**. Confirme sempre no código (não no histórico nem na memór
 
 ---
 
+## DECISÕES TRAVADAS — ciclo de negociação (2026-06-21) — não pontuar como bug
+
+Ver `docs/STATE-MACHINE.md` (canônico). Antes de apontar achado sobre estados/loops, confronte:
+- **"Aceitar oferta" NÃO confirma preço** — é demonstrar interesse + liberar WhatsApp do
+  vendedor. Negociação de valor segue no WhatsApp. **Não há contraproposta** (decisão do dono).
+- **Múltiplos compradores** podem ter contato liberado ao mesmo tempo — é válido.
+- **`sold` é terminal**; `archived → active` só por republicação (fluxo dedicado ainda não existe).
+- Concluir venda: outros pedidos → `sold_elsewhere` (NÃO `declined`); deals `seller_confirmed`
+  concorrentes → `voided`. Pedido do vencedor não é tocado (aparece como negócio via o Deal.)
+- Excluir anúncio/conta **bloqueia** se há venda `seller_confirmed` aberta; senão encerra pedidos
+  (`listing_removed` / `withdrawn`). Histórico de negócios concluídos + avaliações preservados.
+- Comprador: **desistência** (`withdrawn`, pendente ou aceito) e **"não comprei"** (`denyPurchase`).
+- **`expired`**: valor de enum reservado, SEM job de expiração ainda (não é bug — é pendência conhecida).
+- Notificação in-app emitida dentro da transação da transição; badge = não-lidas (os dois lados).
+
+---
+
 ## TL;DR — estado de lançamento
 
 > ⚠️ **Correção (auditoria v3):** versões anteriores deste doc diziam "pronto pra

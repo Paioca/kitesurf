@@ -3,9 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     deal: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
-    request: { findUnique: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
+    request: { findUnique: vi.fn(), updateMany: vi.fn(), count: vi.fn(), findMany: vi.fn() },
     listing: { findFirst: vi.fn(), updateMany: vi.fn() },
     review: { upsert: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -24,6 +25,9 @@ beforeEach(() => {
   mockDb.deal.update.mockResolvedValue({});
   mockDb.deal.updateMany.mockResolvedValue({ count: 0 });
   mockDb.request.updateMany.mockResolvedValue({ count: 0 });
+  mockDb.request.findMany.mockResolvedValue([]);
+  mockDb.notification.create.mockResolvedValue({});
+  mockDb.notification.createMany.mockResolvedValue({ count: 0 });
 });
 
 describe('confirmPurchase', () => {
@@ -50,6 +54,8 @@ describe('confirmPurchase', () => {
     const ru = mockDb.request.updateMany.mock.calls[0][0];
     expect(ru.where.component).toBeUndefined();
     expect(ru.data.status).toBe('sold_elsewhere');
+    // notifica o vendedor que a compra foi confirmada
+    expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ type: 'purchase_confirmed' }) }));
   });
   it('invalida Deals seller_confirmed concorrentes ao concluir (voided)', async () => {
     mockDb.deal.findUnique.mockResolvedValue(dealMock({ component: 'conjunto' }));
@@ -141,6 +147,7 @@ describe('denyPurchase', () => {
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }));
     expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'withdrawn' } }));
     expect(mockDb.listing.updateMany).not.toHaveBeenCalled();
+    expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ type: 'purchase_denied' }) }));
   });
 });
 

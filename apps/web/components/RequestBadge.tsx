@@ -1,12 +1,13 @@
 'use client';
 
-// Bolinha vermelha com o nº de pedidos recebidos pendentes. Some quando 0.
+// Bolinha vermelha com o nº de novidades não-lidas (pedido novo, aceite, recusa,
+// venda marcada, vendido a outro, anúncio removido — os dois lados). Some quando 0.
 import { useEffect, useState } from 'react';
 
 export function RequestBadge() {
   const [n, setN] = useState(0);
   useEffect(() => {
-    fetch('/api/requests/count').then((r) => r.json()).then((d) => setN(d.pending || 0)).catch(() => {});
+    fetch('/api/requests/count').then((r) => r.json()).then((d) => setN(d.unread ?? d.pending ?? 0)).catch(() => {});
   }, []);
   if (!n) return null;
   return (
