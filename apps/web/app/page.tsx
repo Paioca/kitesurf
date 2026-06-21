@@ -19,10 +19,10 @@ export const dynamic = 'force-dynamic';
 // OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
 export const metadata = {
   title: 'Kitetropos — kite e barra com mais confiança',
-  description: 'Compre e venda kite e barra com telefone verificado, ficha padronizada e histórico de negócios. Contato pelo WhatsApp, começando em Cumbuco.',
+  description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
   openGraph: {
     title: 'Kitetropos — kite e barra com mais confiança',
-    description: 'Telefone verificado, anúncios padronizados e contato pelo WhatsApp. Começando em Cumbuco.',
+    description: 'Encontre, anuncie e negocie kite e barra com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
     images: ['/hero-beach.jpg'],
     type: 'website',
   },
@@ -32,7 +32,12 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = searchParams;
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
   const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
-  const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'} em Cumbuco e região`;
+  const countLocation = filters.city.length === 1
+    ? ` em ${filters.city[0]}`
+    : filters.city.length > 1
+      ? ' nos spots selecionados'
+      : ' disponíveis';
+  const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'}${countLocation}`;
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
   const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
@@ -56,9 +61,9 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <Image src="/hero-beach.jpg" alt="" fill priority sizes="430px" style={{ objectFit: 'cover' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Cumbuco · Ceará</div>
-              <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamento de kite<br />com confiança</h1>
-              <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Contato pelo WhatsApp; pagamento e entrega são combinados entre as partes.</p>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Nascido em Cumbuco · Feito para o mundo</div>
+              <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Kite e barra<br />com mais confiança</h1>
+              <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Pagamento e entrega são combinados diretamente entre as partes.</p>
             </div>
           </div>
 
@@ -119,8 +124,8 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
-                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>À venda agora, em Cumbuco</div>
-                  <h2 style={{ fontFamily: font.serif, fontSize: 44, fontWeight: 600, letterSpacing: '-0.5px', margin: 0, lineHeight: 1.02 }}>Equipamento à venda</h2>
+                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>À venda agora</div>
+                  <h2 style={{ fontFamily: font.serif, fontSize: 44, fontWeight: 600, letterSpacing: '-0.5px', margin: 0, lineHeight: 1.02 }}>Kites e barras disponíveis</h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {sorts.map(([key, label]) => (
@@ -158,7 +163,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
                 <div>
-                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Equipamento à venda</h1>
+                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Kites e barras disponíveis</h1>
                   <div style={{ fontSize: 14, color: color.inkMute }}>{countLabel}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -200,9 +205,9 @@ function Hero() {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Cumbuco · Ceará · o hub do kite no Brasil</div>
-          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamento de kite com confiança de verdade</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 560 }}>Compre e venda kite e barra com telefone verificado, ficha padronizada e histórico de negócios. O contato segue pelo WhatsApp.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco · Feito para o mundo</div>
+          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Kite e barra com mais confiança para negociar</h1>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Encontre, anuncie e negocie equipamentos de kitesurf. Perfis com telefone verificado, informações estruturadas e contato pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
@@ -234,18 +239,18 @@ function HeroSelect({ name, label, placeholder, options, accent, last }: { name:
 // ---------- TRUST ----------
 function Trust() {
   const pillars = [
-    { title: 'Telefone verificado', desc: 'Confirmação por código enviado por SMS. Um número por conta.' },
-    { title: 'Spot e nacionalidade no perfil', desc: 'Você sabe o pique e de onde a pessoa é antes de combinar a negociação.' },
-    { title: 'Avaliações de negócios', desc: 'A avaliação fica pública conforme a confirmação do negócio na plataforma.' },
-    { title: 'Contato estruturado', desc: 'O comprador envia seu contato no pedido; o vendedor libera o WhatsApp ao demonstrar interesse.' },
+    { title: 'Telefone verificado', desc: 'Cada conta confirma seu número por código enviado ao celular.' },
+    { title: 'Perfil reconhecível', desc: 'Foto, spot e nacionalidade ajudam você a saber com quem está negociando.' },
+    { title: 'Avaliações de negócios', desc: 'As avaliações ficam públicas depois que comprador e vendedor confirmam o negócio.' },
+    { title: 'Contato com intenção', desc: 'O comprador compartilha seu WhatsApp no pedido. Se o vendedor aceitar, o contato dele também é liberado.' },
   ];
   return (
     <section id="trust" className="kl-reveal" style={{ background: '#ece3d2' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 auto 60px', textAlign: 'center' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 14 }}>Por que é tranquilo</div>
-          <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(32px,4.5vw,46px)', fontWeight: 600, letterSpacing: '-0.5px', color: color.ink, margin: '0 0 18px', lineHeight: 1.04 }}>Mais contexto para negociar com confiança</h2>
-          <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Telefone verificado, foto de perfil obrigatória, anúncios padronizados e avaliações ligadas a negócios confirmados.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 14 }}>Mais contexto antes de negociar</div>
+          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', color: color.ink, margin: '0 0 18px', lineHeight: 0.98 }}>Mais confiança em cada etapa</h2>
+          <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Telefone verificado, foto de perfil obrigatória, anúncios estruturados e avaliações ligadas a negócios confirmados.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40 }}>
           {pillars.map((p) => (
@@ -264,29 +269,31 @@ function Trust() {
 // ---------- COMO FUNCIONA ----------
 function Flow() {
   const steps = [
-    { n: '1', title: 'Anuncie ou ache', desc: 'Ficha estruturada com tamanho e condição. A busca por tamanho funciona de verdade.' },
-    { n: '2', title: 'Oferta ou visita', desc: 'Faça uma oferta ou peça uma visita para conhecer e testar o equipamento.' },
-    { n: '3', title: 'Conversem no WhatsApp', desc: 'O comprador compartilha seu contato no pedido. O vendedor libera o WhatsApp ao demonstrar interesse.' },
-    { n: '4', title: 'Confirmem e avaliem', desc: 'Depois de fechar, os dois confirmam aqui. A venda entra no histórico e as avaliações podem ficar públicas.' },
+    { n: '1', title: 'Anuncie ou encontre', desc: 'Consulte tamanho, condição, fotos e informações do equipamento.' },
+    { n: '2', title: 'Faça uma oferta ou peça uma visita', desc: 'Envie um valor ao vendedor ou solicite uma visita para conhecer o equipamento.' },
+    { n: '3', title: 'Conversem pelo WhatsApp', desc: 'O comprador compartilha seu contato no pedido. Se o vendedor aceitar, o WhatsApp dele também é liberado.' },
+    { n: '4', title: 'Confirmem o negócio', desc: 'Se a negociação for concluída, os dois confirmam. As avaliações passam a fazer parte da reputação dos perfis.' },
   ];
   return (
-    <section className="kl-reveal" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,90px) 32px' }}>
-      <div style={{ maxWidth: 600, margin: '0 0 40px' }}>
-        <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Como funciona</div>
-        <h2 style={{ fontFamily: font.serif, fontSize: 'clamp(30px,4.2vw,44px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 16px', lineHeight: 1.02 }}>Do anúncio ao negócio fechado</h2>
-        <p style={{ fontSize: 17, lineHeight: 1.6, color: color.inkMute, margin: 0 }}>Anunciar e negociar é gratuito na Fase 0. A Kitetropos não processa pagamento nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
-        {steps.map((f) => (
-          <div key={f.n} style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 999, background: color.primary, color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{f.n}</div>
-              <div style={{ flex: 1, height: 2, background: '#eee7d7' }} />
+    <section className="kl-reveal" style={{ background: color.dark, color: '#fff' }}>
+      <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,96px) 32px' }}>
+        <div style={{ maxWidth: 620, margin: '0 0 44px' }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como funciona</div>
+          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio ao contato</h2>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>Anunciar e negociar é gratuito. A Kitetropos não processa pagamentos nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+          {steps.map((f) => (
+            <div key={f.n} style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 999, background: color.aqua, color: color.dark, fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{f.n}</div>
+                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.14)' }} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.2px', color: '#fff' }}>{f.title}</div>
+              <p style={{ fontSize: 13.5, lineHeight: 1.55, color: '#9fb6ab', margin: 0 }}>{f.desc}</p>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.2px' }}>{f.title}</div>
-            <p style={{ fontSize: 13.5, lineHeight: 1.55, color: '#7c857c', margin: 0 }}>{f.desc}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
