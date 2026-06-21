@@ -23,3 +23,11 @@ export function canTransition(from: ListingStatus, to: ListingStatus): boolean {
 export function isEditable(status: ListingStatus): boolean {
   return status === 'draft' || status === 'active' || status === 'paused';
 }
+
+// Teto de anúncios ATIVOS por usuário (anti-spam). Decisão do dono: conta SÓ status
+// 'active' (pausado não conta) — por isso a reativação paused→active também precisa do guard.
+export const ACTIVE_LISTING_LIMIT = 5;
+export const activeListingWhere = (userId: string) => ({ userId, status: 'active' as const, deletedAt: null });
+
+// Preço mínimo de um anúncio, em centavos (R$100) — evita preço-isca pra trapacear filtros.
+export const MIN_LISTING_PRICE_CENTS = 10000;

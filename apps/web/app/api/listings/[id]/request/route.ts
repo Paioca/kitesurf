@@ -13,7 +13,10 @@ const schema = z.object({ type: z.enum(['offer', 'visit']), amount: z.number().i
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser();
+    // Burst guard (30/h) + cap de SEGURANÇA diário (20/dia) anti-abuso — cobre oferta+visita.
+    // Janela 23h (< retenção de 24h do purge) pra não ler hits na borda da limpeza.
     if (!(await rateLimit(`request:${user.id}`, 30, 3600))) return tooMany();
+    if (!(await rateLimit(`offer:day:${user.id}`, 20, 82800))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const r = await createRequest(user.id, params.id, parsed.data.type, parsed.data.amount, parsed.data.component);

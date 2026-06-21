@@ -9,7 +9,10 @@ import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../lib/storage';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
+import { ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../lib/listing-status';
 import { Prisma } from '@prisma/client';
+
+const PRICE_MIN_MSG = 'O preço mínimo de um anúncio é R$100.';
 
 export const runtime = 'nodejs';
 
@@ -41,7 +44,7 @@ const createSchema = z.object({
   attributes: z.record(z.any()),
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
-  price: z.number().int().min(100), // conjunto (kit) ou peça única
+  price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }), // conjunto (kit) ou peça única
   city: z.string().min(1),
   spot: z.string().optional(),
   pickup: z.boolean().optional(),
@@ -49,8 +52,8 @@ const createSchema = z.object({
   images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40),
   // kit (kite + barra)
   hasBarra: z.boolean().optional(),
-  kitePrice: z.number().int().min(100).nullable().optional(), // kite avulso
-  barraPrice: z.number().int().min(100).nullable().optional(), // barra avulsa
+  kitePrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }).nullable().optional(), // kite avulso
+  barraPrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }).nullable().optional(), // barra avulsa
   barraAttributes: z.record(z.any()).optional(),
 });
 
@@ -60,8 +63,14 @@ export async function POST(req: Request) {
     const user = await requireUser();
     if (!(await rateLimit(`listing:${user.id}`, 20, 3600))) return tooMany();
     const parsed = createSchema.safeParse(await req.json().catch(() => ({})));
-    if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
+
+    // Teto anti-spam: máximo de anúncios ATIVOS por usuário (só status 'active').
+    // Rate-limit (20/h) já limita a corrida do mesmo usuário; o count fecha o resto.
+    if ((await db.listing.count({ where: activeListingWhere(user.id) })) >= ACTIVE_LISTING_LIMIT) {
+      return NextResponse.json({ message: `Você atingiu o limite de ${ACTIVE_LISTING_LIMIT} anúncios ativos. Pause, marque como vendido ou exclua um para publicar outro.` }, { status: 409 });
+    }
 
     // Imagens só do nosso storage (cliente reenvia as URLs do upload — não confiar).
     const badImage = dto.images.some((i) => !isOfficialImageUrl(i.url) || (i.thumbUrl != null && !isOfficialImageUrl(i.thumbUrl)));

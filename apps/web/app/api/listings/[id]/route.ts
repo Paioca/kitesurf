@@ -9,7 +9,7 @@ import { LISTINGS_TAG } from '../../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
-import { canTransition, isEditable, type ListingStatus } from '../../../../lib/listing-status';
+import { canTransition, isEditable, type ListingStatus, ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../../lib/listing-status';
 import { openNegotiationExists } from '../../../../lib/deals';
 import { removeListing, LifecycleError } from '../../../../lib/lifecycle';
 import { type Component } from '../../../../lib/components';
@@ -29,13 +29,13 @@ const patchSchema = z.object({
   attributes: z.record(z.any()).optional(),
   title: z.string().min(4).max(120).optional(),
   description: z.string().max(4000).nullable().optional(),
-  price: z.number().int().min(100).optional(),
+  price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).optional(),
   city: z.string().min(1).optional(),
   spot: z.string().nullable().optional(),
   shippable: z.boolean().optional(),
   images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40).optional(),
-  kitePrice: z.number().int().min(100).nullable().optional(),
-  barraPrice: z.number().int().min(100).nullable().optional(),
+  kitePrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).nullable().optional(),
+  barraPrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).nullable().optional(),
   barraAttributes: z.record(z.any()).optional(),
 });
 
@@ -57,7 +57,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (error) return error;
 
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
-    if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
 
     // Máquina de estados: transição inválida (ex: sold→active) e edição de conteúdo
@@ -65,6 +65,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const current = listing!.status as ListingStatus;
     if (dto.status && !canTransition(current, dto.status)) {
       return NextResponse.json({ message: 'Transição de status não permitida.' }, { status: 409 });
+    }
+    // Reativar (→active) reconta pro teto: como só 'active' conta, reativar um pausado
+    // não pode furar o limite de 5 ativos.
+    if (dto.status === 'active' && current !== 'active') {
+      if ((await db.listing.count({ where: activeListingWhere(user.id) })) >= ACTIVE_LISTING_LIMIT) {
+        return NextResponse.json({ message: `Você atingiu o limite de ${ACTIVE_LISTING_LIMIT} anúncios ativos. Pause ou exclua outro para reativar este.` }, { status: 409 });
+      }
     }
     const hasContentEdit = Object.keys(dto).some((k) => k !== 'status');
     if (hasContentEdit && !isEditable(current)) {
