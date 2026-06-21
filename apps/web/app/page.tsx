@@ -36,7 +36,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
     ? ` em ${filters.city[0]}`
     : filters.city.length > 1
       ? ' nos spots selecionados'
-      : ' disponíveis';
+      : total === 1 ? ' disponível' : ' disponíveis';
   const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'}${countLocation}`;
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
@@ -125,7 +125,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
                   <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>À venda agora</div>
-                  <h2 style={{ fontFamily: font.serif, fontSize: 44, fontWeight: 600, letterSpacing: '-0.5px', margin: 0, lineHeight: 1.02 }}>Kites e barras disponíveis</h2>
+                  <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.5vw,50px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: 0, lineHeight: 0.98 }}>Kites e barras disponíveis</h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {sorts.map(([key, label]) => (

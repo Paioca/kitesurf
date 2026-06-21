@@ -163,7 +163,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
 
           {isKit ? (
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px' }}>{formatBRL(l.price)}</div>
+              <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px' }}>{formatBRL(l.price)}</div>
               <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 2 }}>Conjunto · kite + barra</div>
               {(kitePrice || barraPrice) ? (
                 <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -175,7 +175,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
               )}
             </div>
           ) : (
-            <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
+            <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
           )}
 
           {attrs.length > 0 && (
@@ -259,7 +259,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
       <section style={{ maxWidth: 1240, margin: '56px auto 0', padding: '0 24px' }}>
         <div style={{ background: '#ece3d2', borderRadius: 22, padding: 'clamp(28px, 4vw, 44px) clamp(22px, 4vw, 48px)' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 6 }}>100% estruturado — sem texto solto</div>
-          <h2 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 28px' }}>Ficha completa</h2>
+          <h2 style={{ fontFamily: font.sans, fontSize: 32, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.2px', margin: '0 0 28px' }}>Ficha completa</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1, background: '#dccdb2', border: '1px solid #dccdb2', borderRadius: 16, overflow: 'hidden' }}>
             {ficha.map((f) => (
               <div key={f.k} style={{ background: color.bg, padding: '18px 20px' }}>
