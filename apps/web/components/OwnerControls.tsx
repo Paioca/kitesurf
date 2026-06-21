@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { color } from '../lib/tokens';
+import { isEditable, type ListingStatus } from '../lib/listing-status';
 import { useToast } from './Toast';
 
 export function OwnerControls({ listingId, status, compact = false }: { listingId: string; status: string; compact?: boolean }) {
@@ -38,7 +39,7 @@ export function OwnerControls({ listingId, status, compact = false }: { listingI
     <div style={compact ? { padding: '4px 0 0' } : { border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
       {!compact && <div style={{ fontSize: 13, fontWeight: 700, color: color.inkFaint2, marginBottom: 12 }}>Você é o dono deste anúncio</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <Link href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</Link>
+        {isEditable(status as ListingStatus) && <Link href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</Link>}
         {status === 'active' && <button onClick={() => setStatus('paused')} disabled={busy} style={btnOutline}>Pausar</button>}
         {status === 'paused' && <button onClick={() => setStatus('active')} disabled={busy} style={btnOutline}>Reativar</button>}
         <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>

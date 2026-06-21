@@ -9,6 +9,7 @@ import { LISTINGS_TAG } from '../../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
+import { canTransition, isEditable, type ListingStatus } from '../../../../lib/listing-status';
 
 export const runtime = 'nodejs';
 
@@ -55,6 +56,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;
+
+    // Máquina de estados: transição inválida (ex: sold→active) e edição de conteúdo
+    // de um anúncio vendido/arquivado são bloqueadas — `sold` é terminal.
+    const current = listing!.status as ListingStatus;
+    if (dto.status && !canTransition(current, dto.status)) {
+      return NextResponse.json({ message: 'Transição de status não permitida.' }, { status: 409 });
+    }
+    const hasContentEdit = Object.keys(dto).some((k) => k !== 'status');
+    if (hasContentEdit && !isEditable(current)) {
+      return NextResponse.json({ message: 'Não é possível editar um anúncio vendido ou arquivado.' }, { status: 409 });
+    }
 
     if (dto.images !== undefined && dto.images.some((i) => !isOfficialImageUrl(i.url) || (i.thumbUrl != null && !isOfficialImageUrl(i.thumbUrl)))) {
       return NextResponse.json({ message: 'Imagem inválida.' }, { status: 400 });

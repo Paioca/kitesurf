@@ -9,12 +9,15 @@ import { SiteHeader } from '../../../../components/SiteHeader';
 import { Footer } from '../../../../components/Footer';
 import { MobileAppBar } from '../../../../components/MobileChrome';
 import { EditForm } from '../../../../components/EditForm';
+import { isEditable, type ListingStatus } from '../../../../lib/listing-status';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EditarAnuncio({ params }: { params: { id: string } }) {
   const [l, me] = await Promise.all([getListing(params.id), getCurrentUser()]);
   if (!l || !me || me.id !== l.userId) notFound();
+  // Anúncio vendido/arquivado não é editável (preserva o histórico de venda).
+  if (!isEditable(l.status as ListingStatus)) notFound();
 
   const barraSchema = l.hasBarra ? (await db.category.findUnique({ where: { slug: 'barra' } }))?.attributeSchema ?? null : null;
 
