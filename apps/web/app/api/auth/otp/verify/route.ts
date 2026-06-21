@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../../lib/db';
 import { verifyOtp } from '../../../../../lib/otp';
+import { normalizePhone } from '../../../../../lib/phone';
 import { isOfficialImageUrl } from '../../../../../lib/storage';
 import { setSession } from '../../../../../lib/session';
 import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
@@ -9,7 +10,7 @@ import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
 export const runtime = 'nodejs';
 
 const schema = z.object({
-  phone: z.string().regex(/^\+?[1-9]\d{7,14}$/),
+  phone: z.string(),
   code: z.string().min(4).max(8),
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
@@ -23,6 +24,10 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
   const dto = parsed.data;
+  // Mesmo E.164 canônico do request — senão o verifyOtp procura por um telefone
+  // diferente do que foi gravado e o código nunca casa.
+  const phone = normalizePhone(dto.phone);
+  if (!phone) return NextResponse.json({ message: 'Telefone inválido.' }, { status: 400 });
 
   // Avatar (quando enviado) só do nosso storage — não confiar na URL do cliente.
   if (dto.avatarUrl !== undefined && !isOfficialImageUrl(dto.avatarUrl)) {
@@ -32,7 +37,7 @@ export async function POST(req: Request) {
   // anti brute-force do código (além do limite de 5 tentativas por código)
   if (!(await rateLimit(`otp:verify:${clientIp(req)}`, 20, 3600))) return tooMany();
 
-  const existing = await db.user.findUnique({ where: { phone: dto.phone } });
+  const existing = await db.user.findUnique({ where: { phone } });
   let user = existing;
 
   if (!existing) {
@@ -40,22 +45,22 @@ export async function POST(req: Request) {
     // pra ele continuar válido até a criação efetiva.
     // E-mail é opcional (pedido depois, dentro da plataforma). Obrigatórios: nome + foto.
     if (!dto.name || !dto.avatarUrl) {
-      const ok = await verifyOtp(dto.phone, dto.code, false);
+      const ok = await verifyOtp(phone, dto.code, false);
       if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
       return NextResponse.json(
         { needsOnboarding: true, message: 'Conta nova: nome e foto de perfil são obrigatórios.' },
         { status: 400 },
       );
     }
-    const ok = await verifyOtp(dto.phone, dto.code, true);
+    const ok = await verifyOtp(phone, dto.code, true);
     if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
     if (dto.email && (await db.user.findUnique({ where: { email: dto.email } }))) {
       return NextResponse.json({ message: 'Email já cadastrado.' }, { status: 409 });
     }
     user = await db.user.create({
       data: {
-        phone: dto.phone,
-        phoneCountry: dto.phone.startsWith('+55') ? 'BR' : 'INT',
+        phone,
+        phoneCountry: phone.startsWith('+55') ? 'BR' : 'INT',
         phoneVerified: true,
         name: dto.name,
         email: dto.email ?? null,
@@ -66,7 +71,7 @@ export async function POST(req: Request) {
     });
   } else {
     // Login de conta existente: valida e queima o código.
-    const ok = await verifyOtp(dto.phone, dto.code, true);
+    const ok = await verifyOtp(phone, dto.code, true);
     if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
     if (!existing.phoneVerified) {
       user = await db.user.update({ where: { id: existing.id }, data: { phoneVerified: true } });
