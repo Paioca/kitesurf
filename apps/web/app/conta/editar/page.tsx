@@ -16,8 +16,7 @@ export default async function EditarPerfil() {
   const initial = {
     name: user.name ?? '',
     lastName: user.lastName ?? '',
-    city: user.city ?? '',
-    state: user.state ?? '',
+    spot: user.spot ?? '',
     country: user.country ?? '',
     email: user.email ?? '',
     avatarUrl: user.avatarUrl ?? '',

@@ -4,14 +4,14 @@
 import { useRef, useState } from 'react';
 import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
-import { COUNTRY_NAMES, UFS } from '../lib/geo';
+import { COUNTRY_NAMES } from '../lib/geo';
+import { SPOTS } from '../lib/filters';
 
-export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; city: string; state: string; country: string; email: string; avatarUrl: string; locale: string } }) {
+export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; spot: string; country: string; email: string; avatarUrl: string; locale: string } }) {
   const [name, setName] = useState(initial.name);
   const [lastName, setLastName] = useState(initial.lastName);
+  const [spot, setSpot] = useState(initial.spot);
   const [country, setCountry] = useState(initial.country || 'Brasil');
-  const [city, setCity] = useState(initial.city);
-  const [uf, setUf] = useState(initial.state);
   const [email, setEmail] = useState(initial.email);
   const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl);
   const [locale, setLocale] = useState(initial.locale || 'pt');
@@ -36,7 +36,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   async function save() {
     setSaving(true); setError('');
     try {
-      const res = await fetch('/api/auth/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, lastName: lastName.trim() || null, country, city: city.trim() || null, state: country === 'Brasil' ? uf || null : null, email: email.trim() || null, avatarUrl, locale }) });
+      const res = await fetch('/api/auth/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, lastName: lastName.trim() || null, spot: spot || null, country, email: email.trim() || null, avatarUrl, locale }) });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro ao salvar.');
       window.location.href = '/conta';
     } catch (e: any) { setError(e.message); setSaving(false); }
@@ -69,20 +69,17 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
 
       <Field label="Nome"><input className="kl-input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
       <Field label="Sobrenome"><input className="kl-input" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Seu sobrenome" /></Field>
-      <Field label="País">
-        <select className="kl-input" value={country} onChange={(e) => { setCountry(e.target.value); if (e.target.value !== 'Brasil') setUf(''); }}>
+      <Field label="Spot de interesse">
+        <select className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)}>
+          <option value="">Selecione um spot</option>
+          {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </Field>
+      <Field label="Nacionalidade">
+        <select className="kl-input" value={country} onChange={(e) => setCountry(e.target.value)}>
           {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </Field>
-      <Field label="Cidade"><input className="kl-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Sua cidade" /></Field>
-      {country === 'Brasil' && (
-        <Field label="Estado (UF)">
-          <select className="kl-input" value={uf} onChange={(e) => setUf(e.target.value)}>
-            <option value="">Selecione</option>
-            {UFS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-        </Field>
-      )}
       <Field label="E-mail (opcional)"><input className="kl-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" /></Field>
       <Field label="Idioma">
         <div style={{ display: 'inline-flex', background: '#fff', border: `1.5px solid ${color.lineCard}`, borderRadius: 999, padding: 3 }}>

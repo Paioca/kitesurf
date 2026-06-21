@@ -235,7 +235,7 @@ function HeroSelect({ name, label, placeholder, options, accent, last }: { name:
 function Trust() {
   const pillars = [
     { title: 'Telefone verificado', desc: 'Confirmação por código enviado por SMS. Um número por conta.' },
-    { title: 'Cidade e país no perfil', desc: 'Você sabe de onde a pessoa é antes de combinar a negociação.' },
+    { title: 'Spot e nacionalidade no perfil', desc: 'Você sabe o pique e de onde a pessoa é antes de combinar a negociação.' },
     { title: 'Avaliações de negócios', desc: 'A avaliação fica pública conforme a confirmação do negócio na plataforma.' },
     { title: 'Contato estruturado', desc: 'O comprador envia seu contato no pedido; o vendedor libera o WhatsApp ao demonstrar interesse.' },
   ];

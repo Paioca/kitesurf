@@ -5,7 +5,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
-import { COUNTRY_NAMES, UFS } from '../../lib/geo';
+import { COUNTRY_NAMES } from '../../lib/geo';
+import { SPOTS } from '../../lib/filters';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 
@@ -23,8 +24,7 @@ export default function Entrar() {
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('Brasil');
-  const [city, setCity] = useState('');
-  const [uf, setUf] = useState('');
+  const [spot, setSpot] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [lang, setLang] = useState<'pt' | 'en'>('pt');
   const [error, setError] = useState('');
@@ -73,7 +73,7 @@ export default function Entrar() {
     setLoading(true);
     try {
       const body: any = { phone, code };
-      if (withProfile) Object.assign(body, { name, lastName, country, city, state: country === 'Brasil' ? uf : '', avatarUrl, locale: lang });
+      if (withProfile) Object.assign(body, { name, lastName, spot, country, avatarUrl, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,15 +115,14 @@ export default function Entrar() {
     }
   }
 
-  // Foto obrigatória (anti-fake) + nome/sobrenome + país e cidade (estado/UF só pra Brasil).
+  // Foto obrigatória (anti-fake) + nome/sobrenome + spot de interesse + nacionalidade.
   // E-mail é opcional — pedido depois, dentro da plataforma.
   const canFinish =
     !!avatarUrl &&
     name.trim().length >= 2 &&
     lastName.trim().length >= 1 &&
-    !!country &&
-    city.trim().length >= 1 &&
-    (country !== 'Brasil' || !!uf);
+    !!spot &&
+    !!country;
 
   return (
     <div style={shell}>
@@ -222,26 +221,16 @@ export default function Entrar() {
                 </div>
               </div>
 
-              <label style={lbl}>País</label>
-              <select value={country} onChange={(e) => { setCountry(e.target.value); if (e.target.value !== 'Brasil') setUf(''); }} aria-label="País" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
-                {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <label style={lbl}>Spot de interesse</label>
+              <select value={spot} onChange={(e) => setSpot(e.target.value)} aria-label="Spot de interesse" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
+                <option value="">Selecione um spot</option>
+                {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
 
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                <div style={{ flex: country === 'Brasil' ? 2 : 1, minWidth: 0 }}>
-                  <label style={lbl}>Cidade</label>
-                  <input value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" placeholder="Sua cidade" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
-                </div>
-                {country === 'Brasil' && (
-                  <div style={{ flex: 'none', width: 96 }}>
-                    <label style={lbl}>Estado</label>
-                    <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado (UF)" style={{ ...input, width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}>
-                      <option value="">UF</option>
-                      {UFS.map((u) => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
+              <label style={lbl}>Nacionalidade</label>
+              <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Nacionalidade" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
+                {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
 
               <div style={{ fontSize: 12.5, color: '#9aa49d', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{ width: 13, height: 13, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none', marginTop: 2 }} />

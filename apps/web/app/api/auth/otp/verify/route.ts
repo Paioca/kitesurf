@@ -6,6 +6,7 @@ import { normalizePhone } from '../../../../../lib/phone';
 import { isOfficialImageUrl } from '../../../../../lib/storage';
 import { setSession } from '../../../../../lib/session';
 import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
+import { SPOTS } from '../../../../../lib/filters';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +15,7 @@ const schema = z.object({
   code: z.string().min(4).max(8),
   name: z.string().min(2).optional(),
   lastName: z.string().max(80).optional(),
-  city: z.string().max(80).optional(),
-  state: z.string().max(80).optional(),
+  spot: z.string().max(80).optional(),
   country: z.string().max(80).optional(),
   email: z.string().email().optional(),
   avatarUrl: z.string().optional(),
@@ -68,8 +68,7 @@ export async function POST(req: Request) {
         phoneVerified: true,
         name: dto.name,
         lastName: dto.lastName?.trim() || null,
-        city: dto.city?.trim() || null,
-        state: dto.state?.trim() || null,
+        spot: dto.spot && SPOTS.includes(dto.spot) ? dto.spot : null, // só spot da lista controlada
         country: dto.country?.trim() || null,
         email: dto.email ?? null,
         avatarUrl: dto.avatarUrl,

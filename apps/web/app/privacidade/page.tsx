@@ -4,9 +4,9 @@ import { LegalPage, type LegalSection } from '../../components/LegalPage';
 export const metadata = { title: 'Política de Privacidade — Kitetropos' };
 
 const sections: LegalSection[] = [
-  { id: 'dados', title: 'Dados que coletamos', body: 'Telefone (obrigatório, para login e verificação), nome, sobrenome, foto de perfil, cidade/estado e país. E-mail é opcional. Dos anúncios: fotos e a ficha do equipamento. As fotos têm os metadados de localização (GPS) removidos automaticamente no envio.' },
+  { id: 'dados', title: 'Dados que coletamos', body: 'Telefone (obrigatório, para login e verificação), nome, sobrenome, foto de perfil, spot de interesse e nacionalidade. E-mail é opcional. Dos anúncios: fotos e a ficha do equipamento. As fotos têm os metadados de localização (GPS) removidos automaticamente no envio.' },
   { id: 'uso', title: 'Como usamos', body: 'Para autenticar sua conta, exibir seus anúncios, conectar comprador e vendedor, avisar sobre ofertas/visitas e construir a reputação a partir de negócios e avaliações.' },
-  { id: 'publico', title: 'O que é público', body: <>Nome, foto, cidade/estado e país, seus anúncios ativos e suas avaliações. <strong>Telefone e e-mail nunca são exibidos publicamente</strong> — só o selo de "verificado".</> },
+  { id: 'publico', title: 'O que é público', body: <>Nome, foto, spot de interesse e nacionalidade, seus anúncios ativos e suas avaliações. <strong>Telefone e e-mail nunca são exibidos publicamente</strong> — só o selo de "verificado".</> },
   { id: 'contato', title: 'Compartilhamento de contato', body: 'Ao enviar uma oferta ou pedir uma visita, o contato do comprador fica disponível ao vendedor. Quando o vendedor demonstra interesse, o WhatsApp dele também fica disponível ao comprador. Fora desse fluxo, telefone e e-mail não são exibidos publicamente.' },
   { id: 'notificacoes', title: 'Notificações', body: 'Podemos usar SMS ou WhatsApp para avisar sobre atividade da conta, como uma nova oferta ou um pedido de visita. O canal depende da configuração disponível e usa o telefone cadastrado.' },
   { id: 'direitos', title: 'Seus direitos', body: 'Você pode editar seus dados no perfil e excluir sua conta. Ao excluir, seus anúncios saem do ar e os dados pessoais diretamente identificáveis são removidos ou substituídos.' },
