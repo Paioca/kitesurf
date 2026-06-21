@@ -8,7 +8,8 @@ import { db } from '../../../lib/db';
 import { getListingRequestState } from '../../../lib/requests';
 import { OwnerControls } from '../../../components/OwnerControls';
 import { FavoriteButton } from '../../../components/FavoriteButton';
-import { ContactActions } from '../../../components/ContactActions';
+import { ContactActions, type Target } from '../../../components/ContactActions';
+import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
@@ -48,6 +49,7 @@ const CONDITION: Record<string, string> = {
   zero: 'Zero', microfuro_adesivado: 'Microfuro adesivado', original: 'Original', ja_trocadas: 'Já trocadas',
 };
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
+const soldPill: React.CSSProperties = { ...pricePill, color: color.inkFaint2, background: '#efeae0', textDecoration: 'line-through', opacity: 0.7 };
 
 export default async function AnuncioPage({ params }: { params: { id: string } }) {
   const l = await getListing(params.id);
@@ -56,7 +58,8 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   const me = await getCurrentUser();
   const isOwner = !!me && me.id === l.userId;
   const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
-  const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { offer: null, visit: null, whatsapp: null };
+  const emptyReq = { offer: null, visit: null, whatsapp: null };
+  const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { conjunto: emptyReq, kite: emptyReq, barra: emptyReq };
   const statusLabel: Record<string, string> = { paused: 'Pausado — não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
 
   const a = (l.attributes ?? {}) as Record<string, any>;
@@ -100,6 +103,17 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
   if (a.reparos != null) summaryParts.push(Number(a.reparos) > 0 ? `${a.reparos} reparo(s)` : 'sem reparos');
   summaryParts.push(`em ${l.city}${l.spot ? ` (${l.spot})` : ''}`);
   const visitSummary = summaryParts.join(', ');
+
+  // Alvos vendáveis (peça única → 1 alvo 'conjunto'; kit com avulso → 2-3 alvos).
+  const barraSummary = [ba.compatible_brand ? `compatível ${ba.compatible_brand}` : '', ba.line_length_m ? `linhas ${ba.line_length_m} m` : '', ba.condition ? (CONDITION[ba.condition] ?? ba.condition) : '', `em ${l.city}${l.spot ? ` (${l.spot})` : ''}`].filter(Boolean).join(', ');
+  const compMeta: Record<Component, { summary: string; itemNoun: string }> = {
+    conjunto: { summary: visitSummary, itemNoun },
+    kite: { summary: visitSummary, itemNoun: 'o kite' },
+    barra: { summary: barraSummary, itemNoun: 'a barra' },
+  };
+  const targets: Target[] = sellables(l as unknown as ListingLike)
+    .filter((s) => s.available)
+    .map((s) => ({ component: s.component, label: COMPONENT_LABEL[s.component], price: s.price, summary: compMeta[s.component].summary, itemNoun: compMeta[s.component].itemNoun }));
 
   // Ficha completa estruturada (seção "100% estruturado" do design).
   const ficha: { k: string; v: string }[] = [];
@@ -153,8 +167,8 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
               <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 2 }}>Conjunto · kite + barra</div>
               {(kitePrice || barraPrice) ? (
                 <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {kitePrice ? <span style={pricePill}>Só o kite: {formatBRL(kitePrice)}</span> : null}
-                  {barraPrice ? <span style={pricePill}>Só a barra: {formatBRL(barraPrice)}</span> : null}
+                  {kitePrice ? <span style={l.kiteSoldAt ? soldPill : pricePill}>Só o kite: {formatBRL(kitePrice)}{l.kiteSoldAt ? ' · vendido' : ''}</span> : null}
+                  {barraPrice ? <span style={l.barraSoldAt ? soldPill : pricePill}>Só a barra: {formatBRL(barraPrice)}{l.barraSoldAt ? ' · vendida' : ''}</span> : null}
                 </div>
               ) : (
                 <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 6 }}>Vendido só em conjunto.</div>
@@ -200,8 +214,8 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             <OwnerControls listingId={l.id} status={l.status} />
           ) : (
             <>
-              {l.status === 'active' ? (
-                <ContactActions listingId={l.id} initial={reqState} visitSummary={visitSummary} itemNoun={itemNoun} />
+              {l.status === 'active' && targets.length > 0 ? (
+                <ContactActions listingId={l.id} targets={targets} stateByComponent={reqState} />
               ) : (
                 // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
                 // a fricção de preencher uma oferta que vai falhar).

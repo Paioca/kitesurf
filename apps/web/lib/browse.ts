@@ -128,7 +128,7 @@ function toCard(l: any, persp: Perspective): Card {
     sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || '—',
     condLabel: a.condition ? (COND_LABEL[a.condition] ?? a.condition) : null,
     repair: Number(a.repairs_count ?? 0) > 0,
-    includesBar: l.hasBarra === true,
+    includesBar: l.hasBarra === true && l.barraSoldAt == null, // a barra avulsa do kit já saiu? sem badge "+ Barra"
     partOfKit: false,
     favorited: false,
     photo: pickPhoto(l.images, 'kite'),
@@ -146,6 +146,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   const and: Prisma.ListingWhereInput[] = [];
   if (persp === 'barra') {
     and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
+    and.push({ barraSoldAt: null }); // esconde a barra do kit já vendida (anúncio fica na busca de kite)
     if (f.city.length) and.push({ city: { in: f.city } });
     if (f.delivery.length) {
       const opts: Prisma.ListingWhereInput[] = [];
@@ -155,7 +156,10 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
     }
     return { ...BASE, AND: and };
   }
-  if (persp === 'kite') and.push({ category: { slug: 'kite' } });
+  if (persp === 'kite') {
+    and.push({ category: { slug: 'kite' } });
+    and.push({ kiteSoldAt: null }); // esconde o kite do kit já vendido (anúncio fica na busca de barra)
+  }
   if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
   if (f.city.length) and.push({ city: { in: f.city } });
@@ -192,12 +196,13 @@ type ActiveRow = {
   pickup: boolean; shippable: boolean; catSlug: string;
   brandName: string | null; size: string | null; cond: string | null;
   bladder: string | null; mang: string | null; repair: boolean;
+  kiteSold: boolean; barraSold: boolean; // peça avulsa do kit já vendida
 };
 const loadActiveRows = unstable_cache(
   async (): Promise<ActiveRow[]> => {
     const rows = await db.listing.findMany({
       where: BASE,
-      select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
+      select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
     });
     return rows.map((r) => {
       const a = (r.attributes ?? {}) as Record<string, any>;
@@ -206,6 +211,7 @@ const loadActiveRows = unstable_cache(
         pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
         size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
         bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
+        kiteSold: r.kiteSoldAt != null, barraSold: r.barraSoldAt != null,
       };
     });
   },
@@ -219,8 +225,8 @@ const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 5
 // EXCETO o dela própria (padrão de busca facetada — a contagem bate com o resultado).
 function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { facets: Facets; totalAll: number } {
   const inPersp = (r: ActiveRow) =>
-    persp === 'barra' ? r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null)
-      : persp === 'kite' ? r.catSlug === 'kite' && (f.cat === 'kit' ? r.hasBarra : true)
+    persp === 'barra' ? r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null && !r.barraSold)
+      : persp === 'kite' ? r.catSlug === 'kite' && !r.kiteSold && (f.cat === 'kit' ? r.hasBarra : true)
         : true;
 
   const P = {
@@ -249,8 +255,8 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
   const wM = setExcept('withbar');
   // categoria conta sobre filtros cross-categoria (city/price/delivery/brand), sem restrição de perspectiva
   const catSet = rows.filter((r) => P.city(r) && P.price(r) && P.delivery(r) && P.brand(r));
-  const kiteCount = catSet.filter((r) => r.catSlug === 'kite').length;
-  const barraCount = catSet.filter((r) => r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null)).length;
+  const kiteCount = catSet.filter((r) => r.catSlug === 'kite' && !r.kiteSold).length;
+  const barraCount = catSet.filter((r) => r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null && !r.barraSold)).length;
   const withbarCount = wM.filter((r) => r.hasBarra).length;
   const pickupCount = dM.filter((r) => r.pickup).length;
   const shipCount = dM.filter((r) => r.shippable).length;

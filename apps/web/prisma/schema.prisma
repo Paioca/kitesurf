@@ -151,6 +151,11 @@ model Listing {
   status          ListingStatus @default(draft)
   soldToUserId    String?
   lastConfirmedAt DateTime?
+  // venda por componente (kit): peça avulsa vendida (null = ainda disponível).
+  kiteSoldAt        DateTime?
+  kiteSoldToUserId  String?
+  barraSoldAt       DateTime?
+  barraSoldToUserId String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
@@ -169,6 +174,8 @@ model Listing {
   @@index([categoryId])
   @@index([city])
   @@index([status, deletedAt]) // filtro base de toda busca (active + não-excluído)
+  @@index([kiteSoldAt])
+  @@index([barraSoldAt])
   @@index([attributes], type: Gin) // busca por tamanho etc.
 }
 
@@ -234,6 +241,14 @@ enum DealStatus {
   cancelled
 }
 
+// Qual peça de um kit está sendo negociada/vendida. Peça única / kite-only /
+// barra-only usam sempre 'conjunto' (o anúncio inteiro).
+enum Component {
+  conjunto
+  kite
+  barra
+}
+
 // "Aperto de mão" sem dinheiro (Fase 0): vendedor confirma a venda escolhendo
 // o comprador → comprador confirma a compra → vira `completed`, anúncio `sold`,
 // e habilita avaliação dos dois lados.
@@ -244,6 +259,7 @@ model Deal {
   sellerId          String
   buyerId           String
   status            DealStatus @default(seller_confirmed)
+  component         Component  @default(conjunto) // qual peça do kit foi vendida
   sellerConfirmedAt DateTime?
   buyerConfirmedAt  DateTime?
   createdAt         DateTime   @default(now())
@@ -257,9 +273,9 @@ model Deal {
 
   @@index([sellerId])
   @@index([buyerId])
-  // Índice único PARCIAL (só status='completed') criado via SQL em
-  // migrations/20260620000000_deal_unique_completed — Prisma não modela
-  // partial unique index; garante 1 venda completa por anúncio.
+  // Índice único PARCIAL (status='completed') por (listingId, component), criado via
+  // SQL em migrations/20260621000000_component_sales (Prisma não modela partial unique
+  // index): garante 1 venda completa por COMPONENTE do anúncio.
 }
 
 // Avaliação atrelada a um Deal `completed`. 1 review por avaliador por deal.
@@ -332,6 +348,7 @@ model Request {
   type      RequestType
   amount    Int? // centavos — só pra oferta
   status    RequestStatus @default(pending)
+  component Component     @default(conjunto) // alvo da oferta/visita (peça do kit)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -339,7 +356,7 @@ model Request {
   buyer   User    @relation("buyerRequests", fields: [buyerId], references: [id])
   seller  User    @relation("sellerRequests", fields: [sellerId], references: [id])
 
-  @@unique([listingId, buyerId, type]) // 1 oferta + 1 visita por comprador por anúncio
+  @@unique([listingId, buyerId, type, component]) // 1 oferta + 1 visita por comprador por peça
   @@index([sellerId])
   @@index([buyerId])
 }

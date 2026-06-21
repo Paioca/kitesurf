@@ -55,7 +55,7 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} received /></div>
                 <div style={titleTxt}>{r.listing.title}</div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
               </div>
             </a>
@@ -71,7 +71,7 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} /></div>
                 <div style={titleTxt}>{r.listing.title}</div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
               </div>
             </a>

@@ -1,17 +1,20 @@
 'use client';
 
 // Contato estruturado no anúncio: Fazer oferta (valor) | Pedir visita.
-// Vendedor aceita → libera o WhatsApp (vem do servidor em initial.whatsapp).
+// Venda por componente: 1 alvo = UI direta; 2+ (kit com peça avulsa) = seletor.
 import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
+import type { Component } from '../lib/components';
 
 const PENDING_KEY = (id: string) => `vaya:pending-request:${id}`;
 
 type State = { offer: { status: string; amount: number | null } | null; visit: { status: string } | null; whatsapp: string | null };
+export type Target = { component: Component; label: string; price: number; summary: string; itemNoun: string };
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export function ContactActions({ listingId, initial, visitSummary = '', itemNoun = 'o item' }: { listingId: string; initial: State; visitSummary?: string; itemNoun?: string }) {
-  const [state, setState] = useState<State>(initial);
+export function ContactActions({ listingId, targets, stateByComponent }: { listingId: string; targets: Target[]; stateByComponent: Record<Component, State> }) {
+  const [stateMap, setStateMap] = useState(stateByComponent);
+  const [sel, setSel] = useState(0);
   const [showOffer, setShowOffer] = useState(false);
   const [confirmVisit, setConfirmVisit] = useState(false);
   const [ciente, setCiente] = useState(false); // gate anti-spam do design
@@ -19,20 +22,31 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
 
-  // Retoma a oferta/visita digitada antes do login. NÃO reenvia sozinho — restaura o
-  // formulário preenchido pra um clique explícito (não disparar dinheiro sem querer).
+  const target = targets[sel];
+  const component = target.component;
+  const state = stateMap[component];
+  const { visitSummary, itemNoun } = { visitSummary: target.summary, itemNoun: target.itemNoun };
+
+  const switchTarget = (i: number) => { setSel(i); setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount(''); setErr(''); };
+
+  // Retoma a oferta/visita digitada antes do login (no alvo certo). NÃO reenvia
+  // sozinho — restaura o formulário pra um clique explícito.
   useEffect(() => {
     let raw: string | null = null;
     try { raw = sessionStorage.getItem(PENDING_KEY(listingId)); } catch {}
     if (!raw) return;
     try { sessionStorage.removeItem(PENDING_KEY(listingId)); } catch {}
-    let pend: { type: 'offer' | 'visit'; amount: number | null };
+    let pend: { type: 'offer' | 'visit'; amount: number | null; component?: Component };
     try { pend = JSON.parse(raw); } catch { return; }
-    if (pend.type === 'offer' && !initial.offer) {
+    const i = targets.findIndex((t) => t.component === (pend.component ?? 'conjunto'));
+    if (i < 0) return; // alvo não está mais à venda
+    setSel(i);
+    const st = stateMap[targets[i].component];
+    if (pend.type === 'offer' && !st.offer) {
       if (pend.amount != null) setAmount(String(Math.round(pend.amount / 100)));
-      setCiente(true); // já tinha concordado antes do login; falta só o clique de confirmar
+      setCiente(true);
       setShowOffer(true);
-    } else if (pend.type === 'visit' && !initial.visit) {
+    } else if (pend.type === 'visit' && !st.visit) {
       setCiente(true);
       setConfirmVisit(true);
     }
@@ -42,26 +56,35 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
   async function send(type: 'offer' | 'visit', amountCents?: number) {
     setBusy(type); setErr('');
     try {
-      const res = await fetch(`/api/listings/${listingId}/request`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, amount: amountCents }) });
+      const res = await fetch(`/api/listings/${listingId}/request`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, amount: amountCents, component }) });
       if (res.status === 401) {
-        // guarda a oferta/visita digitada pra re-disparar depois do login (não perder)
-        try { sessionStorage.setItem(PENDING_KEY(listingId), JSON.stringify({ type, amount: amountCents ?? null })); } catch {}
+        try { sessionStorage.setItem(PENDING_KEY(listingId), JSON.stringify({ type, amount: amountCents ?? null, component })); } catch {}
         window.location.href = `/entrar?next=${encodeURIComponent(`/anuncio/${listingId}`)}`;
         return;
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
-      if (type === 'offer') setState((s) => ({ ...s, offer: { status: 'pending', amount: amountCents ?? null } }));
-      else setState((s) => ({ ...s, visit: { status: 'pending' } }));
+      setStateMap((m) => ({ ...m, [component]: { ...m[component], ...(type === 'offer' ? { offer: { status: 'pending', amount: amountCents ?? null } } : { visit: { status: 'pending' } }) } }));
       setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount('');
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }
 
-  // Contato já liberado → vai pro WhatsApp.
+  const selector = targets.length > 1 ? (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+      {targets.map((t, i) => (
+        <button key={t.component} onClick={() => switchTarget(i)} style={{ flex: 'none', fontFamily: font.sans, fontSize: 13, fontWeight: 700, padding: '9px 14px', borderRadius: 999, cursor: 'pointer', background: i === sel ? color.primary : '#fff', color: i === sel ? '#fff' : color.ink, border: `1.5px solid ${i === sel ? color.primary : color.lineInput}` }}>
+          {t.label} · {brl(t.price)}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
+  // Contato já liberado pro alvo selecionado → vai pro WhatsApp.
   if (state.whatsapp) {
     return (
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: color.primary, fontWeight: 600, marginBottom: 8 }}>✓ O vendedor liberou o contato.</div>
+        {selector}
+        <div style={{ fontSize: 13, color: color.primary, fontWeight: 600, marginBottom: 8 }}>✓ O vendedor liberou o contato{targets.length > 1 ? ` (${target.label.toLowerCase()})` : ''}.</div>
         <a href={state.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', textAlign: 'center', background: '#25D366', color: '#fff', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>
         <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>Combinem preço, visita e o resto por lá.</div>
       </div>
@@ -70,6 +93,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
 
   return (
     <div style={{ marginBottom: 24 }}>
+      {selector}
       {!showOffer ? (
         <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
       ) : (

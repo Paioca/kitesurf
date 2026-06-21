@@ -1,8 +1,11 @@
 import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
+import { sellables, shouldCloseListing, type ListingLike, type Component } from './components';
 
 export class DealError extends PublicError {}
+
+const sellableSel = { status: true, hasBarra: true, price: true, kitePrice: true, barraPrice: true, kiteSoldAt: true, barraSoldAt: true } as const;
 
 // Vendedor confirma a venda (a partir da conversa) → cria o Deal.
 export async function confirmSale(userId: string, conversationId: string) {
@@ -26,14 +29,16 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
   if (r.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
   if (r.status !== 'accepted') throw new DealError('Aceite o pedido antes de marcar como vendido.', 400);
 
-  const listing = await db.listing.findUnique({ where: { id: r.listingId }, select: { status: true, deletedAt: true } });
-  if (!listing || listing.deletedAt) throw new DealError('Anúncio não encontrado.', 404);
-  if (listing.status === 'sold') throw new DealError('Este anúncio já foi vendido.', 409);
+  const listing = await db.listing.findFirst({ where: { id: r.listingId, deletedAt: null }, select: sellableSel });
+  if (!listing) throw new DealError('Anúncio não encontrado.', 404);
   if (listing.status !== 'active' && listing.status !== 'paused') throw new DealError('Anúncio não está disponível.', 400);
+  const sell = sellables(listing as ListingLike).find((s) => s.component === r.component);
+  if (!sell?.available) throw new DealError('Esta peça já foi vendida.', 409);
 
-  let deal = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId } });
+  // 1 negócio por listing+comprador+COMPONENTE (kite e barra do mesmo kit são deals distintos).
+  let deal = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId, component: r.component } });
   if (!deal) {
-    deal = await db.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
+    deal = await db.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
   } else if (deal.status !== 'completed' && !deal.sellerConfirmedAt) {
     deal = await db.deal.update({ where: { id: deal.id }, data: { status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
   }
@@ -47,21 +52,45 @@ export async function confirmPurchase(userId: string, dealId: string) {
   if (deal.buyerId !== userId) throw new DealError('Só o comprador confirma a compra.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Negócio não está aguardando confirmação.', 400);
 
-  // Atômico: só marca vendido se o anúncio ainda está disponível. Se outro
-  // comprador já fechou (updateMany.count === 0), abortamos — sem segundo "vendido"
-  // nem segunda review válida. O índice único parcial em Deal(listingId) WHERE
-  // status='completed' é a trava de DB que cobre a corrida real.
+  const listing = await db.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: sellableSel });
+  if (!listing) throw new DealError('Anúncio não encontrado.', 404);
+  const comp = deal.component;
+  if (!sellables(listing as ListingLike).find((s) => s.component === comp)?.available) {
+    throw new DealError('Esta peça já foi vendida.', 409);
+  }
+  const close = shouldCloseListing(listing as ListingLike, comp); // última peça → anúncio sold
+
+  // Atômico POR COMPONENTE: o guard no where impede 2 confirmações da mesma peça
+  // (count===0 → aborta). Índice único parcial Deal(listingId, component) WHERE
+  // completed é a trava de DB. conjunto exige nenhuma peça vendida (kiteSoldAt/barraSoldAt null).
   await db.$transaction(async (tx) => {
-    const updated = await tx.listing.updateMany({
-      where: { id: deal.listingId, status: { in: ['active', 'paused'] } },
-      data: { status: 'sold', soldToUserId: deal.buyerId },
-    });
-    if (updated.count === 0) throw new DealError('Este anúncio já foi vendido.', 409);
+    const where: Record<string, unknown> = { id: deal.listingId, status: { in: ['active', 'paused'] } };
+    const data: Record<string, unknown> = {};
+    if (comp === 'kite') {
+      where.kiteSoldAt = null;
+      data.kiteSoldAt = new Date();
+      data.kiteSoldToUserId = deal.buyerId;
+    } else if (comp === 'barra') {
+      where.barraSoldAt = null;
+      data.barraSoldAt = new Date();
+      data.barraSoldToUserId = deal.buyerId;
+    } else {
+      where.kiteSoldAt = null; // conjunto só vende se nenhuma peça avulsa saiu
+      where.barraSoldAt = null;
+    }
+    if (close) {
+      data.status = 'sold';
+      data.soldToUserId = deal.buyerId;
+    }
+    const updated = await tx.listing.updateMany({ where, data });
+    if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
     await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
-    // Vendido → recusa os pedidos pendentes/aceitos dos outros compradores no mesmo
-    // anúncio (o item não está mais disponível pra eles).
+    // Recusa cirúrgica dos pedidos de OUTROS compradores: se fechou o anúncio, recusa
+    // todos; se vendeu só uma peça, recusa a MESMA peça + os de conjunto (kit incompleto),
+    // preservando a outra peça ainda à venda.
+    const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
     await tx.request.updateMany({
-      where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] } },
+      where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter },
       data: { status: 'declined' },
     });
   });
