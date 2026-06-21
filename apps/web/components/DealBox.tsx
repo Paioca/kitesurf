@@ -86,7 +86,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
             : null}
           <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Avalie {reviewing}</div>
           <div style={{ display: 'flex', gap: 6, margin: '10px 0' }}>
-            {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`${n} de 5 estrelas`} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, lineHeight: 1, color: n <= rating ? color.accent : color.lineInput, padding: 0 }}>★</button>)}
+            {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`${n} de 5 estrelas`} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, lineHeight: 1, color: n <= rating ? color.primary : color.lineInput, padding: 0 }}>★</button>)}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
             {tagOptions.map((t) => {

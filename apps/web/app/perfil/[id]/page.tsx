@@ -128,7 +128,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
                     <div style={{ fontSize: 14.5, fontWeight: 700 }}>{r.reviewerName}</div>
                     <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>{r.gear ? `${r.gear} · ` : ''}{new Date(r.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</div>
                   </div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, flex: 'none', color: color.accent, letterSpacing: 1 }}>{stars(r.rating)}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, flex: 'none', color: color.primary, letterSpacing: 1 }}>{stars(r.rating)}</div>
                 </div>
                 {r.tags?.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: r.comment ? 10 : 0 }}>
@@ -168,7 +168,7 @@ function AboutRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
 function Stat({ value, label, star }: { value: string; label: string; star?: boolean }) {
   return (
     <div style={{ background: '#fff', padding: 22, textAlign: 'center' }}>
-      <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', color: star ? color.ink : color.ink }}><span style={star ? { color: color.accent } : undefined}>{value}</span></div>
+      <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', color: color.ink }}><span style={star ? { color: color.primary } : undefined}>{value}</span></div>
       <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 4 }}>{label}</div>
     </div>
   );
