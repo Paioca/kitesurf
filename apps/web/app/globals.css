@@ -79,14 +79,18 @@ a {
 .kl-input,
 .kl-textarea {
   font-family: 'Archivo', sans-serif;
-  font-size: 15px;
+  font-size: 16px; /* 16px evita o auto-zoom do iOS ao focar o campo */
   color: #23332e;
   background: #fff;
   border: 1.5px solid #e0d9c9;
   border-radius: 11px;
   padding: 13px 15px;
+  min-height: 48px; /* alvo de toque mobile (auditoria #04) */
   width: 100%;
   box-sizing: border-box;
+  box-shadow: none; /* campo limpo — sem drop-shadow datado (auditoria #04) */
+  -webkit-appearance: none;
+  appearance: none;
 }
 .kl-select {
   font-weight: 600;
@@ -152,6 +156,45 @@ a {
   outline: none;
   border-color: #1f6b5c;
   box-shadow: 0 0 0 3px rgba(31, 107, 92, 0.1);
+}
+
+/* NAV do Criar — fixa no rodapé no mobile (auditoria #05); inline no desktop */
+.criar-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: #fff;
+  border-top: 1px solid #ece3d2;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.06);
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.criar-nav-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c0492f;
+  text-align: center;
+  margin-bottom: 9px;
+}
+.criar-content {
+  padding-bottom: 104px; /* respiro pra não ficar atrás do bar fixo */
+}
+@media (min-width: 900px) {
+  .criar-nav {
+    position: static;
+    background: none;
+    box-shadow: none;
+    border-top: 1px solid #ece3d2;
+    margin-top: 38px;
+    padding: 24px 0 0;
+  }
+  .criar-nav-msg {
+    text-align: right;
+  }
+  .criar-content {
+    padding-bottom: 0;
+  }
 }
 
 /* Responsivo: mobile feed < 900px, layout web >= 900px */

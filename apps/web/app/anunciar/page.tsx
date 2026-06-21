@@ -9,6 +9,7 @@ import { downscaleImage } from '../../lib/resizeImage';
 import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
+import { SearchSelect } from '../../components/SearchSelect';
 
 // Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
 const CONDITION_LABEL: Record<string, string> = {
@@ -58,6 +59,7 @@ export default function Criar() {
   const [createdId, setCreatedId] = useState('');
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
   const [restored, setRestored] = useState(false); // rascunho recuperado
+  const [detailOpen, setDetailOpen] = useState(false); // seção "Estado detalhado" colapsável (auditoria #02)
   const fileRef = useRef<HTMLInputElement>(null);
   const hydrated = useRef(false);
 
@@ -106,6 +108,19 @@ export default function Criar() {
   const mainCat = kind === 'barra' ? barraCat : kiteCat; // categoria primária enviada
   const mainProps = mainCat?.attributeSchema?.properties ?? {};
   const barraProps = barraCat?.attributeSchema?.properties ?? {};
+  // Essencial = campos `required` do schema; o resto vai pro "Estado detalhado" colapsável (auditoria #02).
+  const pickProps = (props: Record<string, any>, keys: string[], want: boolean) =>
+    Object.fromEntries(Object.entries(props).filter(([k]) => keys.includes(k) === want));
+  const mainReq: string[] = (mainCat?.attributeSchema as any)?.required ?? [];
+  const barraReq: string[] = (barraCat?.attributeSchema as any)?.required ?? [];
+  const mainEss = pickProps(mainProps, mainReq, true);
+  const mainDet = pickProps(mainProps, mainReq, false);
+  const barraEss = pickProps(barraProps, barraReq, true);
+  const barraDet = pickProps(barraProps, barraReq, false);
+  const hasDetail = Object.keys(mainDet).length > 0 || (kind === 'kit' && Object.keys(barraDet).length > 0);
+  const brandOpts = useMemo(() => brands.map((b) => ({ value: b.id, label: b.name })), [brands]);
+  const modelOpts = useMemo(() => (brand?.models ?? []).map((m) => ({ value: m.id, label: m.name })), [brand]);
+  const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
   const showKitePhotos = kind === 'kite' || kind === 'kit';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
   const kitePhotos = images.filter((i) => i.component === 'kite');
@@ -177,7 +192,10 @@ export default function Criar() {
     !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
     missing,
   ];
-  const goNext = () => { if (step < 3 && stepValid[step]) setStep(step + 1); };
+  const goNext = () => {
+    if (step === 0 && !stepValid[0] && hasDetail) setDetailOpen(true); // revela os campos detalhados que faltam
+    if (step < 3 && stepValid[step]) setStep(step + 1);
+  };
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
   async function publish() {
@@ -200,6 +218,17 @@ export default function Criar() {
       if (!res.ok) throw new Error(data.message ?? 'Erro ao publicar.');
       setCreatedId(data.id);
     } catch (e: any) { setError(e.message); }
+  }
+
+  if (authed === null) {
+    return (
+      <Shell>
+        <div style={{ textAlign: 'center', padding: '70px 0' }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Carregando…</div>
+          <p style={{ fontSize: 14, color: color.inkFaint2, margin: 0 }}>Preparando o formulário.</p>
+        </div>
+      </Shell>
+    );
   }
 
   if (authed === false) {
@@ -270,7 +299,7 @@ export default function Criar() {
         </div>
 
         {/* STEP CONTENT */}
-        <div>
+        <div className="criar-content">
           {/* progresso compacto (mobile) */}
           <div className="only-mobile" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
@@ -300,17 +329,51 @@ export default function Criar() {
 
               {kind && (
                 <>
+                  {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
-                    <Cell><Label>Marca *</Label><select className="kl-select" value={brandId} onChange={(e) => { setBrandId(e.target.value); setModelId(''); }}><option value="">—</option>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Cell>
-                    {kind !== 'barra' && <Cell><Label>Modelo *</Label><select className="kl-select" value={modelId} onChange={(e) => setModelId(e.target.value)}><option value="">—</option>{(brand?.models ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Cell>}
-                    {kind !== 'barra' && <Cell><Label>Ano *</Label><select className="kl-select" value={year} onChange={(e) => setYear(e.target.value)}><option value="">—</option>{Array.from({ length: 16 }, (_, i) => 2027 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></Cell>}
+                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
+                    {kind !== 'barra' && <Cell><Label>Modelo *</Label><SearchSelect value={modelId} options={modelOpts} placeholder={brandId ? '—' : 'Escolha a marca primeiro'} onChange={setModelId} disabled={!brandId} /></Cell>}
+                    {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><ChipSelect options={yearOpts} value={year} onChange={setYear} /></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
-                    <Fields props={mainProps} required={Object.keys(mainProps)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
+                    <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
                   </div>
-                  {isKit && (
+                  {isKit && Object.keys(barraEss).length > 0 && (
                     <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
                       <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
-                      <Fields props={barraProps} required={Object.keys(barraProps)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                      <Fields props={barraEss} required={Object.keys(barraEss)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                    </div>
+                  )}
+
+                  {/* ESTADO DETALHADO — colapsável (divulgação progressiva) */}
+                  {hasDetail && (
+                    <div style={{ marginTop: 22, border: `1px solid ${color.lineCard}`, borderRadius: 14, overflow: 'hidden' }}>
+                      <button type="button" onClick={() => setDetailOpen((o) => !o)} aria-expanded={detailOpen} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: '#faf7f0', border: 'none', padding: '15px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                        <span>
+                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>Estado detalhado</span>
+                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Furos, reparos, bladder e mangueiras — pra um anúncio honesto.</span>
+                        </span>
+                        <span aria-hidden="true" style={{ fontSize: 13, color: color.inkMute, flex: 'none', transform: detailOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
+                      </button>
+                      {detailOpen && (
+                        <div style={{ padding: 16, borderTop: `1px solid ${color.line}` }}>
+                          {Object.keys(mainDet).length > 0 && (
+                            <>
+                              {isKit && <SubHead>Kite</SubHead>}
+                              <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: isKit ? 12 : 0 }}>
+                                <Fields props={mainDet} required={Object.keys(mainDet)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
+                              </div>
+                            </>
+                          )}
+                          {isKit && Object.keys(barraDet).length > 0 && (
+                            <>
+                              <SubHead style={{ marginTop: 18 }}>Barra</SubHead>
+                              <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 12 }}>
+                                <Fields props={barraDet} required={Object.keys(barraDet)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   {autoTitle && (
@@ -400,16 +463,19 @@ export default function Criar() {
 
           {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginTop: 24 }}>{error}</div>}
 
-          {/* NAV */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 38, paddingTop: 24, borderTop: `1px solid ${color.line}` }}>
-            <button onClick={goBack} disabled={step === 0} style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, borderRadius: 12, padding: '15px 24px', fontFamily: font.sans, fontSize: 15, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', opacity: step === 0 ? 0.4 : 1 }}>‹ Voltar</button>
-            {step < 3 ? (
-              <button onClick={goNext} disabled={!stepValid[step]} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: stepValid[step] ? 'pointer' : 'not-allowed', background: stepValid[step] ? color.primary : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar ›</button>
-            ) : (
-              <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>Publicar anúncio</button>
-            )}
+          {/* NAV — fixa no rodapé no mobile (auditoria #05); inline no desktop */}
+          <div className="criar-nav">
+            {!stepValid[step] && stepMissing[step] && <div className="criar-nav-msg">{stepMissing[step]}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <button onClick={goBack} disabled={step === 0} style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, borderRadius: 12, padding: '15px 24px', fontFamily: font.sans, fontSize: 15, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', opacity: step === 0 ? 0.4 : 1 }}>‹ Voltar</button>
+              {step < 3 ? (
+                // sempre clicável: se o passo está incompleto, abre o detalhado / mostra o que falta (não fica "morto")
+                <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.primary : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar ›</button>
+              ) : (
+                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>Publicar anúncio</button>
+              )}
+            </div>
           </div>
-          {!stepValid[step] && stepMissing[step] && <div style={{ fontSize: 13, fontWeight: 600, color: '#c0492f', marginTop: 12, textAlign: 'right' }}>{stepMissing[step]}</div>}
         </div>
       </div>
     </Shell>
@@ -444,20 +510,13 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
         return (
           <Cell key={key}>
             <Label>{(spec.label ?? key)}{req ? ' *' : ''}</Label>
-            {spec.enum && (spec.type === 'number' || spec.type === 'integer') ? (
-              <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} />
-            ) : spec.enum ? (
-              <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)}>
-                <option value="">—</option>
-                {spec.enum.map((o: string) => <option key={o} value={o}>{CONDITION_LABEL[o] ?? o}</option>)}
-              </select>
+            {spec.enum ? (
+              // listas curtas → chips on-brand (sem picker cinza do iOS)
+              <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} labels={CONDITION_LABEL} />
             ) : spec.type === 'boolean' ? (
-              <select className="kl-select" value={String(!!values[key])} onChange={(e) => onChange(key, e.target.value === 'true')}><option value="false">Não</option><option value="true">Sim</option></select>
+              <ChipSelect options={['false', 'true']} value={String(!!values[key])} onChange={(v) => onChange(key, v === 'true')} labels={{ false: 'Não', true: 'Sim' }} />
             ) : spec.type === 'integer' ? (
-              <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value === '' ? '' : Number(e.target.value))}>
-                <option value="">—</option>
-                {Array.from({ length: 11 }, (_, i) => i).map((n) => <option key={n} value={n}>{n === 0 ? 'Nenhum' : n}</option>)}
-              </select>
+              <ChipSelect options={Array.from({ length: 11 }, (_, i) => i)} value={values[key]} onChange={(v) => onChange(key, Number(v))} labels={{ '0': 'Nenhum' }} />
             ) : spec.type === 'number' ? (
               <input className="kl-input" type="text" inputMode="decimal" value={values[key] ?? ''} placeholder="Ex.: 9 ou 8.1" onChange={(e) => onChange(key, e.target.value)} />
             ) : (
@@ -470,13 +529,14 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
   );
 }
 
-function ChipSelect({ options, value, onChange }: { options: (string | number)[]; value: any; onChange: (v: string) => void }) {
+function ChipSelect({ options, value, onChange, labels }: { options: (string | number)[]; value: any; onChange: (v: string) => void; labels?: Record<string, string> }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       {options.map((o) => {
         const on = String(value) === String(o);
+        const label = labels?.[String(o)] ?? String(o);
         return (
-          <button key={String(o)} onClick={() => onChange(String(o))} style={{ fontFamily: font.sans, fontSize: 14.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineInput}` }}>{o}</button>
+          <button type="button" key={String(o)} onClick={() => onChange(String(o))} style={{ fontFamily: font.sans, fontSize: 15, fontWeight: 600, padding: '11px 16px', minHeight: 44, borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineInput}` }}>{label}</button>
         );
       })}
     </div>
@@ -523,7 +583,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 function UpLabel({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 12 }}>{children}</div>; }
 function Label({ children }: { children: React.ReactNode }) { return <label style={{ fontSize: 13, fontWeight: 600, color: color.inkSoft, display: 'block', marginBottom: 7 }}>{children}</label>; }
-function Cell({ children }: { children: React.ReactNode }) { return <div>{children}</div>; }
+function Cell({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) { return <div style={style}>{children}</div>; }
 function SubHead({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) { return <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, color: color.ink, ...style }}>{children}</div>; }
 function Helper({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>{children}</div>; }
 // value = string de dígitos (reais inteiros). Display formatado pt-BR. Sem type=number
