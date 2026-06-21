@@ -46,6 +46,15 @@ a {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes kl-shimmer {
+  0% { background-position: -360px 0; }
+  100% { background-position: 360px 0; }
+}
+.kl-shimmer {
+  background: linear-gradient(90deg, #efe9dc 25%, #f6f2e9 50%, #efe9dc 75%);
+  background-size: 720px 100%;
+  animation: kl-shimmer 1.3s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

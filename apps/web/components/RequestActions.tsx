@@ -2,19 +2,23 @@
 
 // Vendedor: aceitar (libera WhatsApp) ou recusar um pedido.
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { color } from '../lib/tokens';
+import { useToast } from './Toast';
 
 export function RequestActions({ id, type }: { id: string; type?: string }) {
   const [busy, setBusy] = useState<'' | 'accepted' | 'declined'>('');
   const [err, setErr] = useState('');
+  const router = useRouter();
+  const toast = useToast();
   async function act(status: 'accepted' | 'declined') {
     if (status === 'declined' && !window.confirm('Recusar este pedido?')) return;
     setBusy(status); setErr('');
     try {
       const res = await fetch(`/api/requests/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-      if (res.ok) window.location.reload();
-      else { setErr((await res.json().catch(() => ({}))).message ?? 'Não deu pra salvar. Tenta de novo.'); setBusy(''); }
-    } catch { setErr('Sem conexão. Tenta de novo.'); setBusy(''); }
+      if (res.ok) { toast.show(status === 'accepted' ? 'WhatsApp liberado pro comprador.' : 'Pedido recusado.'); router.refresh(); setBusy(''); }
+      else { const m = (await res.json().catch(() => ({}))).message ?? 'Não deu pra salvar. Tenta de novo.'; setErr(m); toast.show(m, 'err'); setBusy(''); }
+    } catch { setErr('Sem conexão. Tenta de novo.'); toast.show('Sem conexão.', 'err'); setBusy(''); }
   }
   const kindWord = type === 'visit' ? 'visita' : 'oferta';
   const anyBusy = busy !== '';

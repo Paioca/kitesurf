@@ -4,7 +4,9 @@
 // Avaliar é liberado assim que o negócio existe (vendedor marcou vendido) — não trava
 // no aceite. A avaliação só fica PÚBLICA quando os dois confirmam (deal completed).
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { color, font } from '../lib/tokens';
+import { useToast } from './Toast';
 
 type Deal = { id: string; status: string; iAmSeller: boolean; iAmBuyer: boolean; myReviewDone: boolean } | null;
 
@@ -20,14 +22,16 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   const [err, setErr] = useState('');
   // ação irreversível aguardando confirmação inline (marcar vendido / confirmar compra / cancelar)
   const [pending, setPending] = useState<{ label: string; run: () => void } | null>(null);
+  const router = useRouter();
+  const toast = useToast();
 
   async function call(url: string, body?: any) {
     setBusy(true); setErr(''); setPending(null);
     try {
       const res = await fetch(url, { method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
-      if (res.ok) window.location.reload();
-      else { setErr((await res.json().catch(() => ({}))).message ?? 'Erro.'); setBusy(false); }
-    } catch { setErr('Sem conexão.'); setBusy(false); }
+      if (res.ok) { toast.show('Pronto!'); router.refresh(); setBusy(false); }
+      else { const m = (await res.json().catch(() => ({}))).message ?? 'Erro.'; setErr(m); toast.show(m, 'err'); setBusy(false); }
+    } catch { setErr('Sem conexão.'); toast.show('Sem conexão.', 'err'); setBusy(false); }
   }
 
   const ask = (label: string, run: () => void) => { setErr(''); setPending({ label, run }); };

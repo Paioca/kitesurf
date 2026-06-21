@@ -2,19 +2,25 @@
 
 // Controles do dono no detalhe do anúncio: editar, pausar/reativar, excluir.
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { color } from '../lib/tokens';
+import { useToast } from './Toast';
 
 export function OwnerControls({ listingId, status, compact = false }: { listingId: string; status: string; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const router = useRouter();
+  const toast = useToast();
 
   async function setStatus(next: 'active' | 'paused') {
     setBusy(true); setErr('');
     try {
       const res = await fetch(`/api/listings/${listingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro.');
-      window.location.reload();
-    } catch (e: any) { setErr(e.message); setBusy(false); }
+      toast.show(next === 'paused' ? 'Anúncio pausado.' : 'Anúncio reativado.');
+      router.refresh(); setBusy(false);
+    } catch (e: any) { setErr(e.message); toast.show(e.message, 'err'); setBusy(false); }
   }
 
   async function remove() {
@@ -23,15 +29,16 @@ export function OwnerControls({ listingId, status, compact = false }: { listingI
     try {
       const res = await fetch(`/api/listings/${listingId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro.');
-      window.location.href = '/conta';
-    } catch (e: any) { setErr(e.message); setBusy(false); }
+      toast.show('Anúncio excluído.');
+      router.push('/conta/anuncios'); // antes ia pra /conta
+    } catch (e: any) { setErr(e.message); toast.show(e.message, 'err'); setBusy(false); }
   }
 
   return (
     <div style={compact ? { padding: '4px 0 0' } : { border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
       {!compact && <div style={{ fontSize: 13, fontWeight: 700, color: color.inkFaint2, marginBottom: 12 }}>Você é o dono deste anúncio</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <a href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</a>
+        <Link href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</Link>
         {status === 'active' && <button onClick={() => setStatus('paused')} disabled={busy} style={btnOutline}>Pausar</button>}
         {status === 'paused' && <button onClick={() => setStatus('active')} disabled={busy} style={btnOutline}>Reativar</button>}
         <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>

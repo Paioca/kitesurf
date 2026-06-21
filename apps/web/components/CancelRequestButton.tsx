@@ -3,21 +3,25 @@
 // Comprador retira a própria oferta/visita pendente. Confirmação inline pra não
 // cancelar sem querer.
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { color } from '../lib/tokens';
+import { useToast } from './Toast';
 
 export function CancelRequestButton({ requestId, type }: { requestId: string; type: 'offer' | 'visit' }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [err, setErr] = useState('');
+  const router = useRouter();
+  const toast = useToast();
   const noun = type === 'offer' ? 'a oferta' : 'o pedido de visita';
 
   async function run() {
     setBusy(true); setErr('');
     try {
       const res = await fetch(`/api/requests/${requestId}`, { method: 'DELETE' });
-      if (res.ok) window.location.reload();
-      else { setErr((await res.json().catch(() => ({}))).message ?? 'Erro.'); setBusy(false); }
-    } catch { setErr('Sem conexão.'); setBusy(false); }
+      if (res.ok) { toast.show('Pedido cancelado.'); router.refresh(); setBusy(false); setConfirming(false); }
+      else { const m = (await res.json().catch(() => ({}))).message ?? 'Erro.'; setErr(m); toast.show(m, 'err'); setBusy(false); }
+    } catch { setErr('Sem conexão.'); toast.show('Sem conexão.', 'err'); setBusy(false); }
   }
 
   if (!confirming) {
