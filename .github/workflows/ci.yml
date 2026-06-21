@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Instala do lockfile (raiz = workspaces). Pega regressão de lockfile
+      # cross-plataforma (ex: faltar @next/swc-linux / @img/sharp-linux).
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+      - name: Test (vitest)
+        working-directory: apps/web
+        run: npm run test:run
+
+      # Build de produção. JWT_SECRET forte é obrigatório (o app trava em prod sem ele);
+      # DATABASE_URL é dummy (Prisma é lazy — não conecta no build).
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+        env:
+          JWT_SECRET: ci-dummy-jwt-secret-com-mais-de-32-caracteres-0123456789
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          DIRECT_URL: postgresql://user:pass@localhost:5432/db
+
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
