@@ -3,6 +3,18 @@ import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
 
+// Host EXATO do nosso Supabase (derivado do env; fallback = projeto de prod). Pinar o
+// host fecha o vetor de DoS do Image Optimizer do Next 14.2.x: o wildcard `*.supabase.co`
+// deixava qualquer projeto Supabase de terceiro rotear imagens gigantes pelo nosso
+// optimizer. Espelha o que `isOfficialImageUrl` já exige no write (host + pathname).
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.SUPABASE_URL).hostname;
+  } catch {
+    return 'oycxkofylcofvvditjeg.supabase.co';
+  }
+})();
+
 // CSP pragmática pra Fase 0: bloqueia clickjacking, plugins e base/form hijack
 // sem exigir nonce middleware. 'unsafe-eval' só em dev (HMR do Next precisa).
 // img/connect liberam https: porque as imagens vêm do Supabase Storage (host varia
@@ -38,8 +50,11 @@ const nextConfig = {
     instrumentationHook: true, // Next 14: habilita instrumentation.ts (Sentry server/edge)
   },
   images: {
+    minimumCacheTTL: 86400, // 1 dia: corta re-otimização repetida (mitiga DoS no optimizer)
     remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co' }, // storage oficial das fotos
+      // storage oficial das fotos — host EXATO + caminho público (não mais `*.supabase.co`)
+      { protocol: 'https', hostname: supabaseHost, pathname: '/storage/v1/object/public/**' },
+      // TODO(3.4b): remover junto com a purga dos dados de teste (seed usa estes hosts).
       { protocol: 'https', hostname: 'i.pravatar.cc' }, // avatares de seed
       { protocol: 'https', hostname: 'fastly.picsum.photos' }, // imagens de seed
     ],
