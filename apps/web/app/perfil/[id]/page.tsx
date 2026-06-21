@@ -107,7 +107,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
         {/* listings */}
         {listings.length > 0 && (
           <>
-            <h2 id="anuncios" style={{ fontFamily: font.serif, fontSize: 26, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 18px', scrollMarginTop: 24 }}>Anúncios ativos</h2>
+            <h2 id="anuncios" style={{ fontFamily: font.sans, fontSize: 28, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px', margin: '0 0 18px', scrollMarginTop: 24 }}>Anúncios ativos</h2>
             <div className="perfil-grid" style={{ display: 'grid', gap: 22, marginBottom: 48 }}>
               {listings.map((it) => <ListingCard key={it.id} item={it} imgHeight={170} />)}
             </div>
@@ -115,7 +115,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
         )}
 
         {/* reviews */}
-        <h2 style={{ fontFamily: font.serif, fontSize: 26, fontWeight: 600, letterSpacing: '-0.3px', margin: '0 0 18px' }}>Avaliações</h2>
+        <h2 style={{ fontFamily: font.sans, fontSize: 28, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px', margin: '0 0 18px' }}>Avaliações</h2>
         {reviews.length === 0 ? (
           <div style={{ ...card, fontStyle: 'italic', fontFamily: font.serif, color: color.inkFaint2 }}>Ainda sem avaliações. Elas aparecem após uma venda confirmada.</div>
         ) : (
