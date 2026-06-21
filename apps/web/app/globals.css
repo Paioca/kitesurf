@@ -50,6 +50,11 @@ a {
   0% { background-position: -360px 0; }
   100% { background-position: 360px 0; }
 }
+/* Losango em velocidade (Design Book v2) — o losango líder "voa" pra frente. */
+@keyframes kl-fly {
+  0% { transform: translateX(0) rotate(45deg); }
+  100% { transform: translateX(10px) rotate(45deg); }
+}
 .kl-shimmer {
   background: linear-gradient(90deg, #efe9dc 25%, #f6f2e9 50%, #efe9dc 75%);
   background-size: 720px 100%;

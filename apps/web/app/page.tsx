@@ -8,7 +8,7 @@ import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilte
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
-import { Diamond } from '../components/ui';
+import { Diamond, DiamondTrail } from '../components/ui';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
@@ -62,7 +62,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
               <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Nascido em Cumbuco · Feito para o mundo</div>
-              <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Kite e barra<br />com mais confiança</h1>
+              <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamentos de kitesurf<br />com mais confiança</h1>
               <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Pagamento e entrega são combinados diretamente entre as partes.</p>
             </div>
           </div>
@@ -206,8 +206,8 @@ function Hero() {
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco · Feito para o mundo</div>
-          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Kite e barra com mais confiança para negociar</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Encontre, anuncie e negocie equipamentos de kitesurf. Perfis com telefone verificado, informações estruturadas e contato pelo WhatsApp.</p>
+          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamentos de kitesurf com mais confiança para negociar</h1>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Encontre, anuncie e negocie kite e barra. Perfis com telefone verificado, informações estruturadas e contato pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
@@ -278,6 +278,7 @@ function Flow() {
     <section className="kl-reveal" style={{ background: color.dark, color: '#fff' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 0 44px' }}>
+          <div style={{ marginBottom: 20 }}><DiamondTrail /></div>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como funciona</div>
           <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio ao contato</h2>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>Anunciar e negociar é gratuito. A Kitetropos não processa pagamentos nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>

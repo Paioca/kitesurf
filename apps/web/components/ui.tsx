@@ -20,6 +20,22 @@ export function Logo({ size = 18, onDark = false }: { size?: number; onDark?: bo
   );
 }
 
+/* ---------- Losango em velocidade (Design Book v2) ---------- */
+// A "assinatura de movimento" da marca (o "touro"): rastro + losangos em aceleração,
+// o líder dourado com glow. Marcador de seção/transição. USO PARCO — o ouro é escasso;
+// fica melhor sobre fundo escuro. transform base mantém o losango girado quando a
+// animação está off (prefers-reduced-motion).
+export function DiamondTrail({ className }: { className?: string }) {
+  return (
+    <span className={className} aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
+      <span style={{ width: 60, height: 3, background: `linear-gradient(90deg, transparent, ${color.aqua})`, borderRadius: 2 }} />
+      <span style={{ width: 13, height: 13, background: color.aqua, transform: 'rotate(45deg)', borderRadius: 2, opacity: 0.35 }} />
+      <span style={{ width: 21, height: 21, background: color.aqua, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.65 }} />
+      <span style={{ width: 34, height: 34, background: color.accent, transform: 'rotate(45deg)', borderRadius: 6, boxShadow: '0 0 28px rgba(217,168,107,0.6)', animation: 'kl-fly 1.6s ease-in-out infinite alternate' }} />
+    </span>
+  );
+}
+
 /* ---------- Diamante (marcador) ---------- */
 export function Diamond({ size = 8, c = color.primary, r = 1 }: { size?: number; c?: string; r?: number }) {
   return <span style={{ width: size, height: size, background: c, transform: 'rotate(45deg)', borderRadius: r, display: 'inline-block', flex: 'none' }} />;
