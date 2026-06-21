@@ -186,12 +186,17 @@ export default function Criar() {
     && Object.keys(mainProps).every((k) => attrs[k] != null && attrs[k] !== '')
     && (isKit ? Object.keys(barraProps).every((k) => barraAttrs[k] != null && barraAttrs[k] !== '') : true);
   const photosOk = images.length >= 3 && (isKit ? kitePhotos.length >= 1 && barraPhotos.length >= 1 : true);
-  const priceOk = Number(price) > 0
-    && (!sellKiteAlone || Number(kitePrice) > 0)
-    && (!sellBarraAlone || Number(barraPrice) > 0);
+  // Preço mínimo R$100 — espelha MIN_LISTING_PRICE_CENTS (servidor). Erro na hora,
+  // não só no publish: bloqueia o avanço e mostra inline no campo.
+  const MIN_PRICE = 100;
+  const priceErr = (v: string) => (v && Number(v) > 0 && Number(v) < MIN_PRICE ? `O preço mínimo é R$ ${MIN_PRICE}.` : '');
+  const priceOk = Number(price) >= MIN_PRICE
+    && (!sellKiteAlone || Number(kitePrice) >= MIN_PRICE)
+    && (!sellBarraAlone || Number(barraPrice) >= MIN_PRICE);
+  const priceMsg = priceErr(price) || (sellKiteAlone ? priceErr(kitePrice) : '') || (sellBarraAlone ? priceErr(barraPrice) : '') || (!priceOk ? 'Defina o preço' : '');
   const deliveryOk = pickup || shippable;
   const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading;
-  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
+  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
 
   // wizard: validade e mensagem por passo
   const RAIL = ['Tipo & ficha', 'Fotos guiadas', 'Preço & entrega', 'Revisão'];
@@ -205,7 +210,7 @@ export default function Criar() {
   const stepMissing = [
     !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : '',
     !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : '',
-    !priceOk ? 'Defina o preço' : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
+    !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
     missing,
   ];
   const goNext = () => {
@@ -429,16 +434,16 @@ export default function Criar() {
                 <div>
                   <Label>Preço do conjunto (kite + barra) *</Label>
                   <PriceInput value={price} onChange={setPrice} />
-                  <Helper>É por esse preço que você vende as duas peças juntas.</Helper>
+                  {priceErr(price) ? <ErrorText>{priceErr(price)}</ErrorText> : <Helper>É por esse preço que você vende as duas peças juntas.</Helper>}
                   <div style={{ marginTop: 18, display: 'grid', gap: 14 }}>
                     <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title="Também vendo o kite separado" desc="Aparece na busca de kite com o preço de só o kite." />
-                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só o kite *</Label><PriceInput value={kitePrice} onChange={setKitePrice} /></div>}
+                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só o kite *</Label><PriceInput value={kitePrice} onChange={setKitePrice} />{priceErr(kitePrice) && <ErrorText>{priceErr(kitePrice)}</ErrorText>}</div>}
                     <Toggle on={sellBarraAlone} onClick={() => setSellBarraAlone((v) => !v)} title="Também vendo a barra separada" desc="Aí a barra também aparece na busca de barra." />
-                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só a barra *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} /></div>}
+                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só a barra *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} />{priceErr(barraPrice) && <ErrorText>{priceErr(barraPrice)}</ErrorText>}</div>}
                   </div>
                 </div>
               ) : (
-                <><Label>Preço *</Label><PriceInput value={price} onChange={setPrice} /></>
+                <><Label>Preço *</Label><PriceInput value={price} onChange={setPrice} />{priceErr(price) && <ErrorText>{priceErr(price)}</ErrorText>}</>
               )}
 
               <div className="criar-loc" style={{ display: 'grid', gap: 16, marginTop: 28 }}>
@@ -533,27 +538,41 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
               <ChipSelect options={['false', 'true']} value={String(!!values[key])} onChange={(v) => onChange(key, v === 'true')} labels={{ false: 'Não', true: 'Sim' }} />
             ) : spec.type === 'integer' ? (
               <ChipSelect options={Array.from({ length: 11 }, (_, i) => i)} value={values[key]} onChange={(v) => onChange(key, Number(v))} labels={{ '0': 'Nenhum' }} />
-            ) : spec.type === 'number' ? (
-              <>
-                <input
-                  className="kl-input"
-                  type="text"
-                  inputMode="decimal"
-                  value={values[key] ?? ''}
-                  placeholder={spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
-                  onChange={(e) => {
-                    // máscara: vírgula→ponto, só dígitos e UM ponto (sem letras, sem 1.000)
-                    let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
-                    const parts = v.split('.');
-                    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-                    onChange(key, v);
-                  }}
-                />
-                {spec.min != null && spec.max != null && (
-                  <Helper>Use ponto para decimais (ex.: 8.1). Entre {spec.min} e {spec.max}.</Helper>
-                )}
-              </>
-            ) : (
+            ) : spec.type === 'number' ? (() => {
+              // erro de faixa na hora (sem esperar o "Continuar")
+              const raw = values[key];
+              const has = raw != null && String(raw) !== '' && String(raw) !== '.';
+              const n = has ? Number(String(raw).replace(',', '.')) : NaN;
+              let err = '';
+              if (has) {
+                if (Number.isNaN(n)) err = 'Informe um número válido (use ponto, ex.: 8.1).';
+                else if (spec.min != null && n < spec.min) err = `Mínimo ${spec.min}.`;
+                else if (spec.max != null && n > spec.max) err = `Máximo ${spec.max}.`;
+              }
+              return (
+                <>
+                  <input
+                    className="kl-input"
+                    type="text"
+                    inputMode="decimal"
+                    value={values[key] ?? ''}
+                    placeholder={spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
+                    onChange={(e) => {
+                      // máscara: vírgula→ponto, só dígitos; máx. 2 dígitos inteiros + 1 decimal
+                      // (tamanho de kite/barra nunca passa de 2 dígitos) — impede 3º dígito.
+                      let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+                      const dot = v.indexOf('.');
+                      if (dot === -1) v = v.slice(0, 2);
+                      else v = v.slice(0, dot).slice(0, 2) + '.' + v.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                      onChange(key, v);
+                    }}
+                  />
+                  {err ? <ErrorText>{err}</ErrorText> : spec.min != null && spec.max != null ? (
+                    <Helper>Use ponto para decimais (ex.: 8.1). Entre {spec.min} e {spec.max}.</Helper>
+                  ) : null}
+                </>
+              );
+            })() : (
               <input className="kl-input" type="text" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
             )}
           </Cell>
@@ -620,6 +639,7 @@ function Label({ children }: { children: React.ReactNode }) { return <label styl
 function Cell({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) { return <div style={style}>{children}</div>; }
 function SubHead({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) { return <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, color: color.ink, ...style }}>{children}</div>; }
 function Helper({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>{children}</div>; }
+function ErrorText({ children }: { children: React.ReactNode }) { return <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: '#b3261e', marginTop: 8 }}><span style={{ width: 5, height: 5, borderRadius: 999, background: '#b3261e', flex: 'none' }} />{children}</div>; }
 // value = string de dígitos (reais inteiros). Display formatado pt-BR. Sem type=number
 // (evita o bug onde "1.500" virava 1,5 → R$1,50).
 function PriceInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
