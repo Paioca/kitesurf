@@ -11,10 +11,10 @@ const { mockDb } = vi.hoisted(() => ({
   },
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
-vi.mock('../lib/notify', () => ({ notifyNewRequest: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../lib/notify', () => ({ notifyNewRequest: vi.fn().mockResolvedValue(undefined), notifyRequestAccepted: vi.fn().mockResolvedValue(undefined) }));
 
 import { createRequest, setRequestStatus, cancelRequest } from '../lib/requests';
-import { notifyNewRequest } from '../lib/notify';
+import { notifyNewRequest, notifyRequestAccepted } from '../lib/notify';
 
 // peça única (conjunto) por padrão; passar over pra virar kit
 const listingMock = (over: Record<string, unknown> = {}) => ({
@@ -86,11 +86,22 @@ describe('setRequestStatus', () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000, barraSoldAt: new Date() }));
     await expect(setRequestStatus('S', 'R', 'accepted')).rejects.toThrow(/já foi vendida/);
   });
-  it('aceita pedido pendente com a peça disponível', async () => {
-    mockDb.request.findUnique.mockResolvedValue(reqMock());
+  it('aceita pedido pendente com a peça disponível e manda SMS de interesse pro comprador', async () => {
+    mockDb.request.findUnique
+      .mockResolvedValueOnce(reqMock()) // r (guard inicial)
+      .mockResolvedValueOnce({ buyer: { phone: '+5588' }, seller: { phone: '+5599' } }); // parties (pós-commit)
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
+    mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
     mockDb.request.update.mockResolvedValue({});
     await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted' });
+    expect(notifyRequestAccepted).toHaveBeenCalledWith(expect.objectContaining({ buyerPhone: '+5588', sellerPhone: '+5599' }));
+  });
+  it('recusar NÃO manda SMS de interesse', async () => {
+    mockDb.request.findUnique.mockResolvedValue(reqMock());
+    mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
+    mockDb.request.update.mockResolvedValue({});
+    await setRequestStatus('S', 'R', 'declined');
+    expect(notifyRequestAccepted).not.toHaveBeenCalled();
   });
 });
 

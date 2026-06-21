@@ -71,3 +71,52 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
     console.error(`[notify] ${channel} erro`, e);
   }
 }
+
+// Notifica o COMPRADOR quando o vendedor aceita ("demonstra interesse") e libera o
+// WhatsApp. Por ora SMS (WhatsApp exigiria um 2º template Meta buyer-centric via
+// TWILIO_CONTENT_SID_ACCEPT). Fail-open e fora de transação: NUNCA derruba o aceite.
+export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPhone: string; listingTitle: string }) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token || !opts.buyerPhone) return; // não configurado → silencioso
+
+  const waFrom = process.env.TWILIO_WHATSAPP_FROM;
+  const acceptContentSid = process.env.TWILIO_CONTENT_SID_ACCEPT; // template buyer-centric (opcional)
+  const smsFrom = process.env.TWILIO_SMS_FROM;
+
+  const sellerWa = opts.sellerPhone ? `https://wa.me/${opts.sellerPhone.replace(/\D/g, '')}` : '';
+  const url = `${process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'}/pedidos`;
+  const to = opts.buyerPhone.replace(/[^\d+]/g, '');
+
+  let body: URLSearchParams;
+  if (waFrom && acceptContentSid) {
+    body = new URLSearchParams({
+      From: waFrom,
+      To: `whatsapp:${to}`,
+      ContentSid: acceptContentSid,
+      ContentVariables: JSON.stringify({ '1': opts.listingTitle, '2': sellerWa || url, '3': url }),
+    });
+  } else if (smsFrom) {
+    const contato = sellerWa ? ` Fale no WhatsApp: ${sellerWa}.` : ` Veja em ${url}.`;
+    body = new URLSearchParams({
+      From: smsFrom,
+      To: to,
+      Body: `Kitetropos: o vendedor liberou o contato no anúncio "${opts.listingTitle}".${contato} Bons ventos!`,
+    });
+  } else {
+    return; // nenhum canal configurado
+  }
+
+  const channel = waFrom && acceptContentSid ? 'whatsapp' : 'sms';
+  try {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: { Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) console.error(`[notify] accept ${channel} falhou`, res.status, await res.text().catch(() => ''));
+  } catch (e) {
+    console.error(`[notify] accept ${channel} erro`, e);
+  }
+}

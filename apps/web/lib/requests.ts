@@ -1,6 +1,6 @@
 import 'server-only';
 import { db } from './db';
-import { notifyNewRequest } from './notify';
+import { notifyNewRequest, notifyRequestAccepted } from './notify';
 import { emit } from './notifications';
 import { PublicError } from './http';
 import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from './components';
@@ -70,6 +70,14 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
       data: { title: lst?.title ?? '' },
     });
   });
+  // SMS de "interesse" pro comprador, FORA da transação (fetch awaited com timeout não
+  // pode segurar a transação; fail-open não derruba o aceite já commitado).
+  if (status === 'accepted') {
+    const parties = await db.request.findUnique({ where: { id }, select: { buyer: { select: { phone: true } }, seller: { select: { phone: true } } } });
+    if (parties?.buyer?.phone) {
+      await notifyRequestAccepted({ buyerPhone: parties.buyer.phone, sellerPhone: parties.seller?.phone ?? '', listingTitle: lst?.title ?? '' });
+    }
+  }
   return { ok: true, status };
 }
 
