@@ -14,10 +14,18 @@ travadas do dono**. Confirme sempre no código (não no histórico nem na memór
 
 ## TL;DR — estado de lançamento
 
-O app está **tecnicamente pronto** pra lançar um hub (Cumbuco), centenas de anúncios.
-Auditorias rodaram P0/P1/P2 e uma segunda rodada estrutural; o que era válido foi
-fechado. **Único bloqueio real de lançamento amplo: rotação de credenciais** (ação
-manual do dono — ver Pendências). O resto do backlog é melhoria/escala, não trava.
+> ⚠️ **Correção (auditoria v3):** versões anteriores deste doc diziam "pronto pra
+> lançar". **Não está pronto para lançamento amplo.** Uma 3ª auditoria achou bloqueios
+> reais de domínio/segurança. Estado correto: **pronto pra beta privado após uma rodada
+> curta de correções; não pra lançamento amplo.** O plano definitivo (fases, esforço,
+> trade-offs) está em **[PLANO-LANCAMENTO.md](PLANO-LANCAMENTO.md)** — é a fonte de
+> verdade pro que falta.
+
+Bloqueios reais (resumo — detalhe no plano): venda por componente quebrada (vender 1
+peça marca o anúncio inteiro vendido); Next 14.2.x com advisories *high* (precisa
+migração major); `sold→active` via API; telefone não normalizado; preço inconsistente
+card↔filtro; categorias inativas/dados de teste no browse; copy prometendo segurança
+absoluta. + rotação de credenciais (ação do dono).
 
 Arquitetura: **app único** Next.js (App Router + API routes) em `apps/web`, Prisma +
 Supabase (Postgres + Storage), deploy push-to-`main` → Vercel. **Não há mais API
