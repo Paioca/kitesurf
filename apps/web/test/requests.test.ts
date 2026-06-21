@@ -5,6 +5,7 @@ const { mockDb } = vi.hoisted(() => ({
     listing: { findFirst: vi.fn(), findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
     request: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    deal: { count: vi.fn() },
   },
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
@@ -90,14 +91,26 @@ describe('cancelRequest', () => {
     mockDb.request.findUnique.mockResolvedValue(reqMock());
     await expect(cancelRequest('OUTRO', 'R')).rejects.toThrow(/permissão/i);
   });
-  it('rejeita cancelar um pedido já aceito', async () => {
-    mockDb.request.findUnique.mockResolvedValue(reqMock({ status: 'accepted' }));
-    await expect(cancelRequest('B', 'R')).rejects.toThrow(/pendente/);
-  });
-  it('apaga o pedido pendente do próprio comprador', async () => {
+  it('desiste de um pedido pendente → withdrawn (não apaga)', async () => {
     mockDb.request.findUnique.mockResolvedValue(reqMock());
-    mockDb.request.delete.mockResolvedValue({});
-    await expect(cancelRequest('B', 'R')).resolves.toMatchObject({ ok: true });
-    expect(mockDb.request.delete).toHaveBeenCalledWith({ where: { id: 'R' } });
+    mockDb.request.update.mockResolvedValue({});
+    await expect(cancelRequest('B', 'R')).resolves.toMatchObject({ ok: true, contactAlreadyShared: false });
+    expect(mockDb.request.update).toHaveBeenCalledWith({ where: { id: 'R' }, data: { status: 'withdrawn' } });
+    expect(mockDb.request.delete).not.toHaveBeenCalled();
+  });
+  it('desiste de um pedido aceito (contato já compartilhado, sem venda marcada)', async () => {
+    mockDb.request.findUnique.mockResolvedValue(reqMock({ status: 'accepted' }));
+    mockDb.deal.count.mockResolvedValue(0);
+    mockDb.request.update.mockResolvedValue({});
+    await expect(cancelRequest('B', 'R')).resolves.toMatchObject({ ok: true, contactAlreadyShared: true });
+  });
+  it('bloqueia desistência quando o vendedor já marcou vendido (use "não comprei")', async () => {
+    mockDb.request.findUnique.mockResolvedValue(reqMock({ status: 'accepted' }));
+    mockDb.deal.count.mockResolvedValue(1);
+    await expect(cancelRequest('B', 'R')).rejects.toThrow(/[Nn]ão comprei/);
+  });
+  it('rejeita retirar um pedido em estado terminal (ex: declined)', async () => {
+    mockDb.request.findUnique.mockResolvedValue(reqMock({ status: 'declined' }));
+    await expect(cancelRequest('B', 'R')).rejects.toThrow(/não pode mais ser retirado/);
   });
 });

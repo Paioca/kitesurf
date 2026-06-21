@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { getCurrentUser, requireUser, clearSession, UnauthorizedError } from '../../../../lib/session';
 import { isOfficialImageUrl } from '../../../../lib/storage';
+import { deleteAccount, LifecycleError } from '../../../../lib/lifecycle';
 
 export const runtime = 'nodejs';
 
@@ -55,27 +56,18 @@ export async function PATCH(req: Request) {
   }
 }
 
-// DELETE /api/auth/me — excluir conta (soft). Some os anúncios, anonimiza PII e
-// libera telefone/email pra um futuro re-cadastro. Encerra a sessão.
+// DELETE /api/auth/me — excluir conta (soft). Encerra pedidos abertos, some os anúncios,
+// anonimiza PII e libera telefone/email pra re-cadastro (lógica em deleteAccount).
+// Bloqueia se há venda aguardando confirmação. Encerra a sessão.
 export async function DELETE() {
   try {
     const user = await requireUser();
-    const now = new Date();
-    await db.$transaction([
-      db.listing.updateMany({ where: { userId: user.id, deletedAt: null }, data: { deletedAt: now, status: 'archived' } }),
-      db.user.update({
-        where: { id: user.id },
-        data: {
-          deletedAt: now, status: 'blocked',
-          name: 'Conta removida', avatarUrl: null, instagramHandle: null,
-          phone: `deleted_${user.id}`, email: `deleted_${user.id}@removed.invalid`,
-        },
-      }),
-    ]);
+    await deleteAccount(user.id);
     clearSession();
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if (e instanceof LifecycleError) return NextResponse.json({ message: e.message }, { status: e.status });
     return errorResponse(e);
   }
 }

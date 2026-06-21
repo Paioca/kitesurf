@@ -1,0 +1,60 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { mockDb } = vi.hoisted(() => ({
+  mockDb: {
+    listing: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    deal: { count: vi.fn() },
+    request: { updateMany: vi.fn() },
+    user: { update: vi.fn() },
+    $transaction: vi.fn(),
+  },
+}));
+vi.mock('../lib/db', () => ({ db: mockDb }));
+
+import { removeListing, deleteAccount } from '../lib/lifecycle';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
+  mockDb.request.updateMany.mockResolvedValue({ count: 0 });
+  mockDb.listing.update.mockResolvedValue({});
+  mockDb.listing.updateMany.mockResolvedValue({ count: 0 });
+  mockDb.user.update.mockResolvedValue({});
+});
+
+describe('removeListing', () => {
+  it('rejeita quem não é o dono', async () => {
+    mockDb.listing.findFirst.mockResolvedValue({ id: 'L', userId: 'OUTRO' });
+    await expect(removeListing('S', 'L')).rejects.toThrow(/permissão/i);
+  });
+  it('bloqueia exclusão com venda aguardando confirmação', async () => {
+    mockDb.listing.findFirst.mockResolvedValue({ id: 'L', userId: 'S' });
+    mockDb.deal.count.mockResolvedValue(1);
+    await expect(removeListing('S', 'L')).rejects.toThrow(/aguardando confirmação/);
+    expect(mockDb.listing.update).not.toHaveBeenCalled();
+  });
+  it('sem deal aberto: encerra pedidos como listing_removed e faz soft-delete', async () => {
+    mockDb.listing.findFirst.mockResolvedValue({ id: 'L', userId: 'S' });
+    mockDb.deal.count.mockResolvedValue(0);
+    await removeListing('S', 'L');
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'listing_removed' } }));
+    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'archived' }) }));
+  });
+});
+
+describe('deleteAccount', () => {
+  it('bloqueia exclusão com venda aguardando confirmação (qualquer lado)', async () => {
+    mockDb.deal.count.mockResolvedValue(1);
+    await expect(deleteAccount('U')).rejects.toThrow(/aguardando confirmação/);
+    expect(mockDb.user.update).not.toHaveBeenCalled();
+  });
+  it('encerra pedidos e anonimiza quando não há venda aberta', async () => {
+    mockDb.deal.count.mockResolvedValue(0);
+    await deleteAccount('U');
+    // comprador → withdrawn; vendedor → listing_removed
+    const statuses = mockDb.request.updateMany.mock.calls.map((c: any) => c[0].data.status);
+    expect(statuses).toContain('withdrawn');
+    expect(statuses).toContain('listing_removed');
+    expect(mockDb.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Conta removida', status: 'blocked' }) }));
+  });
+});

@@ -59,15 +59,22 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
   return { ok: true, status };
 }
 
-// Comprador retira a própria oferta/visita enquanto ainda está pendente. Apagamos
-// o pedido (o upsert deixa re-ofertar depois). Não dá pra retirar já aceito/recusado.
+// Comprador desiste do próprio pedido (pendente OU aceito). Marcamos `withdrawn` em vez
+// de apagar — preserva o histórico por status, e o upsert do createRequest deixa
+// re-ofertar (withdrawn → pending). Já aceito: o contato compartilhado NÃO é revogável
+// (só encerra o pedido). Se o vendedor já marcou vendido, o caminho é "não comprei"
+// (denyPurchase), não a desistência — bloqueamos aqui.
 export async function cancelRequest(userId: string, id: string) {
   const r = await db.request.findUnique({ where: { id } });
   if (!r) throw new RequestError('Pedido não encontrado.', 404);
   if (r.buyerId !== userId) throw new RequestError('Sem permissão.', 403);
-  if (r.status !== 'pending') throw new RequestError('Só dá pra cancelar um pedido ainda pendente.', 400);
-  await db.request.delete({ where: { id } });
-  return { ok: true };
+  if (r.status !== 'pending' && r.status !== 'accepted') throw new RequestError('Este pedido não pode mais ser retirado.', 400);
+  if (r.status === 'accepted') {
+    const openDeal = await db.deal.count({ where: { listingId: r.listingId, buyerId: userId, sellerId: r.sellerId, component: r.component, status: 'seller_confirmed' } });
+    if (openDeal > 0) throw new RequestError('O vendedor já marcou esta venda. Se você não comprou, use "Não comprei".', 409);
+  }
+  await db.request.update({ where: { id }, data: { status: 'withdrawn' } });
+  return { ok: true, contactAlreadyShared: r.status === 'accepted' };
 }
 
 function listingShape(l: any) {

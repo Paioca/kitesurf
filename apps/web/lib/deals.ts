@@ -115,6 +115,22 @@ export async function cancelSale(userId: string, dealId: string) {
   await db.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, buyerConfirmedAt: null } });
 }
 
+// Comprador responde "não comprei" a uma venda que o vendedor marcou. Cancela o Deal
+// e encerra a solicitação — SEM marcar o anúncio como vendido (a peça segue à venda).
+export async function denyPurchase(userId: string, dealId: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.buyerId !== userId) throw new DealError('Só o comprador pode responder a esta venda.', 403);
+  if (deal.status !== 'seller_confirmed') throw new DealError('Esta venda não está aguardando sua confirmação.', 400);
+  await db.$transaction([
+    db.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null } }),
+    db.request.updateMany({
+      where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: { in: ['pending', 'accepted'] } },
+      data: { status: 'withdrawn' },
+    }),
+  ]);
+}
+
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA
 // só quando o deal vira completed (os dois confirmam) — filtro em getProfile.
 export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {

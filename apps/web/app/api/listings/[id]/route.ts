@@ -11,6 +11,7 @@ import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
 import { canTransition, isEditable, type ListingStatus } from '../../../../lib/listing-status';
 import { openNegotiationExists } from '../../../../lib/deals';
+import { removeListing, LifecycleError } from '../../../../lib/lifecycle';
 import { type Component } from '../../../../lib/components';
 
 export const runtime = 'nodejs';
@@ -125,17 +126,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-// DELETE /api/listings/[id] — exclusão soft (deletedAt). Só o dono.
+// DELETE /api/listings/[id] — exclusão soft. Encerra pedidos abertos e bloqueia se há
+// venda aguardando confirmação (lógica centralizada em removeListing).
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser();
-    const { error } = await ownedListing(params.id, user.id);
-    if (error) return error;
-    await db.listing.update({ where: { id: params.id }, data: { deletedAt: new Date(), status: 'archived' } });
+    await removeListing(user.id, params.id);
     revalidateTag(LISTINGS_TAG);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if (e instanceof LifecycleError) return NextResponse.json({ message: e.message }, { status: e.status });
     return errorResponse(e);
   }
 }

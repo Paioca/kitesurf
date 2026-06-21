@@ -11,7 +11,7 @@ const { mockDb } = vi.hoisted(() => ({
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
 
-import { confirmPurchase, cancelSale, createReview, confirmSaleFromRequest, openNegotiationExists } from '../lib/deals';
+import { confirmPurchase, cancelSale, createReview, confirmSaleFromRequest, openNegotiationExists, denyPurchase } from '../lib/deals';
 
 const dealMock = (over: Record<string, unknown> = {}) => ({ id: 'D', listingId: 'L', sellerId: 'S', buyerId: 'B', status: 'seller_confirmed', component: 'conjunto', ...over });
 const listingMock = (over: Record<string, unknown> = {}) => ({ status: 'active', hasBarra: false, price: 620000, kitePrice: null, barraPrice: null, kiteSoldAt: null, barraSoldAt: null, ...over });
@@ -19,7 +19,7 @@ const kit = (over: Record<string, unknown> = {}) => listingMock({ hasBarra: true
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockDb.$transaction.mockImplementation(async (fn: any) => fn(mockDb));
+  mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.listing.updateMany.mockResolvedValue({ count: 1 });
   mockDb.deal.update.mockResolvedValue({});
   mockDb.deal.updateMany.mockResolvedValue({ count: 0 });
@@ -122,6 +122,25 @@ describe('confirmSaleFromRequest', () => {
   it('exige o pedido aceito antes de marcar vendido', async () => {
     mockDb.request.findUnique.mockResolvedValue({ id: 'R', sellerId: 'S', status: 'pending', listingId: 'L', buyerId: 'B', component: 'conjunto' });
     await expect(confirmSaleFromRequest('S', 'R')).rejects.toThrow(/[Aa]ceite o pedido/);
+  });
+});
+
+describe('denyPurchase', () => {
+  it('rejeita quem não é o comprador', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock());
+    await expect(denyPurchase('OUTRO', 'D')).rejects.toThrow(/comprador/);
+  });
+  it('rejeita negócio fora de seller_confirmed', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock({ status: 'completed' }));
+    await expect(denyPurchase('B', 'D')).rejects.toThrow(/aguardando/);
+  });
+  it('cancela o deal e encerra o pedido, sem marcar o anúncio vendido', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock());
+    mockDb.deal.update.mockResolvedValue({});
+    await denyPurchase('B', 'D');
+    expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }));
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'withdrawn' } }));
+    expect(mockDb.listing.updateMany).not.toHaveBeenCalled();
   });
 });
 
