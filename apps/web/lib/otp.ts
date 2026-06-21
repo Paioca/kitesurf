@@ -58,6 +58,7 @@ async function sendOtpSms(phone: string, code: string) {
     method: 'POST',
     headers: { Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
+    signal: AbortSignal.timeout(4000), // login não pode pendurar se a Twilio travar
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

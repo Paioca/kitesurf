@@ -59,10 +59,12 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
 
   const channel = waFrom && contentSid ? 'whatsapp' : 'sms';
   try {
+    // timeout: Twilio lenta/fora não pode travar o pedido (esta chamada é awaited).
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: 'POST',
       headers: { Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      signal: AbortSignal.timeout(4000),
     });
     if (!res.ok) console.error(`[notify] ${channel} falhou`, res.status, await res.text().catch(() => ''));
   } catch (e) {

@@ -36,6 +36,7 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
   const r = await db.request.findUnique({ where: { id } });
   if (!r) throw new RequestError('Pedido não encontrado.', 404);
   if (r.sellerId !== userId) throw new RequestError('Sem permissão.', 403);
+  if (r.status !== 'pending') throw new RequestError('Este pedido já foi respondido.', 409); // sem flip-flop nem re-revelar WhatsApp
   if (status === 'accepted') {
     const listing = await db.listing.findUnique({ where: { id: r.listingId }, select: { status: true, deletedAt: true } });
     if (!listing || listing.deletedAt || listing.status === 'sold') throw new RequestError('Este anúncio já foi vendido.', 409);

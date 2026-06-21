@@ -81,7 +81,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
               <VerifiedRow on={user.phoneVerified} title="Telefone verificado" desc="1 número = 1 conta · confirmado por código" />
               <VerifiedRow on={user.emailVerified} title="E-mail verificado" desc="Para recuperar acesso e avisos" />
-              <VerifiedRow on={!!user.instagramHandle} title="Instagram conectado" desc={user.instagramHandle ? `@${user.instagramHandle}` : 'não conectado'} link={user.instagramHandle ? `https://instagram.com/${user.instagramHandle}` : undefined} />
+              <VerifiedRow on={!!user.instagramHandle} title="Instagram informado" desc={user.instagramHandle ? `@${user.instagramHandle}` : 'não informado'} link={user.instagramHandle ? `https://instagram.com/${user.instagramHandle}` : undefined} />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>

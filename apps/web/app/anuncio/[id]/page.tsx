@@ -200,7 +200,15 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
             <OwnerControls listingId={l.id} status={l.status} />
           ) : (
             <>
-              <ContactActions listingId={l.id} initial={reqState} visitSummary={visitSummary} itemNoun={itemNoun} />
+              {l.status === 'active' ? (
+                <ContactActions listingId={l.id} initial={reqState} visitSummary={visitSummary} itemNoun={itemNoun} />
+              ) : (
+                // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
+                // a fricção de preencher uma oferta que vai falhar).
+                <div style={{ background: '#f3f1e9', border: `1px solid ${color.lineCard}`, borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: color.inkMute }}>
+                  {l.status === 'sold' ? 'Este item já foi vendido.' : 'Este anúncio está indisponível no momento.'}
+                </div>
+              )}
               <div style={{ marginBottom: 24 }}><FavoriteButton listingId={l.id} initial={favorited} variant="inline" /></div>
             </>
           )}
@@ -225,7 +233,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
                 </span>
               )}
               {l.user?.instagramHandle && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '6px 11px', borderRadius: 999 }}>Instagram conectado</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '6px 11px', borderRadius: 999 }}>Instagram informado</span>
               )}
             </div>
             <a href={`/perfil/${l.user?.id}`} style={{ display: 'inline-block', marginTop: 15, fontSize: 13.5, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Ver perfil do vendedor ›</a>

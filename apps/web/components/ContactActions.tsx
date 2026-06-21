@@ -1,6 +1,6 @@
 'use client';
 
-// Contato estruturado no anúncio: Fazer oferta (valor) | Agendar visita.
+// Contato estruturado no anúncio: Fazer oferta (valor) | Pedir visita.
 // Vendedor aceita → libera o WhatsApp (vem do servidor em initial.whatsapp).
 import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
@@ -92,7 +92,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
       {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
 
       {!confirmVisit ? (
-        <button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Agendar visita'}</button>
+        <button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Pedir visita'}</button>
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
@@ -102,7 +102,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
           <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
             <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
-            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Confirmar agendamento'}</button>
+            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Confirmar pedido de visita'}</button>
           </div>
         </div>
       )}
@@ -110,7 +110,7 @@ export function ContactActions({ listingId, initial, visitSummary = '', itemNoun
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>
-        <strong style={{ color: color.ink }}>O que acontece:</strong> o vendedor é avisado na hora por SMS com o seu interesse e o seu contato — ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
+        <strong style={{ color: color.ink }}>O que acontece:</strong> avisamos o vendedor e o pedido fica no painel dele com o seu contato — ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
       </div>
     </div>
   );

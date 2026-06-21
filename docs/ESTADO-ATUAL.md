@@ -28,8 +28,8 @@
   (`hasBarra`, `kitePrice`, `barraPrice`, `barraAttributes`, foto por peça via `ListingImage.component`);
   busca **por perspectiva** (kit na busca de kite; barra avulsa também na de barra).
 - **Auditoria UX/QA** aplicada (ver "Histórico"): conta/logout, ciclo de vida do anúncio, moderação,
-  editar/excluir conta, favoritos, "Meus anúncios", **wizard de anunciar virou tela única**, e-mail
-  opcional no cadastro, máscara de preço (bug), tamanho em chips.
+  editar/excluir conta, favoritos, "Meus anúncios", **wizard de anunciar multi-step** (mantido por
+  decisão — NÃO é tela única), e-mail opcional no cadastro, máscara de preço (bug), tamanho em chips.
 
 > **Testar sempre no Vercel, não local** (o `.env` local tende a perder a `SERVICE_ROLE_KEY` → upload
 > quebra com "Invalid Compact JWS"). Fluxo: editar em `apps/web` → `npm run build` → commit+push → redeploy.
@@ -57,7 +57,7 @@ Norte: fricção mínima, crescer base, cobrar depois. Login só por **OTP de te
 - **Next.js 14** (App Router) em `apps/web/` — Route Handlers `app/api/*` + Server Components com Prisma.
 - **Prisma → Supabase Postgres** (pooled 6543 runtime + direct 5432 migrations). **Storage** bucket `listings`.
 - **Sessão** cookie httpOnly JWT 30d (`lib/session.ts`). `requireUser()` / `requireAdmin()`.
-- `apps/api/` (NestJS) = legado **não usado** (deletar).
+- `apps/api/` (NestJS) legado **removido** (repo é app único `apps/web`).
 
 ## Env (no Vercel `kitesurf-web`)
 
@@ -130,19 +130,22 @@ Tudo deriva do bundle Claude Design. Tokens em `lib/tokens.ts`; primitivos em `c
 
 ## PENDÊNCIAS (antes de gente real)
 
-1. **SMS real** — OTP é mock (`OTP_MOCK=true`). Plugar Zenvia/Twilio em `lib/otp.ts`.
-2. **Segurança** — senha `OzziOsbourne1313*` reusada no projeto SP e **vazada**. Trocar + rotacionar
-   `service_role` + **deletar projeto antigo** (Oregon) e Vercel órfãos.
-3. **LGPD** — falta o *texto* de Política/Termos (exclusão de conta já existe).
-4. **Domínio próprio + seeding de Cumbuco** (50 anúncios — [reference/seeding-plan.md](reference/seeding-plan.md)).
-5. **Notificações** — hoje nenhuma (sem chat/polling). Pivot deixou o vendedor sem aviso de pedido novo:
-   **trilha importante** (push/email/WhatsApp Business API).
-6. **Cron de limpeza** `RateHit`/`OtpCode`.
-7. **Virar admin** (pra usar `/moderacao`): `UPDATE "User" SET admin=true WHERE phone='+55...'` no Supabase SQL.
+1. 🔴 **Segurança (P0 — único bloqueio de lançamento)** — senha de banco e `service_role`
+   **vazadas** (a própria senha aparecia neste doc). Rotacionar senha do DB + `service_role`,
+   **deletar Supabase/Vercel órfãos**, conferir histórico Git com secret scanning.
+2. **LGPD** — falta o *texto* de Política/Termos (exclusão de conta já existe).
+3. **Seeding de Cumbuco** (≈50 anúncios — [reference/seeding-plan.md](reference/seeding-plan.md)).
+4. **Confirmar entrega de SMS real** — Twilio plugado e verificado (endpoint responde "enviado");
+   falta só confirmar que entrega pra número comum (não-trial) num celular real.
+5. **Virar admin** (pra usar `/moderacao`): `UPDATE "User" SET admin=true WHERE phone='+55...'` no Supabase SQL.
+
+**JÁ FEITO** (era pendência, hoje no ar): OTP real via Twilio (mock só fora de prod); notificação de
+pedido novo (`lib/notify.ts`, SMS/WhatsApp); endpoint de manutenção `/api/maintenance/cleanup`
+(purga RateHit/OtpCode + imagens órfãs); domínio `kitetropos.com` + `APP_URL`; Sentry; headers/CSP.
 
 ## Como continuar
 
-Candidatos: **notificação de pedido novo** (o pivot tornou isso crítico — o vendedor não sabe que chegou
-oferta/visita), seeding de Cumbuco, SMS real, segurança #2. Opcional: login em drawer no momento da
-oferta/visita (hoje deslogado vai pra `/entrar?next=`). Fluxo: editar em `apps/web`, `npm run build`,
-commit+push → redeploy. Sempre derivar UI do design system. Verificar no Vercel.
+Próximo crítico: **rotacionar credenciais (#1)** — único bloqueio de lançamento. Depois: seeding de
+Cumbuco, confirmar entrega de SMS num celular real, texto de LGPD. Backlog técnico (não bloqueia 1 hub):
+ESLint + CI + smoke-test do funil de venda; máquina de estados de pedido; filtros de barra. Fluxo:
+editar em `apps/web`, `npm run build`, commit+push → redeploy. Sempre derivar UI do design system.

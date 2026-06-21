@@ -21,7 +21,7 @@ export default async function Favoritos() {
     <div style={{ textAlign: 'center', padding: '72px 20px', border: '1px dashed #d3ccbd', borderRadius: 18 }}>
       <div style={{ fontSize: 40, color: color.accent, marginBottom: 14, lineHeight: 1 }}>♡</div>
       <div style={{ fontFamily: font.serif, fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Nada salvo ainda</div>
-      <p style={{ fontSize: 15, color: color.inkMute, margin: '0 auto 24px', maxWidth: 360, lineHeight: 1.5 }}>Toque no coração de um anúncio pra guardar aqui e acompanhar o preço.</p>
+      <p style={{ fontSize: 15, color: color.inkMute, margin: '0 auto 24px', maxWidth: 360, lineHeight: 1.5 }}>Toque no coração de um anúncio pra guardar aqui e voltar quando quiser.</p>
       <a href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700 }}>Explorar equipamento</a>
     </div>
   );
