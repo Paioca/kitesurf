@@ -1,4 +1,7 @@
 // Card de anúncio — primitivo compartilhado (mobile + desktop). Server-compatible.
+// Foto via background-image (não next/image): os thumbs já são 400px e servir
+// direto do Supabase evita a cota de otimização da Vercel (Hobby).
+import Link from 'next/link';
 import { color, font, radius } from '../lib/tokens';
 import type { Card } from '../lib/browse';
 import { FavoriteButton } from './FavoriteButton';
@@ -9,7 +12,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
   return (
     // Favoritar fora do <a> (evita interativo aninhado / clique conflitante; melhora leitor de tela).
     <div className="listing-card" style={{ ...card, position: 'relative' }}>
-      <a href={`/anuncio/${item.id}`} aria-label={`${item.brand} ${item.model}`} style={cardLink}>
+      <Link href={`/anuncio/${item.id}`} aria-label={`${item.brand} ${item.model}`} style={cardLink}>
         <div style={{ ...img, height: imgHeight }}>
           {item.photo ? (
             <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${item.photo}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
@@ -55,7 +58,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
             )}
           </div>
         </div>
-      </a>
+      </Link>
       <FavoriteButton listingId={item.id} initial={item.favorited} />
     </div>
   );
