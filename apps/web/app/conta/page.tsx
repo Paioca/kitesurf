@@ -17,16 +17,17 @@ export default async function Conta() {
   const memberSince = user.createdAt ? new Date(user.createdAt).getFullYear() : null;
   const initials = (user.name ?? '?').slice(0, 2).toUpperCase();
 
-  // Conta = administrativo. Marketplace (Pedidos, Anúncios, Favoritos) fica no header/abas.
+  // Conta = administrativo. Marketplace (Negociações, Anúncios, Favoritos) fica no header/abas.
   const contact: { k: string; v: string; verified?: boolean; muted?: boolean }[] = [
     { k: 'Telefone / WhatsApp', v: user.phone, verified: user.phoneVerified },
     { k: 'Spot de interesse', v: user.spot || 'não informado', muted: !user.spot },
     { k: 'Nacionalidade', v: user.country || 'não informado', muted: !user.country },
-    { k: 'E-mail', v: user.email || 'não informado', muted: !user.email },
+    { k: 'E-mail', v: user.email || 'não informado', verified: user.emailVerified, muted: !user.email },
   ];
   const links: { href: string; label: string; desc: string }[] = [
     { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, spot, e-mail, idioma' },
     { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar — editar, pausar, excluir (inclui pausados)' },
+    { href: '/pedidos', label: 'Minhas negociações', desc: 'Ofertas, pedidos de visita e negócios enviados ou recebidos' },
     { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
   ];
 
@@ -57,7 +58,7 @@ export default async function Conta() {
             </span>
           </div>
         ))}
-        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login e não muda. Spot e e-mail você ajusta em Editar perfil.</div>
+        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login. Confirme um e-mail de segurança para recuperar a conta se perder acesso ao número.</div>
       </div>
 
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>Conta</div>

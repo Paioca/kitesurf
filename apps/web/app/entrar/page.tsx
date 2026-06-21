@@ -170,6 +170,9 @@ export default function Entrar() {
               <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
                 {loading ? '...' : 'Enviar código'}
               </button>
+              <div style={{ textAlign: 'center', marginTop: 14 }}>
+                <a href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</a>
+              </div>
               <p style={terms}>Ao continuar, você concorda com os <a href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</a> e a <a href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</a> da Kitetropos.</p>
             </>
           )}

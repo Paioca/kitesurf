@@ -21,11 +21,11 @@ export const otpIsMock = MOCK;
 // Gera OTP, salva o HASH (nunca o código puro) e envia por SMS (Twilio).
 // Retorna o código só no caminho mock (dev / número de teste); em produção, null.
 // Lança se o envio real falhar — o caller NÃO deve dizer "enviado" sem ter enviado.
-export async function generateOtp(phone: string): Promise<string | null> {
+export async function generateOtp(phone: string, context = 'login'): Promise<string | null> {
   const code = String(crypto.randomInt(100000, 1000000)); // CSPRNG, 6 dígitos
   const codeHash = await bcrypt.hash(code, 8);
   const expiresAt = new Date(Date.now() + TTL * 1000);
-  await db.otpCode.create({ data: { phone, codeHash, expiresAt } });
+  await db.otpCode.create({ data: { phone, codeHash, expiresAt, context } });
 
   if (MOCK || isTestPhone(phone)) {
     // eslint-disable-next-line no-console
@@ -69,9 +69,9 @@ async function sendOtpSms(phone: string, code: string) {
 
 // consume=false só "espia" (valida sem queimar o código) — usado quando a conta
 // é nova e ainda falta o onboarding; o código é queimado só na criação (consume=true).
-export async function verifyOtp(phone: string, code: string, consume = true): Promise<boolean> {
+export async function verifyOtp(phone: string, code: string, consume = true, context = 'login'): Promise<boolean> {
   const otp = await db.otpCode.findFirst({
-    where: { phone, consumed: false, expiresAt: { gt: new Date() } },
+    where: { phone, context, consumed: false, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: 'desc' },
   });
   if (!otp || otp.attempts >= 5) return false;

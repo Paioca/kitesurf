@@ -38,6 +38,11 @@ enum ListingStatus {
   archived
 }
 
+enum EmailTokenPurpose {
+  verify
+  recovery
+}
+
 model User {
   id              String     @id @default(uuid())
   name            String
@@ -45,6 +50,7 @@ model User {
   spot            String? // spot de interesse (lista controlada SPOTS) — perfil
   email           String?    @unique // opcional no cadastro; pedido depois
   emailVerified   Boolean    @default(false)
+  sessionVersion  Int        @default(0) // incrementa em recuperação; invalida sessões antigas
   phone           String     @unique
   phoneCountry    String     @default("BR")
   phoneVerified   Boolean    @default(false) // nível 1 — antifake (OTP)
@@ -78,6 +84,7 @@ model User {
   reportsMade     Report[] @relation("reportsMade")
 
   notifications Notification[] @relation("userNotifications")
+  emailTokens   EmailToken[]
 
   @@index([phone])
 }
@@ -90,9 +97,28 @@ model OtpCode {
   expiresAt DateTime
   consumed  Boolean  @default(false)
   attempts  Int      @default(0)
+  context   String   @default("login") // isola login de troca/recuperação de telefone
   createdAt DateTime @default(now())
 
   @@index([phone])
+  @@index([phone, context])
+}
+
+// Link de verificação/recuperação enviado por e-mail. Só o hash do token é salvo.
+model EmailToken {
+  id         String            @id @default(uuid())
+  userId     String
+  email      String
+  purpose    EmailTokenPurpose
+  tokenHash  String            @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([email, purpose])
 }
 
 // Define quais atributos cada categoria exige (kite -> size_m2, ano; etc.)

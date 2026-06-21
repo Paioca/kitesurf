@@ -7,7 +7,7 @@ import { downscaleImage } from '../lib/resizeImage';
 import { COUNTRY_NAMES } from '../lib/geo';
 import { SPOTS } from '../lib/filters';
 
-export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; spot: string; country: string; email: string; avatarUrl: string; locale: string } }) {
+export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; spot: string; country: string; email: string; emailVerified: boolean; avatarUrl: string; locale: string } }) {
   const [name, setName] = useState(initial.name);
   const [lastName, setLastName] = useState(initial.lastName);
   const [spot, setSpot] = useState(initial.spot);
@@ -18,6 +18,8 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function uploadAvatar(file?: File | null) {
@@ -52,6 +54,16 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
     } catch (e: any) { setError(e.message); setSaving(false); }
   }
 
+  async function sendEmailVerification() {
+    setSendingEmail(true); setError(''); setEmailMessage('');
+    try {
+      const res = await fetch('/api/auth/email/verification/request', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message ?? 'Erro ao enviar confirmação.');
+      setEmailMessage(data.message);
+    } catch (e: any) { setError(e.message); } finally { setSendingEmail(false); }
+  }
+
   const canSave = name.trim().length >= 2 && !!avatarUrl && !saving && !uploading;
 
   return (
@@ -80,7 +92,21 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
           {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </Field>
-      <Field label="E-mail (opcional)"><input className="kl-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" /></Field>
+      <Field label="E-mail de segurança (opcional)">
+        <input className="kl-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailMessage(''); }} placeholder="voce@email.com" />
+        {email && email.trim().toLowerCase() === initial.email.trim().toLowerCase() ? (
+          initial.emailVerified ? (
+            <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 700, marginTop: 8 }}>E-mail confirmado para recuperação da conta.</div>
+          ) : (
+            <button type="button" onClick={sendEmailVerification} disabled={sendingEmail} style={{ background: 'none', border: 'none', color: color.primary, fontSize: 13, fontWeight: 700, padding: '9px 0 0', cursor: sendingEmail ? 'wait' : 'pointer' }}>
+              {sendingEmail ? 'Enviando…' : 'Confirmar este e-mail'}
+            </button>
+          )
+        ) : email ? (
+          <div style={{ fontSize: 12.5, color: color.inkFaint, marginTop: 8 }}>Salve o novo e-mail antes de confirmá-lo.</div>
+        ) : null}
+        {emailMessage && <div style={{ fontSize: 12.5, color: color.primary, marginTop: 8 }}>{emailMessage}</div>}
+      </Field>
       <Field label="Idioma">
         <div style={{ display: 'inline-flex', background: '#fff', border: `1.5px solid ${color.lineCard}`, borderRadius: 999, padding: 3 }}>
           {(['pt', 'en'] as const).map((lo) => (

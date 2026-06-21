@@ -19,6 +19,7 @@ export default async function EditarPerfil() {
     spot: user.spot ?? '',
     country: user.country ?? '',
     email: user.email ?? '',
+    emailVerified: user.emailVerified,
     avatarUrl: user.avatarUrl ?? '',
     locale: user.locale ?? 'pt',
   };

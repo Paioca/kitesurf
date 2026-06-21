@@ -19,6 +19,7 @@ export async function GET() {
     spot: user.spot,
     country: user.country,
     email: user.email,
+    emailVerified: user.emailVerified,
     avatarUrl: user.avatarUrl,
     instagramHandle: user.instagramHandle,
     phoneVerified: user.phoneVerified,
@@ -32,7 +33,7 @@ const patchSchema = z.object({
   lastName: z.string().max(80).nullable().optional(),
   spot: z.string().max(80).nullable().optional(),
   country: z.string().max(80).nullable().optional(),
-  email: z.string().email().max(120).nullable().optional(), // coletado no perfil; validação (confirmação) fica pra depois
+  email: z.string().email().max(120).nullable().optional(),
   instagramHandle: z.string().max(40).nullable().optional(),
   avatarUrl: z.string().min(1).optional(),
   locale: z.enum(['pt', 'en']).optional(),
@@ -49,16 +50,17 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: 'Foto de perfil inválida.' }, { status: 400 });
     }
     const ig = dto.instagramHandle === undefined ? undefined : dto.instagramHandle ? dto.instagramHandle.replace(/^@/, '').trim() || null : null;
-    // e-mail novo zera a verificação (será confirmado depois); null limpa o campo
+    // Só zera a verificação quando o endereço realmente mudou.
     const email = dto.email === undefined ? undefined : (dto.email ? dto.email.toLowerCase().trim() : null);
+    const emailChanged = email !== undefined && email !== user.email;
     const norm = (v: string | null | undefined) => (v === undefined ? undefined : v ? v.trim() || null : null);
     // spot só da lista controlada; valor fora da lista vira null
     const spot = dto.spot === undefined ? undefined : dto.spot && SPOTS.includes(dto.spot) ? dto.spot : null;
     const updated = await db.user.update({
       where: { id: user.id },
-      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: email === undefined ? undefined : false, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
+      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
     });
-    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
+    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if ((e as { code?: string }).code === 'P2002') return NextResponse.json({ message: 'Esse e-mail já está em uso por outra conta.' }, { status: 409 });

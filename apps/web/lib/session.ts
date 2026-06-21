@@ -22,8 +22,8 @@ function resolveSecret(): string {
 const SECRET = resolveSecret();
 
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
-export function setSession(userId: string) {
-  const token = jwt.sign({ sub: userId }, SECRET, { expiresIn: '30d' });
+export function setSession(userId: string, sessionVersion = 0) {
+  const token = jwt.sign({ sub: userId, sv: sessionVersion }, SECRET, { expiresIn: '30d' });
   cookies().set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -37,23 +37,28 @@ export function clearSession() {
   cookies().delete(COOKIE);
 }
 
-export function getUserId(): string | null {
+function getSessionPayload(): { sub: string; sv: number } | null {
   const token = cookies().get(COOKIE)?.value;
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, SECRET) as { sub: string };
-    return payload.sub;
+    const payload = jwt.verify(token, SECRET) as { sub: string; sv?: number };
+    return { sub: payload.sub, sv: payload.sv ?? 0 };
   } catch {
     return null;
   }
 }
 
+export function getUserId(): string | null {
+  return getSessionPayload()?.sub ?? null;
+}
+
 // Usuário logado (ou null). Usar em Server Components e Route Handlers.
 export async function getCurrentUser() {
-  const id = getUserId();
-  if (!id) return null;
-  const user = await db.user.findUnique({ where: { id } });
+  const session = getSessionPayload();
+  if (!session) return null;
+  const user = await db.user.findUnique({ where: { id: session.sub } });
   if (!user || user.status === 'blocked') return null;
+  if (user.sessionVersion !== session.sv) return null;
   return user;
 }
 
