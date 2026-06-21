@@ -14,9 +14,9 @@ import { Logo, Diamond } from '../../components/ui';
 const CONDITION_LABEL: Record<string, string> = {
   // condição do kite (tecido)
   novo_lacrado: 'Novo (lacrado)',
-  novo_10x: 'Novo (menos de 10x velejo)',
-  semi_otimo: 'Semi novo (tecido em ótimo estado)',
-  semi_desgaste: 'Semi novo (tecido com início de desgaste)',
+  novo_10x: 'Usado menos de 10 vezes',
+  semi_otimo: 'Seminovo (tecido em ótimo estado)',
+  semi_desgaste: 'Seminovo (tecido com início de desgaste)',
   usado_desgaste: 'Usado (tecido com bastante desgaste)',
   // condição da barra
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
@@ -165,10 +165,10 @@ export default function Criar() {
   // wizard: validade e mensagem por passo
   const RAIL = ['Tipo & ficha', 'Fotos guiadas', 'Preço & entrega', 'Revisão'];
   const TIPS = [
-    'Tudo de listas fechadas — é isso que deixa a busca por tamanho funcionar. Declare furo e reparo: omitir leva a banimento.',
+    'As listas padronizadas fazem a busca por tamanho funcionar. Informe furos e reparos para que o comprador saiba exatamente o que está avaliando.',
     'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo. Mínimo de 3.',
     'Sem pagamento na plataforma. Marque ao menos uma forma de entrega — retirada no spot ou envio.',
-    'Tudo certo? É só publicar. Dá pra editar depois a qualquer momento.',
+    'Tudo certo? Revise antes de publicar. Anúncios ativos ou pausados podem ser editados depois.',
   ];
   const stepValid = [!!kind && fichaOk, photosOk, priceOk && deliveryOk && !!city, canPublish];
   const stepMissing = [
@@ -220,7 +220,7 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Anúncio publicado!</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Avisamos quando alguém te chamar.</p>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Ofertas e pedidos de visita aparecem em Pedidos; as notificações dependem do canal disponível.</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
             <a href="/" style={outline}>Voltar à busca</a>
@@ -287,14 +287,14 @@ export default function Criar() {
               <div className="criar-tipos" style={{ marginBottom: 28 }}>
                 <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" />
                 <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" />
-                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Kit completo" />
+                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Conjunto" />
               </div>
 
               <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
                 <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção — descreva fielmente</div>
-                  <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Omitir defeito (furo, reparo, bladder, troca de mangueira) leva a banimento. Honestidade gera avaliação boa e protege a comunidade.</p>
+                  <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Informe furos, reparos, estado do bladder e troca de mangueiras. Informações incorretas podem remover o anúncio e restringir a conta.</p>
                 </div>
               </div>
 
@@ -352,10 +352,10 @@ export default function Criar() {
                   <PriceInput value={price} onChange={setPrice} />
                   <Helper>É por esse preço que você vende as duas peças juntas.</Helper>
                   <div style={{ marginTop: 18, display: 'grid', gap: 14 }}>
-                    <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title="Também vendo o kite separado" desc="Aparece na busca de kite com o preço avulso." />
-                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço do kite sozinho *</Label><PriceInput value={kitePrice} onChange={setKitePrice} /></div>}
+                    <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title="Também vendo o kite separado" desc="Aparece na busca de kite com o preço de só o kite." />
+                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só o kite *</Label><PriceInput value={kitePrice} onChange={setKitePrice} /></div>}
                     <Toggle on={sellBarraAlone} onClick={() => setSellBarraAlone((v) => !v)} title="Também vendo a barra separada" desc="Aí a barra também aparece na busca de barra." />
-                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço da barra sozinha *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} /></div>}
+                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só a barra *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} /></div>}
                   </div>
                 </div>
               ) : (
@@ -370,7 +370,7 @@ export default function Criar() {
                 <Label>Como entrega? <span style={{ color: color.inkFaint2, fontWeight: 500 }}>· escolha ao menos uma</span></Label>
                 <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 10 }}>
                   <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title="Retirada no spot" desc="Encontro presencial. Combinam o ponto no WhatsApp." />
-                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio (Correios)" desc="Manda pelos Correios. Ideal pra acessórios." />
+                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio" desc="A transportadora, o valor e o pagamento são combinados diretamente com o comprador." />
                 </div>
               </div>
             </>
@@ -453,11 +453,13 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
               </select>
             ) : spec.type === 'boolean' ? (
               <select className="kl-select" value={String(!!values[key])} onChange={(e) => onChange(key, e.target.value === 'true')}><option value="false">Não</option><option value="true">Sim</option></select>
-            ) : spec.type === 'number' || spec.type === 'integer' ? (
+            ) : spec.type === 'integer' ? (
               <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value === '' ? '' : Number(e.target.value))}>
                 <option value="">—</option>
                 {Array.from({ length: 11 }, (_, i) => i).map((n) => <option key={n} value={n}>{n === 0 ? 'Nenhum' : n}</option>)}
               </select>
+            ) : spec.type === 'number' ? (
+              <input className="kl-input" type="text" inputMode="decimal" value={values[key] ?? ''} placeholder="Ex.: 9 ou 8.1" onChange={(e) => onChange(key, e.target.value)} />
             ) : (
               <input className="kl-input" type="text" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
             )}

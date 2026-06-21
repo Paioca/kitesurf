@@ -18,7 +18,7 @@ const CATEGORIES = [
     attributeSchema: {
       required: ['size_m2', 'condition'],
       properties: {
-        size_m2: { type: 'number', label: 'Tamanho (m²)', enum: [5, 6, 7, 8, 9, 10, 11, 12, 14, 17] },
+        size_m2: { type: 'number', label: 'Tamanho (m²)', min: 3, max: 21, step: 0.1 }, // decimal (8.1, 13.5) — sem enum: busca agrupa por faixa
         condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
         microfuros: { type: 'integer', label: 'Micro furos (qtd)' },
         reparos: { type: 'integer', label: 'Reparos (qtd)' },

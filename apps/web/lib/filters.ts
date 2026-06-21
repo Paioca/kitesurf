@@ -9,6 +9,23 @@ export const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Para
 // Tipos de anúncio. 'kit' = kite com barra (hasBarra) — não é uma categoria, é o combo.
 export const CAT_LABEL: Record<string, string> = { kite: 'Kite', barra: 'Barra', kit: 'Kite + Barra' };
 
+// Faixas de tamanho (m²) — busca por FAIXA (o cadastro aceita decimal: 8.1, 13.5).
+// [lo, hi): size >= lo && size < hi. s5 é "13+".
+export const SIZE_RANGES: Record<string, [number, number]> = {
+  s1: [0, 7],
+  s2: [7, 9],
+  s3: [9, 11],
+  s4: [11, 13],
+  s5: [13, 1e6],
+};
+export const SIZE_LABELS: Record<string, string> = {
+  s1: 'até 7 m²',
+  s2: '7–9 m²',
+  s3: '9–11 m²',
+  s4: '11–13 m²',
+  s5: '13 m² ou +',
+};
+
 export const PRICE_RANGES: Record<string, [number, number]> = {
   p1: [0, 50000],
   p2: [50000, 200000],

@@ -69,7 +69,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       )}
 
       {facets.city.length > 0 && (
-        <Block title="Spot">
+        <Block title="Cidade">
           {facets.city.map((o) => (
             <RowLink key={o.value} href={toggleHref(sp, 'city', o.value)} on={filters.city.includes(o.value)} label={o.label} count={o.count} />
           ))}
@@ -85,7 +85,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       )}
 
       {facets.withbar.length > 0 && (
-        <Block title="Combo">
+        <Block title="Kite + barra">
           {facets.withbar.map((o) => (
             <RowLink key={o.value} href={toggleHref(sp, 'withbar', o.value)} on={filters.withbar.includes(o.value)} label={o.label} count={o.count} />
           ))}

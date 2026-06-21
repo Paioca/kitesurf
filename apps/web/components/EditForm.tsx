@@ -161,8 +161,10 @@ function Fields({ schema, values, onChange }: { schema: Schema; values: Record<s
             </select>
           ) : spec.type === 'boolean' ? (
             <select className="kl-select" value={String(!!values[key])} onChange={(e) => onChange(key, e.target.value === 'true')}><option value="false">Não</option><option value="true">Sim</option></select>
+          ) : spec.type === 'number' ? (
+            <input className="kl-input" type="text" inputMode="decimal" value={values[key] ?? ''} placeholder="Ex.: 9 ou 8.1" onChange={(e) => onChange(key, e.target.value)} />
           ) : (
-            <input className="kl-input" type={spec.type === 'number' || spec.type === 'integer' ? 'number' : 'text'} value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
+            <input className="kl-input" type={spec.type === 'integer' ? 'number' : 'text'} value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)} />
           )}
         </div>
       ))}

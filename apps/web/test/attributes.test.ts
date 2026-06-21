@@ -23,4 +23,12 @@ describe('validateAttributes', () => {
   it('aceita enum válido', () => expect(validateAttributes(schema, { size_m2: 9, cond: 'novo' })).toMatchObject({ cond: 'novo' }));
   it('coage boolean', () => expect(validateAttributes(schema, { size_m2: 9, kit: 'true' })).toMatchObject({ kit: true }));
   it('ignora chaves fora do schema', () => expect(validateAttributes(schema, { size_m2: 9, lixo: 'x' })).toEqual({ size_m2: 9 }));
+  it('aceita tamanho decimal', () => expect(validateAttributes(schema, { size_m2: 8.1 })).toEqual({ size_m2: 8.1 }));
+  it('aceita decimal com vírgula (pt-BR)', () => expect(validateAttributes(schema, { size_m2: '13,5' })).toEqual({ size_m2: 13.5 }));
+  it('valida faixa min/max quando definida', () => {
+    const ranged = { required: ['size_m2'], properties: { size_m2: { type: 'number', min: 3, max: 21 } } };
+    expect(() => validateAttributes(ranged, { size_m2: 2 })).toThrow(/mínimo/);
+    expect(() => validateAttributes(ranged, { size_m2: 99 })).toThrow(/máximo/);
+    expect(validateAttributes(ranged, { size_m2: 8.1 })).toEqual({ size_m2: 8.1 });
+  });
 });

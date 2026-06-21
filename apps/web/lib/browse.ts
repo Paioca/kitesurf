@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { db } from './db';
 import { getCurrentUser } from './session';
-import { parseFilters, PRICE_RANGES, PRICE_LABELS, type SP } from './filters';
+import { parseFilters, PRICE_RANGES, PRICE_LABELS, SIZE_RANGES, SIZE_LABELS, type SP } from './filters';
 
 // Tag pra invalidar o cache quando um anúncio é criado/muda (revalidateTag).
 export const LISTINGS_TAG = 'listings';
@@ -176,7 +176,15 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
   if (f.city.length) and.push({ city: { in: f.city } });
-  if (f.size.length) and.push({ OR: f.size.map((s) => ({ attributes: { path: ['size_m2'], equals: Number(s) } })) });
+  // tamanho por FAIXA: cada chave de faixa vira [lo, hi) sobre attributes.size_m2 (JSON).
+  if (f.size.length) {
+    and.push({
+      OR: f.size.map((k) => {
+        const [lo, hi] = SIZE_RANGES[k] ?? [0, 1e6];
+        return { AND: [{ attributes: { path: ['size_m2'], gte: lo } }, { attributes: { path: ['size_m2'], lt: hi } }] };
+      }),
+    });
+  }
   if (f.price.length) {
     and.push({
       OR: f.price.map((k) => {
@@ -233,6 +241,7 @@ const loadActiveRows = unstable_cache(
 );
 
 const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 500000 ? 'p3' : 'p4');
+const sizeBucket = (s: number) => (s < 7 ? 's1' : s < 9 ? 's2' : s < 11 ? 's3' : s < 13 ? 's4' : 's5');
 
 // Facetas CONTEXTUAIS: cada dimensão é contada aplicando todos os filtros ativos
 // EXCETO o dela própria (padrão de busca facetada — a contagem bate com o resultado).
@@ -243,7 +252,7 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
         : true;
 
   const P = {
-    size: (r: ActiveRow) => !f.size.length || (r.size != null && f.size.includes(r.size)),
+    size: (r: ActiveRow) => !f.size.length || (r.size != null && f.size.includes(sizeBucket(Number(r.size)))),
     cond: (r: ActiveRow) => !f.cond.length || (r.cond != null && f.cond.includes(r.cond)),
     bladder: (r: ActiveRow) => !f.bladder.length || (r.bladder != null && f.bladder.includes(r.bladder)),
     mang: (r: ActiveRow) => !f.mang.length || (r.mang != null && f.mang.includes(r.mang)),
@@ -279,7 +288,7 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
       ...(kiteCount > 0 ? [{ value: 'kite', label: 'Kite', count: kiteCount }] : []),
       ...(barraCount > 0 ? [{ value: 'barra', label: 'Barra', count: barraCount }] : []),
     ],
-    size: list(tally(setExcept('size'), (r) => r.size), (v) => `${v} m²`).sort((a, b) => Number(a.value) - Number(b.value)),
+    size: list(tally(setExcept('size'), (r) => (r.size != null ? sizeBucket(Number(r.size)) : null)), (v) => SIZE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
     brand: list(tally(setExcept('brand'), (r) => r.brandName), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
     city: list(tally(setExcept('city'), (r) => r.city), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
     price: list(tally(setExcept('price'), (r) => priceBucket(r.price)), (v) => PRICE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),

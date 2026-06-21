@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, SIZES, SPOTS, type SP } from '../lib/filters';
+import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, SIZE_RANGES, SIZE_LABELS, SPOTS, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -190,7 +190,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 // ---------- HERO (landing) — busca estruturada (form GET → filtra "/") ----------
 // Busca-builder: oferece a taxonomia COMPLETA (não só o que existe no banco).
 const TYPE_OPTS = [{ value: 'kite', label: 'Kite' }, { value: 'kit', label: 'Kite + Barra' }, { value: 'barra', label: 'Barra' }];
-const SIZE_OPTS = SIZES.map((s) => ({ value: s, label: `${s} m²` }));
+const SIZE_OPTS = Object.keys(SIZE_RANGES).map((k) => ({ value: k, label: SIZE_LABELS[k] }));
 const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
 
 function Hero() {
@@ -207,7 +207,7 @@ function Hero() {
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
             <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
-            <HeroSelect name="city" label="Spot" placeholder="Todos" options={SPOT_OPTS} last />
+            <HeroSelect name="city" label="Cidade" placeholder="Todos" options={SPOT_OPTS} last />
             <button type="submit" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
           </form>
         </div>

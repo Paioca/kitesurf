@@ -3,7 +3,7 @@ import { PublicError } from './http';
 
 interface AttrSchema {
   required?: string[];
-  properties?: Record<string, { type: string; enum?: (string | number)[]; label?: string }>;
+  properties?: Record<string, { type: string; enum?: (string | number)[]; label?: string; min?: number; max?: number }>;
 }
 
 export function validateAttributes(
@@ -27,12 +27,15 @@ export function validateAttributes(
   return out;
 }
 
-function coerce(key: string, value: unknown, spec: { type: string; enum?: (string | number)[] }) {
+function coerce(key: string, value: unknown, spec: { type: string; enum?: (string | number)[]; min?: number; max?: number }) {
   let v: unknown = value;
   if (spec.type === 'number' || spec.type === 'integer') {
-    v = Number(value);
+    // aceita vírgula como separador decimal (pt-BR digita 8,1)
+    v = Number(typeof value === 'string' ? value.replace(',', '.') : value);
     if (Number.isNaN(v)) throw new PublicError(`Atributo ${key} deve ser número.`);
     if (spec.type === 'integer' && !Number.isInteger(v)) throw new PublicError(`Atributo ${key} deve ser inteiro.`);
+    if (spec.min != null && (v as number) < spec.min) throw new PublicError(`Atributo ${key} deve ser no mínimo ${spec.min}.`);
+    if (spec.max != null && (v as number) > spec.max) throw new PublicError(`Atributo ${key} deve ser no máximo ${spec.max}.`);
   } else if (spec.type === 'boolean') {
     v = value === true || value === 'true';
   } else {

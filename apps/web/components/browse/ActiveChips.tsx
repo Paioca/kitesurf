@@ -1,7 +1,7 @@
 // Faixa de filtros ativos — pílulas removíveis acima do grid (handoff v2).
 // Cada pílula leva ao href que desliga aquele valor; "Limpar tudo" zera (preserva sort).
 import { color, font } from '../../lib/tokens';
-import { toggleHref, setHref, clearFiltersHref, PRICE_LABELS, CAT_LABEL, type SP } from '../../lib/filters';
+import { toggleHref, setHref, clearFiltersHref, PRICE_LABELS, SIZE_LABELS, CAT_LABEL, type SP } from '../../lib/filters';
 import type { Facets, Facet } from '../../lib/browse';
 
 type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[]; cond: string[]; bladder: string[]; mang: string[]; delivery: string[] };
@@ -16,6 +16,7 @@ const MULTI: [keyof Filters, keyof Facets][] = [
 export function ActiveChips({ sp, facets, filters }: { sp: SP; facets: Facets; filters: Filters }) {
   const labelFor = (facetKey: keyof Facets, value: string): string => {
     if (facetKey === 'price') return PRICE_LABELS[value] ?? value;
+    if (facetKey === 'size') return SIZE_LABELS[value] ?? value;
     const opt = (facets[facetKey] as Facet[]).find((o) => o.value === value);
     return opt?.label ?? value;
   };
