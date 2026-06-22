@@ -15,7 +15,7 @@ export function waLink(phone: string) {
   return `https://wa.me/${phone.replace(/\D/g, '')}`;
 }
 
-const listingSel = { id: true, title: true, price: true, images: { orderBy: { position: 'asc' as const }, take: 1, select: { url: true, thumbUrl: true } } };
+const listingSel = { id: true, title: true, price: true, status: true, images: { orderBy: { position: 'asc' as const }, take: 1, select: { url: true, thumbUrl: true } } };
 
 // Comprador faz oferta (valor) ou pede visita. 1 oferta + 1 visita por anúncio
 // (re-oferecer atualiza o valor e volta pra pendente).
@@ -100,7 +100,7 @@ export async function cancelRequest(userId: string, id: string) {
 }
 
 function listingShape(l: any) {
-  return { id: l.id, title: l.title, price: l.price, thumb: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null };
+  return { id: l.id, title: l.title, price: l.price, status: l.status, thumb: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null };
 }
 
 // Caixa de pedidos: recebidos (vendedor) + enviados (comprador). WhatsApp do

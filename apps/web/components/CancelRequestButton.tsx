@@ -7,13 +7,18 @@ import { useRouter } from 'next/navigation';
 import { color } from '../lib/tokens';
 import { useToast } from './Toast';
 
-export function CancelRequestButton({ requestId, type }: { requestId: string; type: 'offer' | 'visit' }) {
+export function CancelRequestButton({ requestId, type, accepted }: { requestId: string; type: 'offer' | 'visit'; accepted?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [err, setErr] = useState('');
   const router = useRouter();
   const toast = useToast();
   const noun = type === 'offer' ? 'a oferta' : 'o pedido de visita';
+  // já aceito: o contato já foi compartilhado e não dá pra revogar — só encerra o pedido.
+  const confirmMsg = accepted
+    ? `Retirar ${noun}? O contato já compartilhado continua valendo; isto apenas encerra este pedido.`
+    : `Cancelar ${noun}? Você pode reenviar depois.`;
+  const cta = accepted ? `Retirar ${noun}` : `Cancelar ${noun}`;
 
   async function run() {
     setBusy(true); setErr('');
@@ -26,14 +31,14 @@ export function CancelRequestButton({ requestId, type }: { requestId: string; ty
 
   if (!confirming) {
     return (
-      <button onClick={() => setConfirming(true)} style={ghost}>Cancelar {noun}</button>
+      <button onClick={() => setConfirming(true)} style={ghost}>{cta}</button>
     );
   }
   return (
     <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 12.5, color: color.ink }}>Cancelar {noun}? Você pode reenviar depois.</div>
+      <div style={{ fontSize: 12.5, color: color.ink }}>{confirmMsg}</div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={run} disabled={busy} style={{ ...ghost, marginTop: 0, color: '#b3261e', borderColor: '#e6b8b1' }}>Sim, cancelar</button>
+        <button onClick={run} disabled={busy} style={{ ...ghost, marginTop: 0, color: '#b3261e', borderColor: '#e6b8b1' }}>Sim, {accepted ? 'retirar' : 'cancelar'}</button>
         <button onClick={() => setConfirming(false)} disabled={busy} style={{ ...ghost, marginTop: 0 }}>Voltar</button>
       </div>
       {err && <div style={{ color: '#b3261e', fontSize: 12.5 }}>{err}</div>}

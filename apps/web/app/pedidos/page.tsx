@@ -10,6 +10,7 @@ import { MobileAppBar, MobileTabBar } from '../../components/MobileChrome';
 import { RequestActions } from '../../components/RequestActions';
 import { DealBox } from '../../components/DealBox';
 import { CancelRequestButton } from '../../components/CancelRequestButton';
+import { MarkNotificationsRead } from '../../components/MarkNotificationsRead';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,7 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <MarkNotificationsRead />
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
       <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px, 5vw, 38px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 22px' }}>Pedidos</h1>
 
@@ -59,7 +61,8 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
               </div>
             </a>
-            {r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
+            {(r.status === 'pending' || r.status === 'accepted') && r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
+            {r.status === 'pending' && r.listing.status === 'paused' && <PausedHint />}
             {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
           </Row>
@@ -77,7 +80,8 @@ export default async function Pedidos({ searchParams }: { searchParams: { tab?: 
             </a>
             {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
-            {r.status === 'pending' && <CancelRequestButton requestId={r.id} type={r.type} />}
+            {/* retirar: pendente, ou aceito sem venda marcada (com venda marcada, o caminho é "não comprei" no DealBox) */}
+            {(r.status === 'pending' || (r.status === 'accepted' && (!r.deal || r.deal.status === 'cancelled'))) && <CancelRequestButton requestId={r.id} type={r.type} accepted={r.status === 'accepted'} />}
           </Row>
         ))
       )}
@@ -108,15 +112,31 @@ function TypeTag({ type }: { type: string }) {
   const offer = type === 'offer';
   return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#f3e7d3', color: offer ? color.primary : '#8a6a3a' }}>{offer ? 'Oferta' : 'Visita'}</span>;
 }
+// Todos os estados do pedido têm rótulo próprio — os encerrados (retirado, vendido
+// a outro, anúncio removido, expirado) ficam neutros e NÃO parecem ativos.
 function StatusBadge({ status, completed, received }: { status: string; completed?: boolean; received?: boolean }) {
+  const closed = { fg: '#6b7a73', bg: '#eceae3' }; // encerrado/neutro
   let label = '', fg = '', bg = '';
   if (completed) { label = 'Concluído'; fg = '#15463b'; bg = '#cfe3d9'; }
-  else if (status === 'declined') { label = 'Recusada'; fg = '#9a5040'; bg = '#fbeae4'; }
   else if (status === 'accepted') { label = 'Aceito'; fg = color.primary; bg = '#e8f1ec'; }
-  else { label = received ? 'Novo' : 'Enviado'; fg = '#8a6a3a'; bg = '#f3e7d3'; }
+  else if (status === 'declined') { label = 'Recusada'; fg = '#9a5040'; bg = '#fbeae4'; }
+  else if (status === 'withdrawn') { label = received ? 'Retirada pelo comprador' : 'Retirada'; fg = closed.fg; bg = closed.bg; }
+  else if (status === 'listing_removed') { label = 'Anúncio removido'; fg = closed.fg; bg = closed.bg; }
+  else if (status === 'sold_elsewhere') { label = 'Vendido a outro'; fg = closed.fg; bg = closed.bg; }
+  else if (status === 'expired') { label = 'Expirada'; fg = closed.fg; bg = closed.bg; }
+  else { label = received ? 'Novo' : 'Enviado'; fg = '#8a6a3a'; bg = '#f3e7d3'; } // pending
   return <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, color: fg, background: bg }}>{label}</span>;
 }
 function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px', textAlign: 'center', border: '1px dashed #d3ccbd', borderRadius: 16 }}>{children}</div>; }
+// Anúncio pausado com pedido pendente: aceitar dá erro (só aceita anúncio ativo).
+function PausedHint() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, background: '#f3e7d3', color: '#8a6a3a', fontSize: 12.5, fontWeight: 600, padding: '9px 12px', borderRadius: 10 }}>
+      <span style={{ width: 7, height: 7, borderRadius: 999, background: '#c9a24b', flex: 'none' }} />
+      Anúncio pausado. Reative o anúncio para aceitar esta solicitação.
+    </div>
+  );
+}
 const segOn: React.CSSProperties = { flex: 1, textAlign: 'center', background: '#fff', color: color.ink, borderRadius: 9, padding: 11, fontFamily: font.sans, fontSize: 14, fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
 const segOff: React.CSSProperties = { ...segOn, background: 'transparent', color: color.inkMute, fontWeight: 600, boxShadow: 'none' };
 const tabBadge: React.CSSProperties = { background: '#c0492f', color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };

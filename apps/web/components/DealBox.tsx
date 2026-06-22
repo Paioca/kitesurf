@@ -53,6 +53,9 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
       : <div style={muted}>Quando o vendedor marcar a venda, confirme aqui pra concluir o negócio.</div>;
   } else if (deal.status === 'completed') {
     confirm = <div style={{ fontSize: 13, fontWeight: 700, color: color.primary }}>Negócio concluído ✓</div>;
+  } else if (deal.status === 'voided') {
+    // peça vendida a OUTRO comprador → esta negociação morreu; sem confirmar nem avaliar.
+    confirm = <div style={muted}>Este item foi vendido a outro comprador. Esta negociação foi encerrada.</div>;
   } else if (deal.status === 'seller_confirmed') {
     confirm = role === 'seller'
       ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -73,9 +76,9 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     </div>
   ) : null;
 
-  // --- avaliação padronizada (liberada assim que o deal existe; não em cancelado) ---
+  // --- avaliação padronizada (liberada assim que o deal existe; não em cancelado/anulado) ---
   let review: React.ReactNode = null;
-  if (deal && deal.status !== 'cancelled') {
+  if (deal && deal.status !== 'cancelled' && deal.status !== 'voided') {
     if (deal.myReviewDone) {
       review = <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ {deal.status === 'completed' ? '· já está pública' : '· fica pública quando os dois confirmarem'}</div>;
     } else {
@@ -109,7 +112,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     </div>
   ) : null;
 
-  const liberado = !deal || deal.status !== 'completed';
+  const liberado = !deal || (deal.status !== 'completed' && deal.status !== 'voided');
 
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>

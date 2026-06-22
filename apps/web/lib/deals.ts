@@ -149,7 +149,10 @@ export async function denyPurchase(userId: string, dealId: string) {
 export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {
   const deal = await db.deal.findUnique({ where: { id: dealId } });
   if (!deal) throw new DealError('Negócio não encontrado.', 404);
-  if (deal.status === 'cancelled') throw new DealError('Negócio cancelado.', 400);
+  // Negócio desfeito (cancelled) OU anulado porque a peça foi vendida a outro
+  // comprador (voided) não pode ser avaliado — senão geraria review de uma
+  // transação que não aconteceu.
+  if (deal.status === 'cancelled' || deal.status === 'voided') throw new DealError('Este negócio não está mais válido para avaliação.', 400);
   if (deal.buyerId !== userId && deal.sellerId !== userId) throw new DealError('Sem acesso.', 403);
   if (rating < 1 || rating > 5) throw new DealError('Nota inválida.', 400);
 
