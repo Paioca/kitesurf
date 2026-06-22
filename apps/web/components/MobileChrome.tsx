@@ -1,5 +1,6 @@
 // App bar + bottom tab bar do mobile. Server-compatible (links).
 import { color } from '../lib/tokens';
+import Link from 'next/link';
 import { Diamond, Logo } from './ui';
 import { AccountNav } from './AccountNav';
 import { RequestBadge } from './RequestBadge';
@@ -7,7 +8,7 @@ import { RequestBadge } from './RequestBadge';
 export function MobileAppBar() {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(246,243,236,0.94)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${color.line}`, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <a href="/" style={{ textDecoration: 'none' }}><Logo size={18} /></a>
+      <Link href="/" style={{ textDecoration: 'none' }}><Logo size={18} /></Link>
       <AccountNav mobile />
     </header>
   );
@@ -16,13 +17,13 @@ export function MobileAppBar() {
 export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'msg' | 'perfil' }) {
   return (
     <nav style={tabBar}>
-      <a href="/" style={tab(active === 'home')}><Diamond size={18} c={active === 'home' ? color.primary : color.inkFaint2} r={3} /><span style={lbl(active === 'home')}>Início</span></a>
-      <a href="/favoritos" style={tab(active === 'fav')}><span style={{ fontSize: 19 }}>{active === 'fav' ? '♥' : '♡'}</span><span style={lbl(active === 'fav')}>Favoritos</span></a>
-      <a href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
+      <Link href="/" style={tab(active === 'home')}><Diamond size={18} c={active === 'home' ? color.primary : color.inkFaint2} r={3} /><span style={lbl(active === 'home')}>Início</span></Link>
+      <Link href="/favoritos" style={tab(active === 'fav')}><span style={{ fontSize: 19 }}>{active === 'fav' ? '♥' : '♡'}</span><span style={lbl(active === 'fav')}>Favoritos</span></Link>
+      <Link href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
-      </a>
-      <a href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Pedidos</span></a>
-      <a href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></a>
+      </Link>
+      <Link href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Pedidos</span></Link>
+      <Link href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></Link>
     </nav>
   );
 }

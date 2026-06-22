@@ -2,6 +2,7 @@
 
 // Error boundary global branded — evita white-screen; oferece tentar de novo / voltar.
 import { color, font } from '../lib/tokens';
+import Link from 'next/link';
 import { Logo } from '../components/ui';
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -13,7 +14,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
       <p style={{ fontSize: 16, lineHeight: 1.6, color: color.inkMute, margin: '0 0 28px' }}>Tenta de novo — se continuar, volta pra busca.</p>
       <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button onClick={reset} style={{ background: color.primary, color: '#fff', border: 'none', padding: '14px 26px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: font.sans }}>Tentar de novo</button>
-        <a href="/" style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, textDecoration: 'none', padding: '13px 24px', borderRadius: 12, fontSize: 15, fontWeight: 600 }}>Voltar à busca</a>
+        <Link href="/" style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, textDecoration: 'none', padding: '13px 24px', borderRadius: 12, fontSize: 15, fontWeight: 600 }}>Voltar à busca</Link>
       </div>
     </main>
   );

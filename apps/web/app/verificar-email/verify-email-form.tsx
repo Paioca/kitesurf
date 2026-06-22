@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button, Logo } from '../../components/ui';
 import { color, font } from '../../lib/tokens';
 
@@ -20,7 +21,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
 
   return (
     <main style={shell}>
-      <a href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></a>
+      <Link href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></Link>
       <section style={card}>
         <div style={eyebrow}>Segurança da conta</div>
         <h1 style={title}>{status === 'done' ? 'E-mail confirmado' : 'Confirme seu e-mail'}</h1>

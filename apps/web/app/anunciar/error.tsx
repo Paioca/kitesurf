@@ -3,6 +3,7 @@
 // Rede de segurança do /anunciar (auditoria mobile #01): qualquer erro de render do
 // fluxo cai AQUI — nunca numa tela só de fundo. Estado sempre visível, com saída.
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { color, font } from '../../lib/tokens';
 import { MobileAppBar } from '../../components/MobileChrome';
 
@@ -23,7 +24,7 @@ export default function AnunciarError({ error, reset }: { error: Error & { diges
         </p>
         <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button onClick={reset} style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Tentar de novo</button>
-          <a href="/" style={{ background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink, borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>Voltar à busca</a>
+          <Link href="/" style={{ background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink, borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>Voltar à busca</Link>
         </div>
       </main>
     </>

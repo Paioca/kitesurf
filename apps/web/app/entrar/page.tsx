@@ -3,6 +3,7 @@
 // Cadastro / Entrar — design Kitetropos (handoff Entrar.dc.html).
 // Fluxo: telefone -> OTP -> perfil (foto obrigatória) -> pronto. Sessão em cookie.
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
 import { COUNTRY_NAMES } from '../../lib/geo';
@@ -131,7 +132,7 @@ export default function Entrar() {
         <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={imageryOverlay} />
         <div style={imageryInner}>
-          <a href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></a>
+          <Link href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></Link>
           <div>
             <div style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre na comunidade</div>
             <h2 style={{ fontFamily: "'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
@@ -171,9 +172,9 @@ export default function Entrar() {
                 {loading ? '...' : 'Enviar código'}
               </button>
               <div style={{ textAlign: 'center', marginTop: 14 }}>
-                <a href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</a>
+                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</Link>
               </div>
-              <p style={terms}>Ao continuar, você concorda com os <a href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</a> e a <a href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</a> da Kitetropos.</p>
+              <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
             </>
           )}
 
@@ -259,8 +260,8 @@ export default function Entrar() {
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
               <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta. Anunciar e negociar é gratuito na Fase 0.</p>
-              <a href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</a>
-              <a href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</a>
+              <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</Link>
+              <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</Link>
             </div>
           )}
         </div>

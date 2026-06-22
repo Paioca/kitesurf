@@ -4,6 +4,7 @@
 // Kit = anúncio de kite com hasBarra: seções de ficha/fotos por peça + 3 preços
 // (conjunto / kite avulso / barra avulsa). Cookie auth. Fase 0 sem escrow.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { color, font } from '../../lib/tokens';
 import { downscaleImage } from '../../lib/resizeImage';
 import type { Brand, Category } from '../../lib/api';
@@ -263,7 +264,7 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Entre pra anunciar</h1>
           <p style={{ fontSize: 15, color: color.inkMute, margin: '0 0 24px' }}>Anunciar exige conta com telefone verificado.</p>
-          <a href="/entrar?next=%2Fanunciar" style={primary}>Entrar ou criar conta</a>
+          <Link href="/entrar?next=%2Fanunciar" style={primary}>Entrar ou criar conta</Link>
         </div>
       </Shell>
     );
@@ -278,7 +279,7 @@ export default function Criar() {
           <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Ofertas e pedidos de visita aparecem em Minhas negociações; as notificações dependem do canal disponível.</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
-            <a href="/" style={outline}>Voltar à busca</a>
+            <Link href="/" style={outline}>Voltar à busca</Link>
           </div>
         </div>
       </Shell>
@@ -630,9 +631,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="only-mobile"><MobileAppBar /></div>
       <header className="only-desktop" style={{ background: '#fff', borderBottom: `1px solid ${color.line}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 36px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/" style={{ textDecoration: 'none', color: color.ink }}><Logo size={20} /></a>
+          <Link href="/" style={{ textDecoration: 'none', color: color.ink }}><Logo size={20} /></Link>
           <span style={{ fontSize: 14, fontWeight: 600, color: color.inkMute }}>Criar anúncio</span>
-          <a href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Sair</a>
+          <Link href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Sair</Link>
         </div>
       </header>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 24px 90px' }}>{children}</main>

@@ -1,6 +1,7 @@
 // Meus anúncios — gerenciar os próprios listings (inclui pausados/arquivados,
 // que não aparecem no perfil público). Cada um com Editar/Pausar/Excluir inline.
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getCurrentUser } from '../../../lib/session';
 import { getMyListings } from '../../../lib/browse';
 import { color, font } from '../../../lib/tokens';
@@ -33,7 +34,7 @@ export default async function MeusAnuncios() {
       {items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '50px 20px', border: '1px dashed #d3ccbd', borderRadius: 16 }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.inkFaint2, marginBottom: 14 }}>Você ainda não tem anúncios.</div>
-          <a href="/anunciar" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700 }}>Anunciar o primeiro</a>
+          <Link href="/anunciar" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700 }}>Anunciar o primeiro</Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

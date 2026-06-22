@@ -1,5 +1,6 @@
 // Favoritos do usuário logado.
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getCurrentUser } from '../../lib/session';
 import { getFavorites } from '../../lib/browse';
 import { color, font } from '../../lib/tokens';
@@ -22,7 +23,7 @@ export default async function Favoritos() {
       <div style={{ fontSize: 40, color: color.heart, marginBottom: 14, lineHeight: 1 }}>♡</div>
       <div style={{ fontFamily: font.serif, fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Nada salvo ainda</div>
       <p style={{ fontSize: 15, color: color.inkMute, margin: '0 auto 24px', maxWidth: 360, lineHeight: 1.5 }}>Toque no coração de um anúncio pra guardar aqui e voltar quando quiser.</p>
-      <a href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700 }}>Explorar equipamento</a>
+      <Link href="/" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 26px', fontFamily: font.sans, fontSize: 15, fontWeight: 700 }}>Explorar equipamento</Link>
     </div>
   );
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button, Logo, TextInput } from '../../components/ui';
 import { color, font } from '../../lib/tokens';
 
@@ -50,7 +51,7 @@ export function RecoveryForm({ token }: { token: string }) {
 
   return (
     <main style={shell}>
-      <a href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></a>
+      <Link href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></Link>
       <section style={card}>
         <div style={eyebrow}>Recuperação da conta</div>
         {step === 'email' && <>

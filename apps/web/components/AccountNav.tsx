@@ -3,6 +3,7 @@
 // Detecta login no cliente e troca "Entrar" por "Minha conta". Usado no header
 // desktop e no app bar mobile (que são server-compatible, mas este filho é client).
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { color, radius } from '../lib/tokens';
 
 type Me = { id: string; name?: string; avatarUrl?: string } | null;
@@ -17,8 +18,8 @@ export function AccountNav({ mobile = false }: { mobile?: boolean }) {
 
   if (!me) {
     return mobile
-      ? <a href="/entrar" style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, textDecoration: 'none' }}>Entrar</a>
-      : <a href="/entrar" style={{ fontSize: 15, fontWeight: 500, color: color.ink, textDecoration: 'none' }}>Entrar</a>;
+      ? <Link href="/entrar" style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, textDecoration: 'none' }}>Entrar</Link>
+      : <Link href="/entrar" style={{ fontSize: 15, fontWeight: 500, color: color.ink, textDecoration: 'none' }}>Entrar</Link>;
   }
 
   const avatar = (
@@ -27,11 +28,11 @@ export function AccountNav({ mobile = false }: { mobile?: boolean }) {
     </span>
   );
 
-  if (mobile) return <a href="/conta" style={{ textDecoration: 'none', display: 'flex' }}>{avatar}</a>;
+  if (mobile) return <Link href="/conta" style={{ textDecoration: 'none', display: 'flex' }}>{avatar}</Link>;
 
   return (
-    <a href="/conta" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: color.ink, fontSize: 14.5, fontWeight: 600, background: '#fff', border: `1px solid ${color.lineCard}`, padding: '6px 12px 6px 7px', borderRadius: radius.pill }}>
+    <Link href="/conta" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: color.ink, fontSize: 14.5, fontWeight: 600, background: '#fff', border: `1px solid ${color.lineCard}`, padding: '6px 12px 6px 7px', borderRadius: radius.pill }}>
       {avatar}<span>Minha conta</span>
-    </a>
+    </Link>
   );
 }

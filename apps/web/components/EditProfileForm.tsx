@@ -2,6 +2,7 @@
 
 // Editar perfil + excluir conta. Avatar via /api/uploads/avatar; salva via PATCH.
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
 import { COUNTRY_NAMES } from '../lib/geo';
@@ -133,7 +134,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
       </Field>
 
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-        <a href="/conta" style={{ ...btn, background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink }}>Cancelar</a>
+        <Link href="/conta" style={{ ...btn, background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink }}>Cancelar</Link>
         <button onClick={save} disabled={!canSave} style={{ ...btn, flex: 1, background: canSave ? color.primary : '#dfe3df', color: canSave ? '#fff' : color.inkFaint2, border: 'none', cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
 

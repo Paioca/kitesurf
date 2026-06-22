@@ -2,6 +2,7 @@
 
 // Atalhos do marketplace no header desktop (só logado): o que importa no dia a dia.
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { color } from '../lib/tokens';
 import { RequestBadge } from './RequestBadge';
 
@@ -15,9 +16,9 @@ export function HeaderNav() {
   const link: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, color: color.ink, textDecoration: 'none' };
   return (
     <nav style={{ display: 'flex', alignItems: 'center', gap: 22, marginRight: 4 }}>
-      <a href="/conta/anuncios" style={link}>Anúncios</a>
-      <a href="/pedidos" style={{ ...link, position: 'relative' }}>Pedidos<RequestBadge /></a>
-      <a href="/favoritos" style={link}>Favoritos</a>
+      <Link href="/conta/anuncios" style={link}>Anúncios</Link>
+      <Link href="/pedidos" style={{ ...link, position: 'relative' }}>Pedidos<RequestBadge /></Link>
+      <Link href="/favoritos" style={link}>Favoritos</Link>
     </nav>
   );
 }

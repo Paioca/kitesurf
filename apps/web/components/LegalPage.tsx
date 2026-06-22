@@ -2,6 +2,7 @@
 // handoff Claude Design v2: hero band escuro, índice lateral sticky, selos
 // numerados nas seções e card de contato. O conteúdo vem das páginas.
 import { color, font, radius } from '../lib/tokens';
+import Link from 'next/link';
 import { Logo, Diamond } from './ui';
 import { Footer } from './Footer';
 
@@ -28,7 +29,7 @@ export function LegalPage({
     <>
       <header style={{ borderBottom: `1px solid ${color.line}`, background: '#fff', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 24px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-          <a href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></a>
+          <Link href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></Link>
           <a href={crossHref} style={{ fontSize: 14, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>{crossLabel} ›</a>
         </div>
       </header>

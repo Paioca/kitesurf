@@ -1,5 +1,6 @@
 // Termos de Uso factuais da Fase 0. Revisão jurídica externa continua recomendada.
 import { LegalPage, type LegalSection } from '../../components/LegalPage';
+import Link from 'next/link';
 
 export const metadata = { title: 'Termos de Uso — Kitetropos' };
 
@@ -23,7 +24,7 @@ export default function Termos() {
       sections={sections}
       crossLabel="Política de privacidade"
       crossHref="/privacidade"
-      contact={<>Estes termos descrevem o funcionamento atual da Fase 0 e podem ser atualizados conforme a plataforma evolui. Veja também a <a href="/privacidade" style={{ color: '#1f6b5c', fontWeight: 700 }}>Política de privacidade</a>.</>}
+      contact={<>Estes termos descrevem o funcionamento atual da Fase 0 e podem ser atualizados conforme a plataforma evolui. Veja também a <Link href="/privacidade" style={{ color: '#1f6b5c', fontWeight: 700 }}>Política de privacidade</Link>.</>}
     />
   );
 }

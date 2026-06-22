@@ -1,6 +1,7 @@
 // Pedidos — caixa do contato estruturado (substitui o chat). Recebidos (vendedor:
 // aceitar/recusar) + Enviados (comprador: status + WhatsApp quando liberado).
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getCurrentUser } from '../../lib/session';
 import { getRequestsForUser } from '../../lib/requests';
 import { color, font } from '../../lib/tokens';
@@ -47,8 +48,8 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
 
       {/* abas */}
       <div style={{ display: 'flex', gap: 6, background: '#ece3d2', borderRadius: 13, padding: 5, marginBottom: 24, maxWidth: 380 }}>
-        <a href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 ? <span style={tabBadge}>{novos}</span> : incoming.length > 0 ? <span style={tabCount}>{incoming.length}</span> : null}</a>
-        <a href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados{outgoing.length > 0 && <span style={tabCount}>{outgoing.length}</span>}</a>
+        <Link href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 ? <span style={tabBadge}>{novos}</span> : incoming.length > 0 ? <span style={tabCount}>{incoming.length}</span> : null}</Link>
+        <Link href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados{outgoing.length > 0 && <span style={tabCount}>{outgoing.length}</span>}</Link>
       </div>
 
       {tab === 'received' ? (

@@ -1,5 +1,6 @@
 // Política de Privacidade factual da Fase 0. Revisão jurídica externa continua recomendada.
 import { LegalPage, type LegalSection } from '../../components/LegalPage';
+import Link from 'next/link';
 
 export const metadata = { title: 'Política de Privacidade — Kitetropos' };
 
@@ -22,7 +23,7 @@ export default function Privacidade() {
       sections={sections}
       crossLabel="Termos de uso"
       crossHref="/termos"
-      contact={<>Este texto descreve o funcionamento atual da Fase 0. Veja também os <a href="/termos" style={{ color: '#1f6b5c', fontWeight: 700 }}>Termos de uso</a>.</>}
+      contact={<>Este texto descreve o funcionamento atual da Fase 0. Veja também os <Link href="/termos" style={{ color: '#1f6b5c', fontWeight: 700 }}>Termos de uso</Link>.</>}
     />
   );
 }

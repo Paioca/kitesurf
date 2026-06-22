@@ -1,6 +1,7 @@
 // Detalhe do anúncio — design Kitetropos (handoff Anuncio.dc.html). Server-rendered.
 // Adaptação Fase 0: sem escrow/checkout. CTA = conversar. Sem rating falso.
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
 import { getCurrentUser } from '../../../lib/session';
@@ -138,7 +139,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
       <div className="only-desktop"><SiteHeader /></div>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <a href="/" style={{ color: color.inkFaint, textDecoration: 'none' }}>Comprar</a><span>›</span>
+          <Link href="/" style={{ color: color.inkFaint, textDecoration: 'none' }}>Comprar</Link><span>›</span>
           <a href={`/?cat=${l.category?.slug ?? ''}`} style={{ color: color.inkFaint, textDecoration: 'none' }}>{l.category?.namePt}</a><span>›</span>
           <span style={{ color: color.ink, fontWeight: 600 }}>{title}</span>
         </div>
