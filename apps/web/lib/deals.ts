@@ -1,4 +1,5 @@
 import 'server-only';
+import type { DisputeReason } from '@prisma/client';
 import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
@@ -79,54 +80,11 @@ export async function confirmPurchase(userId: string, dealId: string) {
   if (!sellables(listing as ListingLike).find((s) => s.component === comp)?.available) {
     throw new DealError('Esta peça já foi vendida.', 409);
   }
-  const close = shouldCloseListing(listing as ListingLike, comp); // última peça → anúncio sold
-
-  // Atômico POR COMPONENTE: o guard no where impede 2 confirmações da mesma peça
-  // (count===0 → aborta). Índice único parcial Deal(listingId, component) WHERE
-  // completed é a trava de DB. conjunto exige nenhuma peça vendida (kiteSoldAt/barraSoldAt null).
+  // Marca a peça vendida + encerra concorrentes (helper compartilhado com o
+  // encerramento-sem-confirmação), e notifica o vendedor.
   await db.$transaction(async (tx) => {
-    const where: Record<string, unknown> = { id: deal.listingId, status: { in: ['active', 'paused'] } };
-    const data: Record<string, unknown> = {};
-    if (comp === 'kite') {
-      where.kiteSoldAt = null;
-      data.kiteSoldAt = new Date();
-      data.kiteSoldToUserId = deal.buyerId;
-    } else if (comp === 'barra') {
-      where.barraSoldAt = null;
-      data.barraSoldAt = new Date();
-      data.barraSoldToUserId = deal.buyerId;
-    } else {
-      where.kiteSoldAt = null; // conjunto só vende se nenhuma peça avulsa saiu
-      where.barraSoldAt = null;
-    }
-    if (close) {
-      data.status = 'sold';
-      data.soldToUserId = deal.buyerId;
-    }
-    const updated = await tx.listing.updateMany({ where, data });
-    if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
-    await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
-    // Encerra cirurgicamente o que ficou incompatível com OUTROS compradores: se fechou
-    // o anúncio, tudo; se vendeu só uma peça, a MESMA peça + conjunto (kit incompleto),
-    // preservando a outra peça ainda à venda. Pedidos viram `sold_elsewhere` (não
-    // `declined` — recusa é decisão do vendedor; aqui foi vendido a outro).
-    const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
-    // Captura os compradores afetados ANTES de mudar o status (depois o filtro
-    // pending/accepted não os pega mais) — pra notificar `sold_elsewhere`.
-    const affected = await affectedBuyerIds(tx, deal.listingId, { excludeBuyerId: deal.buyerId, components: close ? undefined : ['conjunto', comp] });
-    await tx.request.updateMany({
-      where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter },
-      data: { status: 'sold_elsewhere' },
-    });
-    // Invalida Deals `seller_confirmed` concorrentes (o vendedor pode ter marcado
-    // vendido pra mais de um) — senão ficam órfãos esperando uma confirmação impossível.
-    await tx.deal.updateMany({
-      where: { listingId: deal.listingId, id: { not: dealId }, buyerId: { not: deal.buyerId }, status: 'seller_confirmed', ...compFilter },
-      data: { status: 'voided' },
-    });
-    // Notifica: vendedor (compra confirmada) + compradores afetados (vendido a outro).
+    await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'completed');
     await emit(tx, { userId: deal.sellerId, type: 'purchase_confirmed', listingId: deal.listingId, dealId, actorId: deal.buyerId, data: { title: listing.title } });
-    await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'sold_elsewhere' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
   });
 }
 
@@ -161,6 +119,127 @@ export async function denyPurchase(userId: string, dealId: string) {
       data: { status: 'withdrawn' },
     });
     await emit(tx, { userId: deal.sellerId, type: 'purchase_denied', listingId: deal.listingId, dealId, actorId: deal.buyerId });
+  });
+}
+
+// Marca a peça do deal como VENDIDA (mesma mutação do confirmPurchase) e encerra os
+// concorrentes incompatíveis. Parametrizado pelo status final do deal: 'completed'
+// (comprador confirmou) ou 'closed_unconfirmed' (vendedor encerrou após 72h).
+async function applyPieceSale(tx: any, deal: { id: string; listingId: string; buyerId: string; component: Component }, listing: ListingLike & { title: string }, finalStatus: 'completed' | 'closed_unconfirmed') {
+  const comp = deal.component;
+  const close = shouldCloseListing(listing, comp);
+  const where: Record<string, unknown> = { id: deal.listingId, status: { in: ['active', 'paused'] } };
+  const data: Record<string, unknown> = {};
+  if (comp === 'kite') { where.kiteSoldAt = null; data.kiteSoldAt = new Date(); data.kiteSoldToUserId = deal.buyerId; }
+  else if (comp === 'barra') { where.barraSoldAt = null; data.barraSoldAt = new Date(); data.barraSoldToUserId = deal.buyerId; }
+  else { where.kiteSoldAt = null; where.barraSoldAt = null; }
+  if (close) { data.status = 'sold'; data.soldToUserId = deal.buyerId; }
+  const updated = await tx.listing.updateMany({ where, data });
+  if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
+  await tx.deal.update({ where: { id: deal.id }, data: finalStatus === 'completed' ? { status: 'completed', buyerConfirmedAt: new Date() } : { status: 'closed_unconfirmed', closedUnconfirmedAt: new Date() } });
+  const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
+  const affected = await affectedBuyerIds(tx, deal.listingId, { excludeBuyerId: deal.buyerId, components: close ? undefined : ['conjunto', comp] });
+  await tx.request.updateMany({ where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter }, data: { status: 'sold_elsewhere' } });
+  await tx.deal.updateMany({ where: { listingId: deal.listingId, id: { not: deal.id }, buyerId: { not: deal.buyerId }, status: 'seller_confirmed', ...compFilter }, data: { status: 'voided', confirmationDeadlineAt: null } });
+  await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'sold_elsewhere' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
+}
+
+// Reabre a peça vendida (reversão/correção): peça volta a paused, NUNCA active sozinha.
+async function unmarkPieceSale(tx: any, listingId: string, comp: Component) {
+  const data: Record<string, unknown> = {};
+  if (comp === 'kite') { data.kiteSoldAt = null; data.kiteSoldToUserId = null; }
+  else if (comp === 'barra') { data.barraSoldAt = null; data.barraSoldToUserId = null; }
+  const l = await tx.listing.findUnique({ where: { id: listingId }, select: { status: true } });
+  if (l?.status === 'sold' || l?.status === 'archived') { data.status = 'paused'; data.soldToUserId = null; }
+  await tx.listing.update({ where: { id: listingId }, data });
+}
+
+// CRON (diário): encerra como vendido-sem-confirmação os deals seller_confirmed cujo
+// prazo de 72h venceu. Idempotente (só pega seller_confirmed vencidos). Retorna a
+// contagem. Protegido por CRON_SECRET no route que chama.
+export async function closeUnconfirmedExpired(now = new Date()): Promise<number> {
+  const venc = await db.deal.findMany({ where: { status: 'seller_confirmed', confirmationDeadlineAt: { lte: now } }, select: { id: true } });
+  let n = 0;
+  for (const { id } of venc) {
+    try {
+      await db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Deal" WHERE id = ${id} FOR UPDATE`;
+        const deal = await tx.deal.findUnique({ where: { id } });
+        if (!deal || deal.status !== 'seller_confirmed') return; // corrida: alguém já mexeu
+        const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
+        if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return; }
+        await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
+        await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
+      });
+      n++;
+    } catch { /* segue pros outros */ }
+  }
+  return n;
+}
+
+// Vendedor corrige um encerramento-sem-confirmação (o comprador nunca confirmou, então
+// é unilateral): a peça volta a paused e o deal vira cancelled. Fica no histórico.
+export async function correctUnconfirmed(userId: string, dealId: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.sellerId !== userId) throw new DealError('Só o vendedor pode corrigir.', 403);
+  if (deal.status !== 'closed_unconfirmed') throw new DealError('Este negócio não está encerrado-sem-confirmação.', 400);
+  await db.$transaction(async (tx) => {
+    await unmarkPieceSale(tx, deal.listingId, deal.component);
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled' } });
+  });
+}
+
+// REVERSÃO (§11) — só de venda completed; exige confirmação bilateral. Abre uma
+// DealDispute (open) e põe o deal em reversal_requested aguardando a outra parte.
+export async function requestReversal(userId: string, dealId: string, reason: DisputeReason, description?: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.status !== 'completed') throw new DealError('Só dá pra pedir correção de uma venda já confirmada pelos dois.', 400);
+  if (deal.buyerId !== userId && deal.sellerId !== userId) throw new DealError('Sem acesso.', 403);
+  const counterpartyId = userId === deal.buyerId ? deal.sellerId : deal.buyerId;
+  const lst = await db.listing.findUnique({ where: { id: deal.listingId }, select: { title: true } });
+  await db.$transaction(async (tx) => {
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'reversal_requested', reversalRequestedAt: new Date() } });
+    await tx.dealDispute.create({ data: { dealId, openedByUserId: userId, counterpartyId, reason, description: description ?? null, status: 'open' } });
+    await emit(tx, { userId: counterpartyId, type: 'reversal_requested', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
+  });
+}
+
+// A contraparte responde à correção. Aceita → reversed (peça volta a paused, deixa de
+// contar). Recusa → disputed + a DealDispute vai pra fila da moderação (under_review).
+export async function respondReversal(userId: string, dealId: string, accept: boolean) {
+  const deal = await db.deal.findUnique({ where: { id: dealId }, include: { disputes: { where: { status: 'open' }, orderBy: { createdAt: 'desc' }, take: 1 } } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.status !== 'reversal_requested') throw new DealError('Não há correção pendente neste negócio.', 400);
+  const dispute = deal.disputes[0];
+  if (!dispute) throw new DealError('Pedido de correção não encontrado.', 404);
+  if (userId !== dispute.counterpartyId) throw new DealError('Só a outra parte pode responder à correção.', 403);
+  const lst = await db.listing.findUnique({ where: { id: deal.listingId }, select: { title: true } });
+  await db.$transaction(async (tx) => {
+    if (accept) {
+      await unmarkPieceSale(tx, deal.listingId, deal.component);
+      await tx.deal.update({ where: { id: dealId }, data: { status: 'reversed', reversedAt: new Date() } });
+      await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_reversed', resolvedAt: new Date() } });
+      await emit(tx, { userId: dispute.openedByUserId, type: 'reversal_confirmed', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
+    } else {
+      await tx.deal.update({ where: { id: dealId }, data: { status: 'disputed' } });
+      await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'under_review' } });
+      await emit(tx, { userId: dispute.openedByUserId, type: 'reversal_rejected', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
+    }
+  });
+}
+
+// Quem pediu a correção desiste → volta a completed.
+export async function cancelReversal(userId: string, dealId: string) {
+  const deal = await db.deal.findUnique({ where: { id: dealId }, include: { disputes: { where: { status: 'open' }, orderBy: { createdAt: 'desc' }, take: 1 } } });
+  if (!deal) throw new DealError('Negócio não encontrado.', 404);
+  if (deal.status !== 'reversal_requested') throw new DealError('Não há correção pendente.', 400);
+  const dispute = deal.disputes[0];
+  if (!dispute || dispute.openedByUserId !== userId) throw new DealError('Só quem pediu a correção pode desistir.', 403);
+  await db.$transaction(async (tx) => {
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', reversalRequestedAt: null } });
+    await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'closed', resolvedAt: new Date() } });
   });
 }
 
