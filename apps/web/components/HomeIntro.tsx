@@ -5,9 +5,9 @@
 import { color, font, radius } from '../lib/tokens';
 
 const STEPS = [
-  { t: 'Escolha o equipamento', d: 'Kite, barra ou kit — foto real e vendedor verificado.' },
-  { t: 'Oferta ou visita', d: 'Faça uma oferta ou agende uma visita em um toque.' },
-  { t: 'Feche no WhatsApp', d: 'O vendedor libera o contato e vocês combinam direto.' },
+  { t: 'Escolha o equipamento', d: 'Kite, barra ou conjunto com fotos e informações estruturadas.' },
+  { t: 'Oferta ou visita', d: 'Faça uma oferta ou peça uma visita para conhecer o equipamento.' },
+  { t: 'Conversem no WhatsApp', d: 'Se o vendedor aceitar, o contato dele também é liberado.' },
 ];
 
 const TRUST = ['1 número = 1 conta', 'Foto obrigatória', 'Avaliação após a venda'];

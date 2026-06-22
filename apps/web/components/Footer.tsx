@@ -8,16 +8,16 @@ export function Footer() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 48, flexWrap: 'wrap', marginBottom: 48 }}>
           <div style={{ maxWidth: 320 }}>
             <div style={{ marginBottom: 18 }}><Logo size={21} onDark /></div>
-            <p style={{ fontFamily: font.serif, fontSize: 16, lineHeight: 1.6, color: '#a9c0b5', margin: 0 }}>O marketplace de equipamento de kitesurf do Brasil. Construído com confiança, começando em Cumbuco.</p>
+            <p style={{ fontFamily: font.serif, fontSize: 16, lineHeight: 1.6, color: '#a9c0b5', margin: 0 }}>Marketplace de kite e barra para a comunidade global do kitesurf. Nascido em Cumbuco.</p>
           </div>
           <div style={{ display: 'flex', gap: 72, flexWrap: 'wrap' }}>
-            <FootCol title="Marketplace" links={[['Buscar equipamento', '/'], ['Anunciar o seu', '/anunciar'], ['Meus pedidos', '/pedidos']]} />
+            <FootCol title="Marketplace" links={[['Buscar equipamento', '/'], ['Anunciar equipamento', '/anunciar'], ['Meus anúncios', '/conta/anuncios'], ['Minhas negociações', '/pedidos']]} />
             <FootCol title="Confiança" links={[['Termos de uso', '/termos'], ['Política de privacidade', '/privacidade']]} />
           </div>
         </div>
         <div style={{ borderTop: '1px solid rgba(220,232,225,0.14)', paddingTop: 26, display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: '#8aa399' }}>© 2026 Kitetropos</span>
-          <span style={{ fontSize: 13, color: '#8aa399' }}>Cumbuco · Ceará · Brasil</span>
+          <span style={{ fontSize: 13, color: '#8aa399' }}>Nascido em Cumbuco · Feito para o mundo</span>
         </div>
       </div>
     </footer>

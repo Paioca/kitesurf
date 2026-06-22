@@ -14,6 +14,7 @@ import { CancelRequestButton } from '../../components/CancelRequestButton';
 import { MarkNotificationsRead } from '../../components/MarkNotificationsRead';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Minhas negociações — Kitetropos' };
 
 const HATCH = 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)';
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -44,7 +45,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <MarkNotificationsRead />
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
-      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px, 5vw, 38px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 22px' }}>Pedidos</h1>
+      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px, 5vw, 38px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 22px' }}>Minhas negociações</h1>
 
       {/* abas */}
       <div style={{ display: 'flex', gap: 6, background: '#ece3d2', borderRadius: 13, padding: 5, marginBottom: 24, maxWidth: 380 }}>

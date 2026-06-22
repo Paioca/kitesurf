@@ -22,7 +22,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
       <Link href="/anunciar" style={{ ...tab(false), marginTop: -14, color: color.ink }}>
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </Link>
-      <Link href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Pedidos</span></Link>
+      <Link href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Negociações</span></Link>
       <Link href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></Link>
     </nav>
   );
