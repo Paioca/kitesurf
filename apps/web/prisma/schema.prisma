@@ -500,6 +500,11 @@ enum NotificationType {
   purchase_denied // vendedor: comprador respondeu "não comprei"
   sold_elsewhere // comprador: a peça foi vendida a outra pessoa
   listing_removed // comprador: o anúncio foi removido
+  sale_cancelled // comprador: o vendedor cancelou a venda marcada
+  sale_closed_unconfirmed // comprador: o vendedor encerrou a venda após 72h sem confirmação
+  reversal_requested // a outra parte pediu correção/devolução da venda
+  reversal_confirmed // a correção foi aceita: venda revertida
+  reversal_rejected // a correção foi recusada: virou disputa
 }
 
 // Notificação in-app persistente. `read` por readAt. Refs opcionais pro deep-link.

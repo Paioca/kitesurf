@@ -11,6 +11,13 @@ ALTER TYPE "DealStatus" ADD VALUE IF NOT EXISTS 'reversal_requested';
 ALTER TYPE "DealStatus" ADD VALUE IF NOT EXISTS 'reversed';
 ALTER TYPE "DealStatus" ADD VALUE IF NOT EXISTS 'disputed';
 
+-- NotificationType: novos eventos do fluxo v2
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'sale_cancelled';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'sale_closed_unconfirmed';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'reversal_requested';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'reversal_confirmed';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'reversal_rejected';
+
 -- Enums da disputa
 CREATE TYPE "DisputeStatus" AS ENUM ('open', 'under_review', 'resolved_upheld', 'resolved_reversed', 'closed');
 CREATE TYPE "DisputeReason" AS ENUM ('devolvido', 'engano', 'nao_aconteceu', 'outro');

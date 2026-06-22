@@ -1,10 +1,12 @@
 import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
-import { sellables, shouldCloseListing, type ListingLike, type Component } from './components';
+import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
 import { emit, emitMany, affectedBuyerIds } from './notifications';
 
 export class DealError extends PublicError {}
+
+const RESERVE_HOURS = 72; // prazo do comprador confirmar antes do vendedor poder encerrar
 
 const sellableSel = { status: true, hasBarra: true, price: true, kitePrice: true, barraPrice: true, kiteSoldAt: true, barraSoldAt: true } as const;
 
@@ -43,9 +45,22 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
   if (existing && !becomesPending) return existing.id;
 
   return db.$transaction(async (tx) => {
+    // TRAVA por unidade física (§3): lock da linha do Listing serializa marcações
+    // concorrentes; dentro do lock, rejeita se já há reserva pendente que conflite.
+    // O índice único parcial seller_confirmed por (listingId, component) é o backstop.
+    await tx.$queryRaw`SELECT id FROM "Listing" WHERE id = ${r.listingId} FOR UPDATE`;
+    const pendentes = await tx.deal.findMany({
+      where: { listingId: r.listingId, status: 'seller_confirmed' },
+      select: { id: true, component: true, buyerId: true },
+    });
+    const conflito = pendentes.find((d) => reservationConflict(d.component, r.component) && !(existing && d.id === existing.id));
+    if (conflito) throw new DealError('Já existe uma venda aguardando confirmação para esta peça. Cancele a anterior antes de escolher outro comprador.', 409);
+
+    const sellerConfirmedAt = new Date();
+    const confirmationDeadlineAt = new Date(sellerConfirmedAt.getTime() + RESERVE_HOURS * 3600 * 1000);
     const deal = existing
-      ? await tx.deal.update({ where: { id: existing.id }, data: { status: 'seller_confirmed', sellerConfirmedAt: new Date() } })
-      : await tx.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt: new Date() } });
+      ? await tx.deal.update({ where: { id: existing.id }, data: { status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt } })
+      : await tx.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt } });
     await emit(tx, { userId: r.buyerId, type: 'sale_marked', listingId: r.listingId, requestId: r.id, dealId: deal.id, actorId: r.sellerId, data: { title: listing.title } });
     return deal.id;
   });
@@ -124,7 +139,12 @@ export async function cancelSale(userId: string, dealId: string) {
   if (!deal) throw new DealError('Negócio não encontrado.', 404);
   if (deal.sellerId !== userId) throw new DealError('Só o vendedor pode cancelar a venda.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Só dá pra cancelar uma venda ainda não concluída.', 400);
-  await db.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, buyerConfirmedAt: null } });
+  // Notifica o comprador — ele tinha uma venda marcada esperando confirmação (teste #15).
+  const lst = await db.listing.findUnique({ where: { id: deal.listingId }, select: { title: true } });
+  await db.$transaction(async (tx) => {
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, buyerConfirmedAt: null, confirmationDeadlineAt: null } });
+    await emit(tx, { userId: deal.buyerId, type: 'sale_cancelled', listingId: deal.listingId, dealId, actorId: deal.sellerId, data: { title: lst?.title ?? '' } });
+  });
 }
 
 // Comprador responde "não comprei" a uma venda que o vendedor marcou. Cancela o Deal
@@ -135,7 +155,7 @@ export async function denyPurchase(userId: string, dealId: string) {
   if (deal.buyerId !== userId) throw new DealError('Só o comprador pode responder a esta venda.', 403);
   if (deal.status !== 'seller_confirmed') throw new DealError('Esta venda não está aguardando sua confirmação.', 400);
   await db.$transaction(async (tx) => {
-    await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null } });
+    await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null } });
     await tx.request.updateMany({
       where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: { in: ['pending', 'accepted'] } },
       data: { status: 'withdrawn' },
@@ -149,10 +169,10 @@ export async function denyPurchase(userId: string, dealId: string) {
 export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {
   const deal = await db.deal.findUnique({ where: { id: dealId } });
   if (!deal) throw new DealError('Negócio não encontrado.', 404);
-  // Negócio desfeito (cancelled) OU anulado porque a peça foi vendida a outro
-  // comprador (voided) não pode ser avaliado — senão geraria review de uma
-  // transação que não aconteceu.
-  if (deal.status === 'cancelled' || deal.status === 'voided') throw new DealError('Este negócio não está mais válido para avaliação.', 400);
+  // Avaliação SÓ depois da confirmação dos dois lados (§4). Bloqueia todos os demais
+  // estados — seller_confirmed (ainda não confirmado), cancelled, voided,
+  // closed_unconfirmed, reversal_requested, reversed, disputed.
+  if (deal.status !== 'completed') throw new DealError('A avaliação só é liberada depois da compra confirmada pelos dois.', 400);
   if (deal.buyerId !== userId && deal.sellerId !== userId) throw new DealError('Sem acesso.', 403);
   if (rating < 1 || rating > 5) throw new DealError('Nota inválida.', 400);
 

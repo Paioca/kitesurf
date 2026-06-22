@@ -50,6 +50,20 @@ export function shouldCloseListing(l: ListingLike, justSold: Component): boolean
   return kiteGone && barraGone;
 }
 
+// Unidades físicas que cada venda RESERVA (negociacao-v2 §3). O conjunto reserva as
+// duas peças; kite/barra reservam só a sua. Base da trava de "1 reserva por unidade".
+const RESERVES: Record<Component, Component[]> = {
+  conjunto: ['kite', 'barra'],
+  kite: ['kite'],
+  barra: ['barra'],
+};
+
+// Duas vendas conflitam se reservam alguma unidade física em comum.
+export function reservationConflict(a: Component, b: Component): boolean {
+  const ua = new Set(RESERVES[a] ?? [a]);
+  return (RESERVES[b] ?? [b]).some((u) => ua.has(u));
+}
+
 // Preço da peça (centavos) ou null se o anúncio não vende essa peça avulsa.
 export function priceOf(l: ListingLike, c: Component): number | null {
   if (c === 'kite') return l.hasBarra ? l.kitePrice : null;
