@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
 import { LISTINGS_TAG } from '../../../lib/browse';
+import { SPOTS } from '../../../lib/filters';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../lib/storage';
@@ -45,7 +46,7 @@ const createSchema = z.object({
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
   price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }), // conjunto (kit) ou peça única
-  city: z.string().min(1),
+  city: z.string().refine((c) => SPOTS.includes(c), { message: 'Spot inválido — escolha um da lista oficial.' }),
   spot: z.string().optional(),
   pickup: z.boolean().optional(),
   shippable: z.boolean(),
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
       if (model.categoryId && model.categoryId !== dto.categoryId) return NextResponse.json({ message: 'Modelo não pertence a esta categoria.' }, { status: 400 });
     }
 
-    const attributes = validateAttributes(category.attributeSchema as any, dto.attributes);
+    const attributes = validateAttributes(category.attributeSchema as any, dto.attributes, { requireAll: true });
 
     // Kit: categoria primária precisa ser kite; valida infos da barra; exige
     // ao menos 1 foto de cada peça (a barra precisa de foto própria pra busca de barra).
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
       if (category.slug !== 'kite') return NextResponse.json({ message: 'Kit precisa ter o kite como peça principal.' }, { status: 400 });
       const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
       if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });
-      barraAttributes = validateAttributes(barraCat.attributeSchema as any, dto.barraAttributes ?? {}) as Prisma.InputJsonValue;
+      barraAttributes = validateAttributes(barraCat.attributeSchema as any, dto.barraAttributes ?? {}, { requireAll: true }) as Prisma.InputJsonValue;
       const hasKitePhoto = dto.images.some((i) => i.component === 'kite');
       const hasBarraPhoto = dto.images.some((i) => i.component === 'barra');
       if (!hasKitePhoto || !hasBarraPhoto) return NextResponse.json({ message: 'Envie pelo menos uma foto do kite e uma da barra.' }, { status: 400 });

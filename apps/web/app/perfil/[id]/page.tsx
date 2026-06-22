@@ -84,7 +84,7 @@ export default async function PerfilPage({ params }: { params: { id: string } })
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>O número, o e-mail e o CPF nunca aparecem para outros usuários — só o selo de "verificado".</p>
+              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>E-mail e CPF nunca são compartilhados. O telefone não aparece no perfil público — só é liberado para a outra parte quando uma solicitação é aceita.</p>
             </div>
           </div>
           <div style={card}>

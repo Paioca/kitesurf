@@ -54,6 +54,10 @@ export async function deleteAccount(userId: string) {
         deletedAt: now, status: 'blocked',
         name: 'Conta removida', avatarUrl: null, instagramHandle: null,
         phone: `deleted_${userId}`, email: `deleted_${userId}@removed.invalid`,
+        // LGPD: apaga TODO o PII residual (não só telefone/email/nome). Histórico de
+        // negócios concluídos e avaliações ficam — mas sem dado pessoal identificável.
+        lastName: null, spot: null, country: null, cpf: null, payoutAccountId: null,
+        emailVerified: false, phoneVerified: false,
       },
     });
     await emitMany(tx, affected.map((a) => ({ userId: a.buyerId, type: 'listing_removed' as const, listingId: a.listingId, actorId: userId })));

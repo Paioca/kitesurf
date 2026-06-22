@@ -9,14 +9,19 @@ interface AttrSchema {
 export function validateAttributes(
   schema: AttrSchema,
   attributes: Record<string, unknown>,
+  opts: { requireAll?: boolean } = {},
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const props = schema.properties ?? {};
 
-  for (const key of schema.required ?? []) {
+  // Na criação a ficha inteira é obrigatória (igual ao formulário, Fase 0) — não só
+  // os `required` do schema. requireAll fecha o bypass de chamada direta à API.
+  const mustHave = opts.requireAll ? Object.keys(props) : (schema.required ?? []);
+  for (const key of mustHave) {
     const v = attributes[key];
     if (v === undefined || v === null || v === '') {
-      throw new PublicError(`Atributo obrigatório ausente: ${key}`);
+      const label = props[key]?.label ?? key;
+      throw new PublicError(`Atributo obrigatório ausente: ${label}`);
     }
   }
   for (const [key, value] of Object.entries(attributes)) {

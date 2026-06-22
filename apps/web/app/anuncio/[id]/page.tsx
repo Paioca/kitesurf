@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
   const price = formatBRL(l.price);
   const title = `${name} — ${price} · Kitetropos`;
-  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Contato verificado, sem golpe — na Kitetropos.`;
+  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados — na Kitetropos.`;
   const img = (l.images ?? [])[0]?.url;
   const images = img ? [img] : undefined;
   return {
