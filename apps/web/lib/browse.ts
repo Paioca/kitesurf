@@ -188,7 +188,8 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   if (f.price.length) {
     and.push({
       OR: f.price.map((k) => {
-        const [lo, hi] = PRICE_RANGES[k] ?? [0, 1e12];
+        // O fallback também deve caber no INT4 da coluna Listing.price.
+        const [lo, hi] = PRICE_RANGES[k] ?? [0, 2_147_483_647];
         return { price: { gte: lo, lt: hi } };
       }),
     });

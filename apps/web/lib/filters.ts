@@ -30,7 +30,8 @@ export const PRICE_RANGES: Record<string, [number, number]> = {
   p1: [0, 50000],
   p2: [50000, 200000],
   p3: [200000, 500000],
-  p4: [500000, 1e12],
+  // Listing.price é Int/PostgreSQL INT4. O teto precisa caber em 32 bits.
+  p4: [500000, 2_147_483_647],
 };
 export const PRICE_LABELS: Record<string, string> = {
   p1: 'Até R$ 500',
