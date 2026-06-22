@@ -19,7 +19,7 @@ const SCENES = [
   { dur: 6200, no: '08', label: 'Avalie e gere reputação', sub: 'Confiança que fica pra comunidade' },
 ];
 const TOTAL = SCENES.reduce((a, s) => a + s.dur, 0);
-const SPEED = 1.6; // ritmo do loop (1 = original); >1 acelera tudo proporcionalmente
+const SPEED = 2.5; // ritmo do loop (1 = original); >1 acelera tudo proporcionalmente
 
 const clamp = (x: number, a: number, b: number) => (x < a ? a : x > b ? b : x);
 const ease = (x: number) => { x = clamp(x, 0, 1); return (1 - Math.cos(Math.PI * x)) / 2; };
