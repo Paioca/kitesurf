@@ -15,6 +15,7 @@ import { SiteHeader } from '../../../components/SiteHeader';
 import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
 import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
+import { BarraPhotos } from '../../../components/BarraPhotos';
 import { ReportButton } from '../../../components/ReportButton';
 
 export const dynamic = 'force-dynamic';
@@ -194,13 +195,7 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
                 <span style={{ background: '#e8f1ec', color: color.primary, fontSize: 11.5, fontWeight: 800, padding: '4px 10px', borderRadius: 999 }}>+ Barra</span>
                 <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600 }}>Barra que acompanha</div>
               </div>
-              {barraPhotos.length > 0 && (
-                <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12 }}>
-                  {barraPhotos.map((u, i) => (
-                    <div key={i} style={{ width: 92, height: 92, borderRadius: 10, flex: 'none', backgroundImage: `url("${u}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-                  ))}
-                </div>
-              )}
+              <BarraPhotos photos={barraPhotos} />
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 14, color: color.ink }}>
                 {ba.line_length_m != null && <div><span style={{ color: color.inkFaint }}>Comprimento: </span><b>{ba.line_length_m} m</b></div>}
                 {ba.condition && <div><span style={{ color: color.inkFaint }}>Estado: </span><b>{CONDITION[ba.condition] ?? ba.condition}</b></div>}
