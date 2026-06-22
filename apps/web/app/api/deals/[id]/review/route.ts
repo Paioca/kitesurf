@@ -8,7 +8,8 @@ export const runtime = 'nodejs';
 
 const schema = z.object({ rating: z.number().int().min(1).max(5), comment: z.string().max(1000).optional(), tags: z.array(z.string().max(40)).max(8).optional() });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));

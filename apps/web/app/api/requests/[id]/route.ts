@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 const schema = z.object({ status: z.enum(['accepted', 'declined']) });
 
 // PATCH /api/requests/[id] — vendedor aceita (libera WhatsApp) ou recusa.
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
@@ -23,7 +24,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/requests/[id] — comprador retira a própria oferta/visita pendente.
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     return NextResponse.json(await cancelRequest(user.id, params.id));

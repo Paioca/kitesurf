@@ -16,7 +16,8 @@ import { type Component } from '../../../../lib/components';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const listing = await getListing(params.id);
   if (!listing) return NextResponse.json({ message: 'Anúncio não encontrado.' }, { status: 404 });
   return NextResponse.json(listing);
@@ -50,7 +51,8 @@ async function ownedListing(id: string, userId: string) {
 }
 
 // PATCH /api/listings/[id] — editar campos e/ou mudar status. Só o dono.
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const { listing, error } = await ownedListing(params.id, user.id);
@@ -135,7 +137,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 // DELETE /api/listings/[id] — exclusão soft. Encerra pedidos abertos e bloqueia se há
 // venda aguardando confirmação (lógica centralizada em removeListing).
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await removeListing(user.id, params.id);

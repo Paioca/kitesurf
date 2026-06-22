@@ -27,7 +27,8 @@ function Thumb({ src }: { src: string | null }) {
   return <div style={{ width: 84, height: 84, borderRadius: 13, flex: 'none', backgroundImage: src ? `url("${src}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', border: `1px solid ${color.line}` }} />;
 }
 
-export default async function Pedidos({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function Pedidos(props: { searchParams: Promise<{ tab?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/entrar?next=%2Fpedidos');
   const { incoming, outgoing } = await getRequestsForUser(user.id);

@@ -1,5 +1,5 @@
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { db } from './db';
 
@@ -24,7 +24,7 @@ const SECRET = resolveSecret();
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
 export function setSession(userId: string, sessionVersion = 0) {
   const token = jwt.sign({ sub: userId, sv: sessionVersion }, SECRET, { expiresIn: '30d' });
-  cookies().set(COOKIE, token, {
+  (cookies() as unknown as UnsafeUnwrappedCookies).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -34,11 +34,11 @@ export function setSession(userId: string, sessionVersion = 0) {
 }
 
 export function clearSession() {
-  cookies().delete(COOKIE);
+  (cookies() as unknown as UnsafeUnwrappedCookies).delete(COOKIE);
 }
 
 function getSessionPayload(): { sub: string; sv: number } | null {
-  const token = cookies().get(COOKIE)?.value;
+  const token = (cookies() as unknown as UnsafeUnwrappedCookies).get(COOKIE)?.value;
   if (!token) return null;
   try {
     const payload = jwt.verify(token, SECRET) as { sub: string; sv?: number };

@@ -6,7 +6,8 @@ import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 export const runtime = 'nodejs';
 
 // POST — favoritar (idempotente).
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await db.favorite.upsert({
@@ -22,7 +23,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE — desfavoritar.
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await db.favorite.deleteMany({ where: { userId: user.id, listingId: params.id } });

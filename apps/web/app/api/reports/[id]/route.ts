@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 const schema = z.object({ status: z.enum(['open', 'reviewed', 'actioned']) });
 
 // PATCH — admin muda o status da denúncia (open → reviewed → actioned).
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     await requireAdmin();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));

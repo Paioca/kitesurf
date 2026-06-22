@@ -6,7 +6,8 @@ import { confirmSaleFromRequest, DealError } from '../../../../../lib/deals';
 export const runtime = 'nodejs';
 
 // POST /api/requests/[id]/sold — vendedor marca a venda pro comprador do pedido.
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const dealId = await confirmSaleFromRequest(user.id, params.id);

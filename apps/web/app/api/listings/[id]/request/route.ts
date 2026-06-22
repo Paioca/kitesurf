@@ -10,7 +10,8 @@ export const runtime = 'nodejs';
 const schema = z.object({ type: z.enum(['offer', 'visit']), amount: z.number().int().min(100).optional(), component: z.enum(['conjunto', 'kite', 'barra']).default('conjunto') });
 
 // POST /api/listings/[id]/request — comprador faz oferta (com valor) ou pede visita.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     // Burst guard (30/h) + cap de SEGURANÇA diário (20/dia) anti-abuso — cobre oferta+visita.

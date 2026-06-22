@@ -12,7 +12,8 @@ import { ListingCard } from '../../../components/ListingCard';
 export const dynamic = 'force-dynamic';
 
 // OG do perfil — superfície de "compartilhe pra vender".
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const data = await getProfile(params.id);
   if (!data) return { title: 'Perfil não encontrado — Kitetropos' };
   const { user, stats } = data;
@@ -35,7 +36,8 @@ function avColor(name: string) {
   return AV_COLORS[h % AV_COLORS.length];
 }
 
-export default async function PerfilPage({ params }: { params: { id: string } }) {
+export default async function PerfilPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const data = await getProfile(params.id);
   if (!data) notFound();
   const { user, stats, listings, reviews } = data;

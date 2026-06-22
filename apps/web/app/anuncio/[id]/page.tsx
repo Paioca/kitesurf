@@ -21,7 +21,8 @@ import { ReportButton } from '../../../components/ReportButton';
 export const dynamic = 'force-dynamic';
 
 // Preview rico ao compartilhar o link (WhatsApp/IG): foto, título e preço.
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const l = await getListing(params.id);
   if (!l) return { title: 'Anúncio não encontrado — Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
@@ -51,7 +52,8 @@ const CONDITION: Record<string, string> = {
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
 const soldPill: React.CSSProperties = { ...pricePill, color: color.inkFaint2, background: '#efeae0', textDecoration: 'line-through', opacity: 0.7 };
 
-export default async function AnuncioPage({ params }: { params: { id: string } }) {
+export default async function AnuncioPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const l = await getListing(params.id);
   if (!l) notFound();
 
@@ -134,7 +136,6 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
     <>
       <div className="only-mobile"><MobileAppBar /></div>
       <div className="only-desktop"><SiteHeader /></div>
-
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <a href="/" style={{ color: color.inkFaint, textDecoration: 'none' }}>Comprar</a><span>›</span>
@@ -142,7 +143,6 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           <span style={{ color: color.ink, fontWeight: 600 }}>{title}</span>
         </div>
       </div>
-
       <main className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <Gallery photos={photos} listingId={l.id} favorited={favorited} />
 
@@ -213,9 +213,9 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
               ) : (
                 // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
                 // a fricção de preencher uma oferta que vai falhar).
-                <div style={{ background: '#f3f1e9', border: `1px solid ${color.lineCard}`, borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: color.inkMute }}>
+                (<div style={{ background: '#f3f1e9', border: `1px solid ${color.lineCard}`, borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: color.inkMute }}>
                   {l.status === 'sold' ? 'Este item já foi vendido.' : 'Este anúncio está indisponível no momento.'}
-                </div>
+                </div>)
               )}
             </>
           )}
@@ -247,7 +247,6 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           </div>
         </div>
       </main>
-
       {/* FICHA COMPLETA — 100% estruturado (handoff Anuncio.dc.html) */}
       <section style={{ maxWidth: 1240, margin: '56px auto 0', padding: '0 24px' }}>
         <div style={{ background: '#ece3d2', borderRadius: 22, padding: 'clamp(28px, 4vw, 44px) clamp(22px, 4vw, 48px)' }}>
@@ -267,7 +266,6 @@ export default async function AnuncioPage({ params }: { params: { id: string } }
           </div>
         </div>
       </section>
-
       <div className="only-mobile" style={{ height: 84 }} />
       <div className="only-desktop"><Footer /></div>
       <div className="only-mobile"><MobileTabBar /></div>

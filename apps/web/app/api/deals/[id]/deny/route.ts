@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 
 // POST — comprador responde "não comprei": cancela o Deal e encerra a solicitação,
 // sem marcar o anúncio como vendido (a peça segue disponível).
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await denyPurchase(user.id, params.id);

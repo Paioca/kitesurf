@@ -29,7 +29,8 @@ export const metadata = {
   },
 };
 
-export default async function Home({ searchParams }: { searchParams: SP }) {
+export default async function Home(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const sp = searchParams;
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
   const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);

@@ -13,7 +13,8 @@ import { isEditable, type ListingStatus } from '../../../../lib/listing-status';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditarAnuncio({ params }: { params: { id: string } }) {
+export default async function EditarAnuncio(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const [l, me] = await Promise.all([getListing(params.id), getCurrentUser()]);
   if (!l || !me || me.id !== l.userId) notFound();
   // Anúncio vendido/arquivado não é editável (preserva o histórico de venda).

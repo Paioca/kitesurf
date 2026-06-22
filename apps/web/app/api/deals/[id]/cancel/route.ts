@@ -6,7 +6,8 @@ import { cancelSale, DealError } from '../../../../../lib/deals';
 export const runtime = 'nodejs';
 
 // POST — vendedor cancela uma venda marcada por engano (antes da confirmação do comprador).
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await cancelSale(user.id, params.id);

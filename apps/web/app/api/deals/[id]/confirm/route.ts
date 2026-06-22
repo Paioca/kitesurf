@@ -8,7 +8,8 @@ import { LISTINGS_TAG } from '../../../../../lib/browse';
 export const runtime = 'nodejs';
 
 // POST — comprador confirma a compra → completa o negócio.
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     await confirmPurchase(user.id, params.id);
