@@ -3,7 +3,7 @@ import { db } from './db';
 import { notifyNewRequest, notifyRequestAccepted } from './notify';
 import { emit } from './notifications';
 import { PublicError } from './http';
-import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from './components';
+import { sellables, reservationConflict, COMPONENT_LABEL, type Component, type ListingLike } from './components';
 
 export class RequestError extends PublicError {}
 
@@ -28,11 +28,21 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   const sell = sellables(listing as ListingLike).find((s) => s.component === component);
   if (!sell) throw new RequestError('Esta opção não está à venda neste anúncio.', 400);
   if (!sell.available) throw new RequestError('Esta peça não está mais disponível.', 409);
+  // §7 — reserve-block no backend: peça com venda aguardando confirmação não recebe
+  // novas ofertas/visitas (esconder o botão não basta). Conjunto também bloqueia se
+  // kite ou barra estiver reservado (matriz).
+  const reservas = await db.deal.findMany({ where: { listingId, status: 'seller_confirmed' }, select: { component: true } });
+  if (reservas.some((d) => reservationConflict(d.component, component))) {
+    throw new RequestError('Esta peça está com uma venda em andamento. Tente mais tarde ou veja outra peça.', 409);
+  }
   if (type === 'offer') {
     if (!amount || amount < 100) throw new RequestError('Informe um valor válido.', 400);
     if (amount > sell.price * 3) throw new RequestError('Valor muito acima do anúncio — confira.', 400); // teto anti-erro de digitação
   }
   const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
+  // §12 — defesa adicional contra negociar consigo (o owner-check acima já cobre o caso
+  // normal; telefone único torna isto redundante, mas fica como cinto de segurança).
+  if (buyer && buyer.phone === listing.user.phone) throw new RequestError('Você não pode negociar com a própria conta.', 400);
   const title = component === 'conjunto' ? listing.title : `${listing.title} · ${COMPONENT_LABEL[component]}`;
   const r = await db.$transaction(async (tx) => {
     const req = await tx.request.upsert({
