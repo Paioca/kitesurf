@@ -151,14 +151,19 @@ export default function Criar() {
     if (!files) return;
     const component = uploadTarget;
     setUploading(true); setError('');
+    const list = Array.from(files).slice(0, 40 - images.length);
+    const CONCURRENCY = 3; // fila com concorrência limitada: rápido em rede móvel sem afogar o servidor
+    const uploadOne = async (file: File) => {
+      const small = await downscaleImage(file, 1600); // reduz no cliente: upload rápido, sem estourar 4,5MB
+      const fd = new FormData(); fd.append('file', small);
+      const res = await fetch('/api/uploads/image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Falha no upload.');
+      setImages((imgs) => [...imgs, { url: data.url, thumbUrl: data.thumbUrl, component }]);
+    };
     try {
-      for (const file of Array.from(files).slice(0, 40 - images.length)) {
-        const small = await downscaleImage(file, 1600); // reduz no cliente: upload rápido, sem estourar 4,5MB
-        const fd = new FormData(); fd.append('file', small);
-        const res = await fetch('/api/uploads/image', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message ?? 'Falha no upload.');
-        setImages((imgs) => [...imgs, { url: data.url, thumbUrl: data.thumbUrl, component }]);
+      for (let i = 0; i < list.length; i += CONCURRENCY) {
+        await Promise.all(list.slice(i, i + CONCURRENCY).map(uploadOne));
       }
     } catch (e: any) { setError(e.message); } finally { setUploading(false); }
   }

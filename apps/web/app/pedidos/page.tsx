@@ -31,7 +31,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/entrar?next=%2Fpedidos');
-  const { incoming, outgoing } = await getRequestsForUser(user.id);
+  const { incoming, outgoing, moreIncoming, moreOutgoing } = await getRequestsForUser(user.id);
   const novos = incoming.filter((r) => r.status === 'pending').length;
   // sem ?tab explícito, abre na aba que tem conteúdo (comprador cai em "Enviados").
   const tab: 'received' | 'sent' =
@@ -52,7 +52,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
       </div>
 
       {tab === 'received' ? (
-        incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : incoming.map((r) => (
+        incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : <>{incoming.map((r) => (
           <Row key={r.id}>
             <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
               <div style={{ minWidth: 0, flex: 1 }}>
@@ -67,9 +67,9 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
             {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
           </Row>
-        ))
+        ))}{moreIncoming && <MoreNote />}</>
       ) : (
-        outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : outgoing.map((r) => (
+        outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : <>{outgoing.map((r) => (
           <Row key={r.id}>
             <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
               <div style={{ minWidth: 0, flex: 1 }}>
@@ -84,7 +84,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
             {/* retirar: pendente, ou aceito sem venda marcada (com venda marcada, o caminho é "não comprei" no DealBox) */}
             {(r.status === 'pending' || (r.status === 'accepted' && (!r.deal || r.deal.status === 'cancelled'))) && <CancelRequestButton requestId={r.id} type={r.type} accepted={r.status === 'accepted'} />}
           </Row>
-        ))
+        ))}{moreOutgoing && <MoreNote />}</>
       )}
     </div>
   );
@@ -129,6 +129,8 @@ function StatusBadge({ status, completed, received }: { status: string; complete
   return <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, color: fg, background: bg }}>{label}</span>;
 }
 function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px', textAlign: 'center', border: '1px dashed #d3ccbd', borderRadius: 16 }}>{children}</div>; }
+// Teto de payload: mostra os 50 mais recentes (paginação completa fica como evolução).
+function MoreNote() { return <div style={{ fontSize: 12.5, color: color.inkFaint2, textAlign: 'center', padding: '6px 0 2px' }}>Mostrando os 50 mais recentes.</div>; }
 // Anúncio pausado com pedido pendente: aceitar dá erro (só aceita anúncio ativo).
 function PausedHint() {
   return (

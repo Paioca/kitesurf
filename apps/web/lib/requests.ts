@@ -105,12 +105,19 @@ function listingShape(l: any) {
 
 // Caixa de pedidos: recebidos (vendedor) + enviados (comprador). WhatsApp do
 // vendedor só vem nos enviados que foram aceitos.
+const PEDIDOS_TAKE = 50; // teto de payload: os 50 mais recentes por aba (vendedor com muitos anúncios não baixa tudo)
+
 export async function getRequestsForUser(userId: string) {
-  const [incoming, outgoing, deals] = await Promise.all([
-    db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } }),
-    db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
+  const [incomingRaw, outgoingRaw, deals] = await Promise.all([
+    db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } }),
+    db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
     db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } } } }),
   ]);
+  // teto + flag "há mais" (sem count extra): pede 51, mostra 50.
+  const moreIncoming = incomingRaw.length > PEDIDOS_TAKE;
+  const moreOutgoing = outgoingRaw.length > PEDIDOS_TAKE;
+  const incoming = incomingRaw.slice(0, PEDIDOS_TAKE);
+  const outgoing = outgoingRaw.slice(0, PEDIDOS_TAKE);
   // chave inclui o COMPONENTE: comprador pode ter oferta no kite E na barra do mesmo
   // kit (deals distintos) — sem isso casaria o deal errado.
   const dkey = (l: string, b: string, s: string, c: string) => `${l}|${b}|${s}|${c}`;
@@ -124,6 +131,7 @@ export async function getRequestsForUser(userId: string) {
   return {
     incoming: incoming.map((r) => ({ ...shape(r), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: waLink(r.buyer.phone) } })),
     outgoing: outgoing.map((r) => ({ ...shape(r), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null })),
+    moreIncoming, moreOutgoing,
   };
 }
 
