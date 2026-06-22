@@ -33,8 +33,10 @@ export function FavoriteButton({ listingId, initial = false, variant = 'overlay'
   }
 
   return (
-    <button onClick={toggle} aria-label={fav ? 'Remover dos favoritos' : 'Favoritar'} aria-pressed={fav} style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 999, border: 'none', background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 4px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, lineHeight: 1, color: fav ? '#d14b4b' : '#7c857c', cursor: 'pointer', zIndex: 3 }}>
-      {heart}
+    // Alvo de toque 44×44 (transparente); o círculo branco visível segue 34px,
+    // centrado no mesmo ponto de antes (top/right 7 + 22 = 29 = 12 + 17 anterior).
+    <button onClick={toggle} aria-label={fav ? 'Remover dos favoritos' : 'Favoritar'} aria-pressed={fav} style={{ position: 'absolute', top: 7, right: 7, width: 44, height: 44, borderRadius: 999, border: 'none', background: 'transparent', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 3 }}>
+      <span style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 4px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, lineHeight: 1, color: fav ? '#d14b4b' : '#7c857c' }}>{heart}</span>
     </button>
   );
 }

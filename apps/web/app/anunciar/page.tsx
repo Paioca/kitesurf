@@ -258,7 +258,7 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Entre pra anunciar</h1>
           <p style={{ fontSize: 15, color: color.inkMute, margin: '0 0 24px' }}>Anunciar exige conta com telefone verificado.</p>
-          <a href="/entrar" style={primary}>Entrar ou criar conta</a>
+          <a href="/entrar?next=%2Fanunciar" style={primary}>Entrar ou criar conta</a>
         </div>
       </Shell>
     );
