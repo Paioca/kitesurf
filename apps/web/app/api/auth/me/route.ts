@@ -75,7 +75,7 @@ export async function DELETE() {
   try {
     const user = await requireUser();
     await deleteAccount(user.id);
-    clearSession();
+    await clearSession();
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

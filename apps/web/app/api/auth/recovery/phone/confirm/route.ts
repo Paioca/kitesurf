@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       });
       return changed;
     });
-    setSession(updated.id, updated.sessionVersion);
+    await setSession(updated.id, updated.sessionVersion);
     return NextResponse.json({ ok: true, message: 'Telefone atualizado. Sua conta foi recuperada.' });
   } catch (error) {
     if (error instanceof RecoveryTokenUsedError) {

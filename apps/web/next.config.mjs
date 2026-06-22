@@ -46,13 +46,9 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
-  // Next 15: instrumentation.ts é estável e detectado automaticamente — o flag
-  // experimental.instrumentationHook foi removido.
-  // O eslint-config-next 15 promoveu `no-html-link-for-pages` (<a href="/">) de
-  // warning a erro, o que travaria o build (o app usa <a> estilizado em vários
-  // pontos de navegação). Não barrar o build no lint — igual ao comportamento do
-  // Next 14; o type-check continua rodando. TODO: migrar <a> internos p/ <Link>.
-  eslint: { ignoreDuringBuilds: true },
+  // Next 16: instrumentation.ts é estável e auto-detectada; o build não roda mais
+  // ESLint (a chave `eslint` saiu do config) — lint é passo à parte.
+  // TODO: migrar <a> internos para <Link> (regra no-html-link-for-pages).
   images: {
     minimumCacheTTL: 86400, // 1 dia: corta re-otimização repetida (mitiga DoS no optimizer)
     remotePatterns: [

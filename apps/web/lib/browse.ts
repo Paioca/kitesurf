@@ -1,12 +1,9 @@
 import 'server-only';
-import { unstable_cache } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { db } from './db';
 import { getCurrentUser } from './session';
 import { parseFilters, PRICE_RANGES, PRICE_LABELS, SIZE_RANGES, SIZE_LABELS, type SP } from './filters';
 
-// Tag pra invalidar o cache quando um anúncio é criado/muda (revalidateTag).
-export const LISTINGS_TAG = 'listings';
 export const PAGE_SIZE = 24;
 
 // Busca SQL paginada (sem teto), por PERSPECTIVA: a mesma listagem aparece como
@@ -220,26 +217,27 @@ type ActiveRow = {
   bladder: string | null; mang: string | null; repair: boolean;
   kiteSold: boolean; barraSold: boolean; // peça avulsa do kit já vendida
 };
-const loadActiveRows = unstable_cache(
-  async (): Promise<ActiveRow[]> => {
-    const rows = await db.listing.findMany({
-      where: BASE,
-      select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
-    });
-    return rows.map((r) => {
-      const a = (r.attributes ?? {}) as Record<string, any>;
-      return {
-        price: r.price, city: r.city, hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
-        pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
-        size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
-        bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
-        kiteSold: r.kiteSoldAt != null, barraSold: r.barraSoldAt != null,
-      };
-    });
-  },
-  ['browse:active-rows'],
-  { revalidate: 60, tags: [LISTINGS_TAG] },
-);
+// Sem cache: as facetas são calculadas por request. O app é force-dynamic e a
+// escala atual (centenas de anúncios) torna o custo desprezível — e o Next 16
+// trocou o modelo de cache (unstable_cache/revalidateTag legacy saiu). Quando a
+// escala exigir, a faceta deve virar query agregada no banco (auditoria), não
+// cache de processo.
+async function loadActiveRows(): Promise<ActiveRow[]> {
+  const rows = await db.listing.findMany({
+    where: BASE,
+    select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
+  });
+  return rows.map((r) => {
+    const a = (r.attributes ?? {}) as Record<string, any>;
+    return {
+      price: r.price, city: r.city, hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
+      pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
+      size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
+      bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
+      kiteSold: r.kiteSoldAt != null, barraSold: r.barraSoldAt != null,
+    };
+  });
+}
 
 const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 500000 ? 'p3' : 'p4');
 const sizeBucket = (s: number) => (s < 7 ? 's1' : s < 9 ? 's2' : s < 11 ? 's3' : s < 13 ? 's4' : 's5');

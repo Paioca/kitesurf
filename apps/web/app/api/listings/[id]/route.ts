@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { errorResponse } from '../../../../lib/http';
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { db } from '../../../../lib/db';
 import { getListing } from '../../../../lib/queries';
-import { LISTINGS_TAG } from '../../../../lib/browse';
 import { requireUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
@@ -127,7 +125,6 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     }
 
     const updated = await db.listing.update({ where: { id: params.id }, data, include: { images: true } });
-    revalidateTag(LISTINGS_TAG);
     return NextResponse.json(updated);
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
@@ -142,7 +139,6 @@ export async function DELETE(_req: Request, props: { params: Promise<{ id: strin
   try {
     const user = await requireUser();
     await removeListing(user.id, params.id);
-    revalidateTag(LISTINGS_TAG);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

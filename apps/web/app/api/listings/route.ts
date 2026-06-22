@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { errorResponse } from '../../../lib/http';
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
-import { LISTINGS_TAG } from '../../../lib/browse';
 import { SPOTS } from '../../../lib/filters';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
@@ -133,7 +131,6 @@ export async function POST(req: Request) {
       },
       include: { images: true },
     });
-    revalidateTag(LISTINGS_TAG); // anúncio novo aparece na busca na hora
     return NextResponse.json(listing, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

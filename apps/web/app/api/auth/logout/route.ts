@@ -4,6 +4,6 @@ import { clearSession } from '../../../../lib/session';
 export const runtime = 'nodejs';
 
 export async function POST() {
-  clearSession();
+  await clearSession();
   return NextResponse.json({ ok: true });
 }

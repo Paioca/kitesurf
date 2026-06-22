@@ -1,5 +1,5 @@
 import 'server-only';
-import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
+import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { db } from './db';
 
@@ -22,9 +22,9 @@ function resolveSecret(): string {
 const SECRET = resolveSecret();
 
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
-export function setSession(userId: string, sessionVersion = 0) {
+export async function setSession(userId: string, sessionVersion = 0) {
   const token = jwt.sign({ sub: userId, sv: sessionVersion }, SECRET, { expiresIn: '30d' });
-  (cookies() as unknown as UnsafeUnwrappedCookies).set(COOKIE, token, {
+  (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -33,12 +33,12 @@ export function setSession(userId: string, sessionVersion = 0) {
   });
 }
 
-export function clearSession() {
-  (cookies() as unknown as UnsafeUnwrappedCookies).delete(COOKIE);
+export async function clearSession() {
+  (await cookies()).delete(COOKIE);
 }
 
-function getSessionPayload(): { sub: string; sv: number } | null {
-  const token = (cookies() as unknown as UnsafeUnwrappedCookies).get(COOKIE)?.value;
+async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> {
+  const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   try {
     const payload = jwt.verify(token, SECRET) as { sub: string; sv?: number };
@@ -48,13 +48,13 @@ function getSessionPayload(): { sub: string; sv: number } | null {
   }
 }
 
-export function getUserId(): string | null {
-  return getSessionPayload()?.sub ?? null;
+export async function getUserId(): Promise<string | null> {
+  return (await getSessionPayload())?.sub ?? null;
 }
 
 // Usuário logado (ou null). Usar em Server Components e Route Handlers.
 export async function getCurrentUser() {
-  const session = getSessionPayload();
+  const session = await getSessionPayload();
   if (!session) return null;
   const user = await db.user.findUnique({ where: { id: session.sub } });
   if (!user || user.status === 'blocked') return null;

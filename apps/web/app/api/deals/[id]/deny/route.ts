@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { errorResponse } from '../../../../../lib/http';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 import { denyPurchase, DealError } from '../../../../../lib/deals';
-import { LISTINGS_TAG } from '../../../../../lib/browse';
 
 export const runtime = 'nodejs';
 
@@ -14,7 +12,6 @@ export async function POST(_req: Request, props: { params: Promise<{ id: string 
   try {
     const user = await requireUser();
     await denyPurchase(user.id, params.id);
-    revalidateTag(LISTINGS_TAG);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

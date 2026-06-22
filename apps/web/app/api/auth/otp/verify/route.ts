@@ -88,7 +88,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ message: 'Erro.' }, { status: 500 });
   if (user.status === 'blocked') return NextResponse.json({ message: 'Conta bloqueada.' }, { status: 401 });
 
-  setSession(user.id, user.sessionVersion);
+  await setSession(user.id, user.sessionVersion);
   return NextResponse.json({
     ok: true,
     user: { id: user.id, name: user.name, avatarUrl: user.avatarUrl },
