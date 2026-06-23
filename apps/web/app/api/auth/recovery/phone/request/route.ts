@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   if (!allowedToken || !allowedPhone || !allowedIp) return tooMany();
 
   try {
-    const devCode = await generateOtp(phone, `recovery:${emailToken.id}`);
+    const devCode = await generateOtp({ phone }, `recovery:${emailToken.id}`);
     return NextResponse.json({ ok: true, message: 'Código enviado por SMS.', ...(devCode ? { devCode } : {}) });
   } catch (error) {
     log.error({ event: 'sms_not_sent', userId: user.id, err: error }, 'SMS não enviado');

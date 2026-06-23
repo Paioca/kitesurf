@@ -10,6 +10,7 @@ import { COUNTRY_NAMES } from '../../lib/geo';
 import { SPOTS } from '../../lib/filters';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
+type Channel = 'sms' | 'email';
 
 const PERKS = [
   'Telefone verificado — 1 número, 1 conta',
@@ -19,8 +20,13 @@ const PERKS = [
 
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
+  // Canal: SMS é o padrão (todo cadastro novo passa por aqui). E-mail é fallback do
+  // SPOF do Twilio — só funciona pra usuário JÁ EXISTENTE com email verificado, e
+  // nunca cria conta nova (schema exige telefone).
+  const [channel, setChannel] = useState<Channel>('sms');
   const [rawPhone, setRawPhone] = useState('');
   const [dial, setDial] = useState('+55'); // DDI do país — default Brasil
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -52,10 +58,11 @@ export default function Entrar() {
     setError('');
     setLoading(true);
     try {
+      const payload = channel === 'sms' ? { phone } : { email: email.trim().toLowerCase() };
       const res = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Falha ao enviar código.');
@@ -73,7 +80,7 @@ export default function Entrar() {
     setError('');
     setLoading(true);
     try {
-      const body: any = { phone, code };
+      const body: any = channel === 'sms' ? { phone, code } : { email: email.trim().toLowerCase(), code };
       if (withProfile) Object.assign(body, { name, lastName, spot, country, avatarUrl, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
@@ -161,14 +168,44 @@ export default function Entrar() {
             <>
               <h1 style={h1}>Entrar ou criar conta</h1>
               <p style={sub}>Sem senha. Te mandamos um código pra confirmar.</p>
-              <label style={lbl}>Telefone</label>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-                <select value={dial} onChange={(e) => setDial(e.target.value)} style={ddi} aria-label="País">
-                  {COUNTRIES.map((c) => <option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
-                </select>
-                <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1, minWidth: 0 }} />
+
+              {/* Toggle canal: SMS é padrão; E-mail só pra quem já tem conta com email
+                  verificado (cadastro novo sempre exige telefone). */}
+              <div style={{ display: 'flex', border: '1px solid #d3ccbd', borderRadius: 999, overflow: 'hidden', fontSize: 13, fontWeight: 600, marginBottom: 18, width: 'fit-content' }}>
+                <button type="button" onClick={() => setChannel('sms')} style={channel === 'sms' ? segOn : segOff}>SMS</button>
+                <button type="button" onClick={() => setChannel('email')} style={channel === 'email' ? segOn : segOff}>E-mail</button>
               </div>
-              <button onClick={requestOtp} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} style={primaryBtn}>
+
+              {channel === 'sms' ? (
+                <>
+                  <label style={lbl}>Telefone</label>
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+                    <select value={dial} onChange={(e) => setDial(e.target.value)} style={ddi} aria-label="País">
+                      {COUNTRIES.map((c) => <option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
+                    </select>
+                    <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1, minWidth: 0 }} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label style={lbl}>E-mail</label>
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="seu@email.com" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 18 }} />
+                  <div style={{ fontSize: 12.5, color: '#8a948d', margin: '-8px 0 18px', lineHeight: 1.4 }}>
+                    Use o e-mail já cadastrado e verificado na sua conta. Para criar uma conta nova, use SMS.
+                  </div>
+                </>
+              )}
+
+              <button
+                onClick={requestOtp}
+                disabled={
+                  loading ||
+                  (channel === 'sms'
+                    ? rawPhone.replace(/\D/g, '').length < 8
+                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+                }
+                style={primaryBtn}
+              >
                 {loading ? '...' : 'Enviar código'}
               </button>
               <div style={{ textAlign: 'center', marginTop: 14 }}>
@@ -182,7 +219,7 @@ export default function Entrar() {
             <>
               <button onClick={() => setStep('phone')} style={backBtn}>‹ Voltar</button>
               <h1 style={h1}>Digite o código</h1>
-              <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{phone}</strong>.</p>
+              <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{channel === 'sms' ? phone : email}</strong>.</p>
               <OtpCells value={code} onChange={setCode} />
               <div style={{ fontSize: 13, color: '#8a948d', margin: '6px 0 26px' }}>
                 Não recebeu? <button onClick={requestOtp} style={linkInline}>Reenviar</button>

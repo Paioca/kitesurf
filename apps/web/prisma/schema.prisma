@@ -93,11 +93,15 @@ model User {
   @@index([phone])
 }
 
-// Código OTP enviado por SMS (1 telefone = 1 conta).
+// Código OTP — DOIS canais: SMS (phone) ou e-mail. Mata o SPOF do Twilio (queda
+// total = todo login bloqueado). Exatamente UM dos dois (phone/email) deve estar
+// preenchido por linha. Cadastro novo ainda exige telefone — email só serve pra
+// login/recuperação de quem JÁ tem e-mail verificado na conta.
 model OtpCode {
   id        String   @id @default(uuid())
-  phone     String
-  codeHash  String // nunca guardamos o código em texto puro
+  phone     String?  // SMS via Twilio
+  email     String?  // E-mail via Resend (fallback do SPOF)
+  codeHash  String   // nunca guardamos o código em texto puro
   expiresAt DateTime
   consumed  Boolean  @default(false)
   attempts  Int      @default(0)
@@ -106,6 +110,7 @@ model OtpCode {
 
   @@index([phone])
   @@index([phone, context])
+  @@index([email, context])
 }
 
 // Link de verificação/recuperação enviado por e-mail. Só o hash do token é salvo.

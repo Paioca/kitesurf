@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const owner = await db.user.findUnique({ where: { phone } });
   if (owner && owner.id !== user.id) return NextResponse.json({ message: 'Esse telefone já está vinculado a outra conta.' }, { status: 409 });
 
-  const validOtp = await verifyOtp(phone, parsed.data.code, true, `recovery:${emailToken.id}`);
+  const validOtp = await verifyOtp({ phone }, parsed.data.code, true, `recovery:${emailToken.id}`);
   if (!validOtp) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 400 });
 
   try {
