@@ -169,13 +169,10 @@ export default function Entrar() {
               <h1 style={h1}>Entrar ou criar conta</h1>
               <p style={sub}>Sem senha. Te mandamos um código pra confirmar.</p>
 
-              {/* Toggle canal: SMS é padrão; E-mail só pra quem já tem conta com email
-                  verificado (cadastro novo sempre exige telefone). */}
-              <div style={{ display: 'flex', border: '1px solid #d3ccbd', borderRadius: 999, overflow: 'hidden', fontSize: 13, fontWeight: 600, marginBottom: 18, width: 'fit-content' }}>
-                <button type="button" onClick={() => setChannel('sms')} style={channel === 'sms' ? segOn : segOff}>SMS</button>
-                <button type="button" onClick={() => setChannel('email')} style={channel === 'email' ? segOn : segOff}>E-mail</button>
-              </div>
-
+              {/* Canal SMS é A interface — é por onde TODO cadastro novo passa. E-mail
+                  é canal alternativo só pra quem JÁ TEM conta + email verificado, e
+                  aparece como link discreto abaixo, pra não competir com o caminho
+                  principal e não confundir quem chega novo. */}
               {channel === 'sms' ? (
                 <>
                   <label style={lbl}>Telefone</label>
@@ -188,10 +185,10 @@ export default function Entrar() {
                 </>
               ) : (
                 <>
-                  <label style={lbl}>E-mail</label>
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="seu@email.com" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 18 }} />
-                  <div style={{ fontSize: 12.5, color: '#8a948d', margin: '-8px 0 18px', lineHeight: 1.4 }}>
-                    Use o e-mail já cadastrado e verificado na sua conta. Para criar uma conta nova, use SMS.
+                  <label style={lbl}>E-mail da sua conta</label>
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="seu@email.com" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 8 }} />
+                  <div style={{ fontSize: 12.5, color: '#8a948d', margin: '0 0 18px', lineHeight: 1.4 }}>
+                    Acesso alternativo. Pra criar uma conta nova, <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={linkInline}>use o telefone</button>.
                   </div>
                 </>
               )}
@@ -208,9 +205,21 @@ export default function Entrar() {
               >
                 {loading ? '...' : 'Enviar código'}
               </button>
-              <div style={{ textAlign: 'center', marginTop: 14 }}>
+
+              {/* Links secundários — separados visualmente, mesma hierarquia. */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', marginTop: 18 }}>
+                {channel === 'sms' ? (
+                  <button type="button" onClick={() => { setChannel('email'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
+                    Não recebo SMS — entrar por e-mail
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
+                    Voltar pra entrar por SMS
+                  </button>
+                )}
                 <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</Link>
               </div>
+
               <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
             </>
           )}
