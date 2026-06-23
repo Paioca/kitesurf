@@ -58,7 +58,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
           <Row key={r.id}>
             <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} received /></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} received /></div>
                 <div style={titleTxt}>{r.listing.title}</div>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
@@ -77,7 +77,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
           <Row key={r.id}>
             <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} completed={r.deal?.status === 'completed'} /></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} /></div>
                 <div style={titleTxt}>{r.listing.title}</div>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
@@ -118,18 +118,28 @@ function TypeTag({ type }: { type: string }) {
   return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#f3e7d3', color: offer ? color.primary : '#8a6a3a' }}>{offer ? 'Oferta' : 'Visita'}</span>;
 }
 // Todos os estados do pedido têm rótulo próprio — os encerrados (retirado, vendido
-// a outro, anúncio removido, expirado) ficam neutros e NÃO parecem ativos.
-function StatusBadge({ status, completed, received }: { status: string; completed?: boolean; received?: boolean }) {
+// a outro, anúncio removido, expirado) ficam neutros e NÃO parecem ativos. O estado do
+// NEGÓCIO (deal) tem prioridade sobre o do pedido: o request fica 'accepted' enquanto o
+// deal evolui (venda marcada → concluído → correção/disputa/reversão). cancelled/voided
+// caem no status do pedido (negociação ativa de novo / vendido a outro).
+function StatusBadge({ status, dealStatus, received }: { status: string; dealStatus?: string; received?: boolean }) {
   const closed = { fg: '#6b7a73', bg: '#eceae3' }; // encerrado/neutro
+  const amber = { fg: '#8a6a3a', bg: '#f3e7d3' }; // em andamento/atenção
+  const red = { fg: '#9a5040', bg: '#fbeae4' };
   let label = '', fg = '', bg = '';
-  if (completed) { label = 'Concluído'; fg = '#15463b'; bg = '#cfe3d9'; }
+  if (dealStatus === 'completed') { label = 'Concluído'; fg = '#15463b'; bg = '#cfe3d9'; }
+  else if (dealStatus === 'seller_confirmed') { label = 'Venda marcada'; ({ fg, bg } = amber); }
+  else if (dealStatus === 'reversal_requested') { label = 'Correção pedida'; ({ fg, bg } = amber); }
+  else if (dealStatus === 'disputed') { label = 'Em disputa'; ({ fg, bg } = red); }
+  else if (dealStatus === 'reversed') { label = 'Revertido'; ({ fg, bg } = closed); }
+  else if (dealStatus === 'closed_unconfirmed') { label = 'Encerrado'; ({ fg, bg } = closed); }
   else if (status === 'accepted') { label = 'Aceito'; fg = color.primary; bg = '#e8f1ec'; }
-  else if (status === 'declined') { label = 'Recusada'; fg = '#9a5040'; bg = '#fbeae4'; }
-  else if (status === 'withdrawn') { label = received ? 'Retirada pelo comprador' : 'Retirada'; fg = closed.fg; bg = closed.bg; }
-  else if (status === 'listing_removed') { label = 'Anúncio removido'; fg = closed.fg; bg = closed.bg; }
-  else if (status === 'sold_elsewhere') { label = 'Vendido a outro'; fg = closed.fg; bg = closed.bg; }
-  else if (status === 'expired') { label = 'Expirada'; fg = closed.fg; bg = closed.bg; }
-  else { label = received ? 'Novo' : 'Enviado'; fg = '#8a6a3a'; bg = '#f3e7d3'; } // pending
+  else if (status === 'declined') { label = 'Recusada'; ({ fg, bg } = red); }
+  else if (status === 'withdrawn') { label = received ? 'Retirada pelo comprador' : 'Retirada'; ({ fg, bg } = closed); }
+  else if (status === 'listing_removed') { label = 'Anúncio removido'; ({ fg, bg } = closed); }
+  else if (status === 'sold_elsewhere') { label = 'Vendido a outro'; ({ fg, bg } = closed); }
+  else if (status === 'expired') { label = 'Expirada'; ({ fg, bg } = closed); }
+  else { label = received ? 'Novo' : 'Enviado'; ({ fg, bg } = amber); } // pending
   return <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, color: fg, background: bg }}>{label}</span>;
 }
 function Empty({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 14, color: color.inkFaint2, padding: '8px 0 4px', textAlign: 'center', border: '1px dashed #d3ccbd', borderRadius: 16 }}>{children}</div>; }
