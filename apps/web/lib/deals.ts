@@ -243,6 +243,34 @@ export async function cancelReversal(userId: string, dealId: string) {
   });
 }
 
+// MODERAÇÃO (§11) — o admin decide uma disputa em under_review (a contraparte recusou
+// a correção). `uphold` mantém a venda → Deal volta a `completed` (segue como estava,
+// volta a contar e a review reaparece). `reverse` reverte → Deal `reversed` + peça volta
+// a paused (deixa de contar, review oculta permanente). Idempotente: só age sobre uma
+// disputa under_review com o Deal em disputed. Notifica as duas partes (reusa
+// reversal_confirmed/reversal_rejected — registros de badge, não há cópia por tipo).
+export async function resolveDispute(adminId: string, disputeId: string, action: 'uphold' | 'reverse', resolution?: string) {
+  const dispute = await db.dealDispute.findUnique({ where: { id: disputeId }, include: { deal: true } });
+  if (!dispute) throw new DealError('Disputa não encontrada.', 404);
+  if (dispute.status !== 'under_review') throw new DealError('Esta disputa não está em análise.', 400);
+  const deal = dispute.deal;
+  if (deal.status !== 'disputed') throw new DealError('O negócio não está em disputa.', 409);
+  const lst = await db.listing.findUnique({ where: { id: deal.listingId }, select: { title: true } });
+  const parties = [dispute.openedByUserId, dispute.counterpartyId];
+  await db.$transaction(async (tx) => {
+    if (action === 'reverse') {
+      await unmarkPieceSale(tx, deal.listingId, deal.component);
+      await tx.deal.update({ where: { id: deal.id }, data: { status: 'reversed', reversedAt: new Date() } });
+      await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_reversed', resolvedByAdminId: adminId, resolvedAt: new Date(), resolution: resolution ?? null } });
+      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_confirmed' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '' } })));
+    } else {
+      await tx.deal.update({ where: { id: deal.id }, data: { status: 'completed', reversalRequestedAt: null } });
+      await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_upheld', resolvedByAdminId: adminId, resolvedAt: new Date(), resolution: resolution ?? null } });
+      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_rejected' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '' } })));
+    }
+  });
+}
+
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA
 // só quando o deal vira completed (os dois confirmam) — filtro em getProfile.
 export async function createReview(userId: string, dealId: string, rating: number, comment?: string, tags?: string[]) {

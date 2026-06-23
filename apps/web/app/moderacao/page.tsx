@@ -8,6 +8,7 @@ import { SiteHeader } from '../../components/SiteHeader';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Footer } from '../../components/Footer';
 import { ModerationList } from '../../components/ModerationList';
+import { DisputeList } from '../../components/DisputeList';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,13 +52,50 @@ export default async function Moderacao() {
     actions: r.actions.map((a) => ({ action: a.action, by: a.moderator?.name ?? '—', at: a.createdAt.toISOString(), note: a.note })),
   }));
 
+  // 2ª fila (§11) — disputas de venda aguardando decisão do admin (contraparte recusou
+  // a correção). Modelo próprio (DealDispute), não Report.
+  const dispRaw = await db.dealDispute.findMany({
+    where: { status: 'under_review' },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    include: {
+      deal: { select: { listingId: true, component: true } },
+      openedBy: { select: { id: true, name: true } },
+      counterparty: { select: { id: true, name: true } },
+    },
+  });
+  const dispListingIds = [...new Set(dispRaw.map((d) => d.deal.listingId))];
+  const dispListings = dispListingIds.length ? await db.listing.findMany({ where: { id: { in: dispListingIds } }, select: { id: true, title: true } }) : [];
+  const dispTitle = new Map(dispListings.map((l) => [l.id, l.title]));
+  const disputes = dispRaw.map((d) => ({
+    id: d.id,
+    dealId: d.dealId,
+    listingId: d.deal.listingId,
+    listingTitle: dispTitle.get(d.deal.listingId) ?? '—',
+    component: d.deal.component,
+    reason: d.reason,
+    description: d.description,
+    openedById: d.openedBy?.id ?? d.openedByUserId,
+    openedBy: d.openedBy?.name ?? '—',
+    counterpartyId: d.counterparty?.id ?? d.counterpartyId,
+    counterparty: d.counterparty?.name ?? '—',
+    createdAt: d.createdAt.toISOString(),
+  }));
+
   return (
     <>
       <div className="only-mobile"><MobileAppBar /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '36px 24px 80px' }}>
         <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>Moderação</h1>
-        <p style={{ fontSize: 14.5, color: color.inkMute, margin: '0 0 24px' }}>Denúncias recebidas. {reports.filter((r) => r.status === 'open').length} aberta(s).</p>
+        <p style={{ fontSize: 14.5, color: color.inkMute, margin: '0 0 28px' }}>Duas filas: disputas de venda e denúncias.</p>
+
+        <h2 style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, margin: '0 0 4px' }}>Disputas de venda</h2>
+        <p style={{ fontSize: 13.5, color: color.inkMute, margin: '0 0 14px' }}>Correções recusadas pela contraparte. {disputes.length} em análise.</p>
+        <DisputeList disputes={disputes} />
+
+        <h2 style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, margin: '36px 0 4px' }}>Denúncias</h2>
+        <p style={{ fontSize: 13.5, color: color.inkMute, margin: '0 0 14px' }}>{reports.filter((r) => r.status === 'open').length} aberta(s).</p>
         <ModerationList reports={reports} />
       </main>
       <Footer />
