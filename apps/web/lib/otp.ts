@@ -61,8 +61,8 @@ async function sendOtpSms(phone: string, code: string) {
     signal: AbortSignal.timeout(4000), // login não pode pendurar se a Twilio travar
   });
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    console.error('[otp] sms falhou', res.status, detail);
+    // Não logar res.text(): erros de validação da Twilio (e.g. 21211) ecoam o telefone.
+    console.error('[otp] sms failed', { status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
     throw new Error(`Twilio recusou o envio (${res.status})`);
   }
 }

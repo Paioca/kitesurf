@@ -17,8 +17,9 @@ export async function POST(req: Request) {
   if (!email) return NextResponse.json({ message: 'Digite um e-mail válido.' }, { status: 400 });
 
   const emailKey = crypto.createHash('sha256').update(email).digest('hex').slice(0, 24);
-  const allowedEmail = await rateLimit(`recovery:email:${emailKey}`, 3, 3600);
-  const allowedIp = await rateLimit(`recovery:email:ip:${clientIp(req)}`, 10, 3600);
+  // fail-closed: e-mail de recuperação inicia mudança de telefone — proteção crítica.
+  const allowedEmail = await rateLimit(`recovery:email:${emailKey}`, 3, 3600, { failClosed: true });
+  const allowedIp = await rateLimit(`recovery:email:ip:${clientIp(req)}`, 10, 3600, { failClosed: true });
   if (!allowedEmail || !allowedIp) return tooMany();
 
   const user = await db.user.findUnique({ where: { email } });

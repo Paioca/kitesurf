@@ -38,8 +38,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Foto de perfil inválida.' }, { status: 400 });
   }
 
-  // anti brute-force do código (além do limite de 5 tentativas por código)
-  if (!(await rateLimit(`otp:verify:${clientIp(req)}`, 20, 3600))) return tooMany();
+  // anti brute-force do código (além do limite de 5 tentativas por código).
+  // fail-closed: durante incidente de DB, não relaxa proteção contra brute-force de OTP.
+  if (!(await rateLimit(`otp:verify:${clientIp(req)}`, 20, 3600, { failClosed: true }))) return tooMany();
 
   const existing = await db.user.findUnique({ where: { phone } });
   let user = existing;

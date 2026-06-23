@@ -27,9 +27,10 @@ export async function POST(req: Request) {
   const owner = await db.user.findUnique({ where: { phone } });
   if (owner && owner.id !== user.id) return NextResponse.json({ message: 'Esse telefone já está vinculado a outra conta.' }, { status: 409 });
 
-  const allowedToken = await rateLimit(`recovery:sms:token:${emailToken.id}`, 5, 3600);
-  const allowedPhone = await rateLimit(`recovery:sms:phone:${phone}`, 5, 3600);
-  const allowedIp = await rateLimit(`recovery:sms:ip:${clientIp(req)}`, 15, 3600);
+  // fail-closed: recuperação dispara SMS (custo) e é alvo de brute-force.
+  const allowedToken = await rateLimit(`recovery:sms:token:${emailToken.id}`, 5, 3600, { failClosed: true });
+  const allowedPhone = await rateLimit(`recovery:sms:phone:${phone}`, 5, 3600, { failClosed: true });
+  const allowedIp = await rateLimit(`recovery:sms:ip:${clientIp(req)}`, 15, 3600, { failClosed: true });
   if (!allowedToken || !allowedPhone || !allowedIp) return tooMany();
 
   try {

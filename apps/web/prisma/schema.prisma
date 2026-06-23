@@ -382,11 +382,19 @@ model Review {
 }
 
 // Rate limiting via banco (janela fixa). Sem infra nova; cron de limpeza no P2.
+//
+// bucketStart = epoch (segundos) do INÍCIO da janela à qual esta linha pertence.
+// O caller calcula floor(now/windowSec)*windowSec, e o @@unique([key, bucketStart])
+// garante upsert ATÔMICO: dois requests concorrentes na mesma janela disputam a
+// mesma linha e `count` incrementa serializadamente — fim da race count+create.
 model RateHit {
-  id        String   @id @default(uuid())
-  key       String
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  key         String
+  bucketStart Int      @default(0)
+  count       Int      @default(1)
+  createdAt   DateTime @default(now())
 
+  @@unique([key, bucketStart])
   @@index([key, createdAt])
 }
 

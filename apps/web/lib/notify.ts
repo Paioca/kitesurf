@@ -66,9 +66,12 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
       body,
       signal: AbortSignal.timeout(4000),
     });
-    if (!res.ok) console.error(`[notify] ${channel} falhou`, res.status, await res.text().catch(() => ''));
+    // Não logar res.text(): a Twilio costuma ecoar o telefone destinatário em erros de
+    // validação (e.g. 21211 'is not a valid phone number'), o que vazaria PII pros logs.
+    // Status + twilio-request-id bastam pra triagem; payload fica no Sentry breadcrumb.
+    if (!res.ok) console.error('[notify] failed', { channel, status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
   } catch (e) {
-    console.error(`[notify] ${channel} erro`, e);
+    console.error('[notify] error', { channel, message: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -115,8 +118,8 @@ export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPh
       body,
       signal: AbortSignal.timeout(4000),
     });
-    if (!res.ok) console.error(`[notify] accept ${channel} falhou`, res.status, await res.text().catch(() => ''));
+    if (!res.ok) console.error('[notify] accept failed', { channel, status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
   } catch (e) {
-    console.error(`[notify] accept ${channel} erro`, e);
+    console.error('[notify] accept error', { channel, message: e instanceof Error ? e.message : String(e) });
   }
 }

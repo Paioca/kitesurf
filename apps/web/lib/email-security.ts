@@ -86,8 +86,9 @@ export async function sendSecurityEmail(opts: { to: string; name: string; purpos
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    console.error('[email] Resend falhou', res.status, detail);
+    // Não logar res.text(): erros de validação do Resend ecoam o e-mail destinatário.
+    // Só status + ids — payload completo fica no Sentry breadcrumb.
+    console.error('[email] resend failed', { purpose: opts.purpose, status: res.status, requestId: res.headers.get('x-resend-request-id') ?? null });
     throw new Error(`Resend recusou o envio (${res.status})`);
   }
 }

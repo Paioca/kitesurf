@@ -16,9 +16,10 @@ export async function POST(req: Request) {
   const phone = parsed.success ? normalizePhone(parsed.data.phone) : null;
   if (!phone) return NextResponse.json({ message: 'Telefone inválido.' }, { status: 400 });
 
-  // anti SMS-bombing: por telefone e por IP
-  const okPhone = await rateLimit(`otp:req:${phone}`, 5, 3600);
-  const okIp = await rateLimit(`otp:reqip:${clientIp(req)}`, 20, 3600);
+  // anti SMS-bombing: por telefone e por IP. fail-closed: se o banco do rate limiter
+  // cair, NÃO liberamos OTP-send — Twilio cobra por SMS e seria abuso direto.
+  const okPhone = await rateLimit(`otp:req:${phone}`, 5, 3600, { failClosed: true });
+  const okIp = await rateLimit(`otp:reqip:${clientIp(req)}`, 20, 3600, { failClosed: true });
   if (!okPhone || !okIp) return tooMany();
 
   let devCode: string | null;

@@ -12,8 +12,9 @@ export async function POST(req: Request) {
     if (!user.email) return NextResponse.json({ message: 'Adicione e salve um e-mail antes de confirmar.' }, { status: 400 });
     if (user.emailVerified) return NextResponse.json({ ok: true, message: 'Seu e-mail já está confirmado.' });
 
-    const allowedUser = await rateLimit(`email:verify:user:${user.id}`, 3, 3600);
-    const allowedIp = await rateLimit(`email:verify:ip:${clientIp(req)}`, 10, 3600);
+    // fail-closed: confirmação de e-mail é gate de canal de segurança.
+    const allowedUser = await rateLimit(`email:verify:user:${user.id}`, 3, 3600, { failClosed: true });
+    const allowedIp = await rateLimit(`email:verify:ip:${clientIp(req)}`, 10, 3600, { failClosed: true });
     if (!allowedUser || !allowedIp) return tooMany();
 
     const { raw, token } = await issueEmailToken(user.id, user.email, EmailTokenPurpose.verify);

@@ -21,7 +21,8 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
   const phone = normalizePhone(parsed.data.phone);
   if (!phone) return NextResponse.json({ message: 'Telefone inválido.' }, { status: 400 });
-  if (!(await rateLimit(`recovery:confirm:ip:${clientIp(req)}`, 20, 3600))) return tooMany();
+  // fail-closed: confirma OTP de recuperação — alvo de brute-force, não relaxar.
+  if (!(await rateLimit(`recovery:confirm:ip:${clientIp(req)}`, 20, 3600, { failClosed: true }))) return tooMany();
 
   const emailToken = await findValidEmailToken(parsed.data.token, EmailTokenPurpose.recovery);
   if (!emailToken) return NextResponse.json({ message: 'Este link é inválido ou expirou.' }, { status: 400 });
