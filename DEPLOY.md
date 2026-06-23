@@ -36,29 +36,74 @@ cd apps/web && npx prisma migrate deploy
 
 ## Variáveis de ambiente na Vercel
 
-Setar no projeto (Settings > Environment Variables), ambiente **Production**:
+Setar no projeto (Settings > Environment Variables), ambiente **Production** **e**
+**Preview** quando aplicável:
 
 | Variável | Valor |
 |---|---|
-| `DATABASE_URL` | pooler `:6543` + `?pgbouncer=true` |
-| `DIRECT_URL` | direct `:5432` |
+| `DATABASE_URL` | pooler `:6543` + `?pgbouncer=true&connection_limit=1` (ver nota Prisma serverless abaixo) |
+| `DIRECT_URL` | direct `:5432` **sem** `connection_limit` (só pra migration) |
 | `SUPABASE_URL` | `https://PROJ.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | chave `service_role` (secreta) |
 | `SUPABASE_BUCKET` | `listings` |
 | `JWT_SECRET` | **forte, ≥32 chars** — o app não sobe em prod sem isso |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` | SMS do OTP (login depende disso em prod) |
+| `RESEND_API_KEY` / `EMAIL_FROM` | e-mails de verificação/recuperação |
 | `NEXT_PUBLIC_SENTRY_DSN` | observabilidade |
-| `CRON_SECRET` | protege `/api/maintenance/cleanup` (opcional) |
+| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | release do Sentry no client; linkar ao system env `VERCEL_GIT_COMMIT_SHA` |
+| `CRON_SECRET` | **obrigatório** — protege `/api/cron/*`; a Vercel injeta `Authorization: Bearer $CRON_SECRET` automaticamente nos crons quando esta env está setada |
 | `APP_URL` | base dos links de notificação (ex: `https://kitetropos.com`) |
 
 `OTP_MOCK` e números de teste só valem fora de produção — em prod o login sempre
 exige SMS real.
 
-## Manutenção (opcional, agendável)
+### Nota: `connection_limit=1` em DATABASE_URL (Prisma + Vercel serverless)
 
-`POST /api/maintenance/cleanup` (header `Authorization: Bearer $CRON_SECRET`): purga
-OtpCode/RateHit velhos e reporta imagens órfãs no storage (`?purgeOrphans=true` pra
-apagar de fato, com carência de 24h). Pode ser ligado num cron da Vercel.
+A Vercel sobe cada handler como um lambda independente; cada warm function instancia
+o seu próprio pool do Prisma. Em pico, dezenas de lambdas × pool padrão estouram os
+slots do pgbouncer transaction-mode e a app começa a devolver `Timed out fetching a
+connection`. Padronize `?pgbouncer=true&connection_limit=1` no `DATABASE_URL`; o
+`DIRECT_URL` (usado só pra `prisma migrate`) NÃO leva esse parâmetro.
+
+## Crons (Vercel)
+
+Definidos em `apps/web/vercel.json`. Ambos POST autenticados via `Authorization:
+Bearer $CRON_SECRET` (a Vercel injeta o header automaticamente quando a env está
+setada). Schedule em UTC, lembrar que `0 3` = 00:00 BRT no horário-padrão.
+
+| Path | Schedule (UTC) | O que faz |
+|---|---|---|
+| `/api/cron/close-unconfirmed` | `0 3 * * *` | Encerra deals `seller_confirmed` com prazo de 72h vencido |
+| `/api/cron/cleanup` | `0 4 * * *` | Purga OtpCode/EmailToken/RateHit velhos + apaga imagens órfãs no Storage (24h grace) |
+
+Cada execução grava uma linha em `JobRun` (status, duração, resultado, erro), e
+envia `Sentry.captureCheckIn` pro monitor slug `job-<nome>`. Lock por
+`pg_try_advisory_lock` previne execução concorrente — se uma segunda invocação cair
+em cima de outra rodando, ela retorna `{ok:true, skipped:true}` sem reprocessar.
+
+Hobby plan da Vercel limita crons a 2 schedules diários. Já estamos em 2 — para
+adicionar outro (ex: drain de outbox no Sprint 3), o projeto **precisa estar em Pro**.
+
+## Monitor externo de uptime (login)
+
+Há uma probe pública em `GET /api/health/login` que checa DB + Twilio (componentes
+de que o fluxo de login DEPENDE) e devolve 200 ou 503. Configure um monitor externo
+(Better Stack / UptimeRobot / Pingdom) batendo nesse endpoint a cada 1 min com
+alerta no Slack/e-mail. Sem isso, o SPOF de Twilio só aparece quando o usuário
+reclama. Uma resposta de exemplo verde:
+
+```json
+{ "ok": true, "components": {
+  "db":     { "ok": true, "latencyMs": 12 },
+  "twilio": { "ok": true, "latencyMs": 230 }
+}}
+```
+
+## Manutenção on-demand (legado)
+
+O endpoint legado `POST /api/maintenance/cleanup` continua funcionando (mesma auth
+por `CRON_SECRET`) — útil pra trigger manual sem esperar o cron. Em produção,
+prefira o cron automático.
 
 ## Notas
 

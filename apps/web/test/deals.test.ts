@@ -8,6 +8,7 @@ const { mockDb } = vi.hoisted(() => ({
     review: { upsert: vi.fn() },
     dealDispute: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
+    auditEvent: { create: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
   },
@@ -40,6 +41,7 @@ beforeEach(() => {
   mockDb.dealDispute.update.mockResolvedValue({});
   mockDb.notification.create.mockResolvedValue({});
   mockDb.notification.createMany.mockResolvedValue({ count: 0 });
+  mockDb.auditEvent.create.mockResolvedValue({});
 });
 
 describe('confirmPurchase', () => {

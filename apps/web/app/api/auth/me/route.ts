@@ -6,6 +6,7 @@ import { getCurrentUser, requireUser, clearSession, UnauthorizedError } from '..
 import { isOfficialImageUrl } from '../../../../lib/storage';
 import { deleteAccount, LifecycleError } from '../../../../lib/lifecycle';
 import { SPOTS } from '../../../../lib/filters';
+import { recordAuditNoTx } from '../../../../lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -60,6 +61,18 @@ export async function PATCH(req: Request) {
       where: { id: user.id },
       data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
     });
+    // Audit só quando o e-mail (canal de segurança) mudou. Outros campos do perfil não
+    // entram no audit no MVP — escopo deliberado: registrar só ações de segurança/PII.
+    if (emailChanged) {
+      await recordAuditNoTx({
+        actorUserId: user.id,
+        action: 'user.email_changed',
+        entityType: 'user',
+        entityId: user.id,
+        before: { email: user.email, emailVerified: user.emailVerified },
+        after: { email: updated.email, emailVerified: updated.emailVerified },
+      });
+    }
     return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

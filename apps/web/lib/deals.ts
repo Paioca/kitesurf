@@ -4,6 +4,7 @@ import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
 import { emit, emitMany, affectedBuyerIds } from './notifications';
+import { recordAudit } from './audit';
 
 export class DealError extends PublicError {}
 
@@ -85,6 +86,16 @@ export async function confirmPurchase(userId: string, dealId: string) {
   await db.$transaction(async (tx) => {
     await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'completed');
     await emit(tx, { userId: deal.sellerId, type: 'purchase_confirmed', listingId: deal.listingId, dealId, actorId: deal.buyerId, data: { title: listing.title } });
+    // Audit: deal vira completed — registro financeiro/contratual. Indispensável pra
+    // disputa (reversal/dispute olham pra cá pra reconstituir o estado anterior).
+    await recordAudit(tx, {
+      actorUserId: userId,
+      action: 'deal.confirm_purchase',
+      entityType: 'deal',
+      entityId: dealId,
+      before: { status: deal.status, sellerConfirmedAt: deal.sellerConfirmedAt?.toISOString() ?? null, buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null },
+      after: { status: 'completed', listingId: deal.listingId, component: deal.component, sellerId: deal.sellerId, buyerId: deal.buyerId },
+    });
   });
 }
 

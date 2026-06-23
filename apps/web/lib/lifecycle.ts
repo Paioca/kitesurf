@@ -3,6 +3,7 @@ import { db } from './db';
 import { PublicError } from './http';
 import { emitMany, affectedBuyerIds } from './notifications';
 import { listingHasSaleRecord } from './deals';
+import { recordAudit } from './audit';
 
 export class LifecycleError extends PublicError {}
 
@@ -46,6 +47,14 @@ export async function deleteAccount(userId: string) {
     throw new LifecycleError('Você tem uma venda aguardando confirmação. Conclua ou cancele antes de excluir a conta.', 409);
   }
 
+  // Snapshot do PII ANTES da anonimização — necessário pra disputa/LGPD e pra qualquer
+  // reclamação de "quem era esse usuário?" depois. Sem este snapshot, deleteAccount era
+  // destruição irreversível sem rastro.
+  const priorState = await db.user.findUnique({
+    where: { id: userId },
+    select: { name: true, lastName: true, email: true, phone: true, cpf: true, spot: true, country: true, instagramHandle: true, emailVerified: true, phoneVerified: true, status: true },
+  });
+
   const now = new Date();
   await db.$transaction(async (tx) => {
     // compradores afetados pelos anúncios DESTE vendedor (antes de mudar o status)
@@ -69,5 +78,14 @@ export async function deleteAccount(userId: string) {
       },
     });
     await emitMany(tx, affected.map((a) => ({ userId: a.buyerId, type: 'listing_removed' as const, listingId: a.listingId, actorId: userId })));
+    // Audit DENTRO da transação: ou some/persiste junto com a anonimização.
+    await recordAudit(tx, {
+      actorUserId: userId,
+      action: 'account.delete',
+      entityType: 'user',
+      entityId: userId,
+      before: priorState ?? null,
+      after: { name: 'Conta removida', email: `deleted_${userId}@removed.invalid`, phone: `deleted_${userId}`, status: 'blocked', deletedAt: now.toISOString() },
+    });
   });
 }

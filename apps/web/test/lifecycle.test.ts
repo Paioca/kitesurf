@@ -5,8 +5,9 @@ const { mockDb } = vi.hoisted(() => ({
     listing: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     deal: { count: vi.fn() },
     request: { updateMany: vi.fn(), findMany: vi.fn() },
-    user: { update: vi.fn() },
+    user: { update: vi.fn(), findUnique: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
+    auditEvent: { create: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -22,7 +23,9 @@ beforeEach(() => {
   mockDb.listing.update.mockResolvedValue({});
   mockDb.listing.updateMany.mockResolvedValue({ count: 0 });
   mockDb.user.update.mockResolvedValue({});
+  mockDb.user.findUnique.mockResolvedValue({ name: 'Old', email: 'old@x.com', phone: '+5511', emailVerified: true, phoneVerified: true, status: 'active' });
   mockDb.notification.createMany.mockResolvedValue({ count: 0 });
+  mockDb.auditEvent.create.mockResolvedValue({});
 });
 
 describe('removeListing', () => {

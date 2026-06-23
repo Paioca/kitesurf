@@ -515,6 +515,47 @@ enum NotificationType {
   reversal_rejected // a correção foi recusada: virou disputa
 }
 
+// Auditoria de ações IRREVERSÍVEIS / financeiras (LGPD + disputa). Append-only.
+// Escopo deliberadamente estreito no MVP: deleteAccount, confirmPurchase, troca de
+// e-mail/telefone — NÃO é audit completo de toda mutação (isso vira tarefa pós-escala).
+// `before`/`after` carregam só os campos relevantes da ação, NUNCA o objeto Prisma cru.
+model AuditEvent {
+  id            String   @id @default(uuid())
+  actorUserId   String?  // quem executou; null pra ações do sistema (cron, etc)
+  action        String   // account.delete | deal.confirm_purchase | user.email_changed | ...
+  entityType    String   // user | deal | listing
+  entityId      String
+  before        Json?
+  after         Json?
+  correlationId String?  // backbone do Sprint 2
+  ipHash        String?  // HMAC do IP (Sprint 2 também — pode ficar null por ora)
+  userAgent     String?
+  release       String?  // VERCEL_GIT_COMMIT_SHA do deploy que executou
+  result        String   @default("ok") // ok | error
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+// Execução de job (cron e on-demand). Sentinela de "rodou? quando? deu certo?".
+// Vamos alertar via Sentry quando JobRun.findFirst({ status: ok, finishedAt > X horas })
+// não voltar nada, OU quando há linha presa em status=running por > timeout.
+model JobRun {
+  id          String    @id @default(uuid())
+  job         String    // cleanup | close-unconfirmed | ...
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  status      String    // running | ok | error
+  result      Json?
+  error       String?
+  release     String?
+
+  @@index([job, startedAt])
+  @@index([status, startedAt])
+}
+
 // Notificação in-app persistente. `read` por readAt. Refs opcionais pro deep-link.
 model Notification {
   id         String           @id @default(uuid())
