@@ -37,6 +37,9 @@ export default function Entrar() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // E-mail é canal de EXCEÇÃO — só aparece como opção quando o SMS realmente falhou
+  // (502 do provider). Senão fica completamente invisível pro fluxo normal de cadastro/login.
+  const [smsFailed, setSmsFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const submittedRef = useRef('');
 
@@ -65,7 +68,12 @@ export default function Entrar() {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message ?? 'Falha ao enviar código.');
+      if (!res.ok) {
+        // 502 do canal SMS = Twilio fora/recusou. SÓ AQUI revelamos o fallback de
+        // e-mail, evitando confundir o fluxo normal de cadastro com uma "opção paralela".
+        if (channel === 'sms' && res.status === 502) setSmsFailed(true);
+        throw new Error(data.message ?? 'Falha ao enviar código.');
+      }
       // No modo mock o código volta aqui e preenche silenciosamente (sem afordância visível).
       if (data.devCode) setCode(String(data.devCode));
       setStep('otp');
@@ -206,13 +214,17 @@ export default function Entrar() {
                 {loading ? '...' : 'Enviar código'}
               </button>
 
-              {/* Links secundários — separados visualmente, mesma hierarquia. */}
+              {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
+                  real do SMS (smsFailed) — antes disso e-mail é invisível e o fluxo
+                  é só telefone. "Voltar pra SMS" aparece quando user já está no modo
+                  e-mail (porque clicou em "tentar por e-mail" antes). */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', marginTop: 18 }}>
-                {channel === 'sms' ? (
+                {channel === 'sms' && smsFailed && (
                   <button type="button" onClick={() => { setChannel('email'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
-                    Não recebo SMS — entrar por e-mail
+                    Tentar por e-mail
                   </button>
-                ) : (
+                )}
+                {channel === 'email' && (
                   <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
                     Voltar pra entrar por SMS
                   </button>
