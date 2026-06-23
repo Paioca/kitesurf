@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { db } from '../../../../lib/db';
 
 export const runtime = 'nodejs';
@@ -32,7 +33,14 @@ async function checkDb(): Promise<ComponentStatus> {
     await db.$queryRaw`SELECT 1`;
     return { ok: true, latencyMs: Date.now() - t0 };
   } catch (e) {
-    return { ok: false, latencyMs: Date.now() - t0, reason: e instanceof Error ? e.name : 'unknown' };
+    // Manda detalhe pro Sentry — onde a senha do DATABASE_URL não vaza pra resposta pública.
+    Sentry.captureException(e, { tags: { component: 'health-probe', check: 'db' } });
+    const name = e instanceof Error ? e.name : 'unknown';
+    // Message pode conter pista útil (e.g. "Can't reach database server at host:port") sem
+    // expor senha. Limita 200 chars e remove qualquer fragmento que pareça connection string.
+    const raw = e instanceof Error ? (e.message ?? '') : '';
+    const safeMessage = raw.replace(/postgres(ql)?:\/\/[^\s]+/gi, '[REDACTED-URL]').slice(0, 200);
+    return { ok: false, latencyMs: Date.now() - t0, reason: `${name}: ${safeMessage}` };
   }
 }
 

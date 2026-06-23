@@ -1,53 +1,56 @@
-// Diagnóstico read-only do estado da migration moderation_actions em prod.
-// Responde 3 perguntas: a tabela ModerationAction existe? o enum existe? como o
-// _prisma_migrations registrou a tentativa? Essas 3 respostas decidem se a gente
-// roda `migrate resolve --applied` (estado já está aplicado, só não foi marcado) ou
-// `--rolled-back` (nada foi aplicado, pode re-rodar) ou cleanup manual (parcial).
+// Diagnóstico read-only do estado das migrations do Sprint 0/1.
+// Confere se as colunas/tabelas que o código novo espera existem no banco e como o
+// _prisma_migrations registrou cada uma. Decide o que fazer baseado no estado real.
 import { PrismaClient } from '@prisma/client';
 
 const db = new PrismaClient();
-const MIG = '20260622000000_moderation_actions';
+const MIGS = [
+  '20260622000000_moderation_actions',
+  '20260623000000_negociacao_v2',
+  '20260623120000_ratehit_atomic_bucket',
+  '20260623130000_audit_event_job_run',
+];
+
+async function tableExists(name) {
+  const r = await db.$queryRawUnsafe(`SELECT to_regclass($1)::text AS reg`, `"${name}"`);
+  return !!r?.[0]?.reg;
+}
+async function columnExists(table, col) {
+  const r = await db.$queryRawUnsafe(
+    `SELECT 1 FROM information_schema.columns WHERE table_name=$1 AND column_name=$2`,
+    table, col
+  );
+  return r.length > 0;
+}
+async function indexExists(name) {
+  const r = await db.$queryRawUnsafe(
+    `SELECT 1 FROM pg_indexes WHERE indexname=$1`, name
+  );
+  return r.length > 0;
+}
 
 async function main() {
-  // Cast pra text: regclass/regtype são tipos nativos do PG e o Prisma não desserializa.
-  const tableExists = await db.$queryRawUnsafe(
-    `SELECT to_regclass('"ModerationAction"')::text AS reg`
-  );
-  const enumExists = await db.$queryRawUnsafe(
-    `SELECT to_regtype('"ModerationActionType"')::text AS reg`
-  );
-  const rowsInTable = tableExists?.[0]?.reg
-    ? await db.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "ModerationAction"`)
-    : null;
-  const prismaRow = await db.$queryRawUnsafe(
-    `SELECT migration_name, started_at, finished_at, rolled_back_at, applied_steps_count, logs
-       FROM _prisma_migrations
-      WHERE migration_name = $1`,
-    MIG
-  );
-
-  console.log('=== diagnostic: moderation_actions migration ===');
-  console.log('ModerationAction table exists ?', tableExists?.[0]?.reg);
-  console.log('ModerationActionType enum exists?', enumExists?.[0]?.reg);
-  console.log('rows in ModerationAction       ?', rowsInTable?.[0]?.n ?? '(table absent)');
-  console.log('_prisma_migrations row         :', JSON.stringify(prismaRow, null, 2));
-
-  // Sugestão automática
-  const t = !!tableExists?.[0]?.reg;
-  const e = !!enumExists?.[0]?.reg;
-  console.log('\n=== suggested next step ===');
-  if (t && e) {
-    console.log('Estado: tabela+enum existem. Provável: SQL passou, _prisma_migrations não marcou.');
-    console.log('Fix: npx prisma migrate resolve --applied 20260622000000_moderation_actions');
-  } else if (!t && !e) {
-    console.log('Estado: nada foi criado. Migration travou no comando 1.');
-    console.log('Fix: npx prisma migrate resolve --rolled-back 20260622000000_moderation_actions');
-    console.log('     (depois rode migrate deploy novamente — ela vai aplicar do zero)');
-  } else {
-    console.log('Estado: PARCIAL — tabela?', t, 'enum?', e);
-    console.log('Fix: cleanup manual (DROP TABLE / DROP TYPE do que existir) + migrate resolve --rolled-back.');
-    console.log('     Me passa este output que eu monto o SQL exato.');
+  console.log('=== _prisma_migrations rows ===');
+  for (const m of MIGS) {
+    const row = await db.$queryRawUnsafe(
+      `SELECT migration_name, started_at, finished_at, rolled_back_at, applied_steps_count
+         FROM _prisma_migrations WHERE migration_name = $1`, m
+    );
+    if (!row[0]) { console.log(`${m}: (sem registro)`); continue; }
+    const r = row[0];
+    const state = r.rolled_back_at ? 'ROLLED_BACK' : r.finished_at ? 'APPLIED' : 'FAILED_OR_RUNNING';
+    console.log(`${m}: ${state}  steps=${r.applied_steps_count}  started=${r.started_at?.toISOString?.() ?? r.started_at}  finished=${r.finished_at?.toISOString?.() ?? r.finished_at}`);
   }
+
+  console.log('\n=== actual DB shape ===');
+  console.log('ModerationAction table  :', await tableExists('ModerationAction'));
+  console.log('RateHit.bucketStart col :', await columnExists('RateHit', 'bucketStart'));
+  console.log('RateHit.count col       :', await columnExists('RateHit', 'count'));
+  console.log('RateHit unique index    :', await indexExists('RateHit_key_bucketStart_key'));
+  console.log('AuditEvent table        :', await tableExists('AuditEvent'));
+  console.log('JobRun table            :', await tableExists('JobRun'));
+
+  console.log('\nReporta este output que eu te digo o próximo passo.');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); }).finally(() => db.$disconnect());
