@@ -308,6 +308,11 @@ export async function openNegotiationExists(listingId: string, component: Compon
 // por listing-status + os guards por peça (kit parcialmente vendido segue gerenciável).
 export const SOLD_RECORD_DEAL_STATUSES: DealStatus[] = ['completed', 'closed_unconfirmed', 'reversal_requested', 'disputed', 'reversed'];
 
+// §4 — estados que CONTAM como venda no perfil: a venda segue contando provisoriamente
+// durante a correção/disputa. Predicado DISTINTO da review pública (= só completed): em
+// reversal_requested/disputed a venda conta, mas a review fica oculta. reversed não conta.
+export const COUNTS_AS_SALE_STATUSES: DealStatus[] = ['completed', 'reversal_requested', 'disputed'];
+
 export async function listingHasSaleRecord(listingId: string): Promise<boolean> {
   return (await db.deal.count({ where: { listingId, status: { in: SOLD_RECORD_DEAL_STATUSES } } })) > 0;
 }

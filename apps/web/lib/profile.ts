@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { db } from './db';
+import { COUNTS_AS_SALE_STATUSES } from './deals';
 import type { Card } from './browse';
 
 function brl(c: number) {
@@ -15,7 +16,10 @@ export const getProfile = cache(async (id: string) => {
   });
   if (!user) return null;
 
+  // Dois predicados §4: review pública = SÓ completed; "conta como venda" inclui
+  // reversal_requested/disputed (provisório) — por isso não dá pra reusar o mesmo filtro.
   const reviewWhere = { reviewedId: id, deal: { status: 'completed' as const } };
+  const saleStatusWhere = { status: { in: COUNTS_AS_SALE_STATUSES } };
   // Mesma regra do browse: ativo, não-excluído e em categoria ainda ativa (fora do MVP some).
   const publicListingWhere = { userId: id, status: 'active' as const, deletedAt: null, category: { is: { active: true } } };
   const [reviewsRaw, ratingAgg, salesCount, purchasesCount, listingsRaw, activeCount] = await Promise.all([
@@ -28,8 +32,8 @@ export const getProfile = cache(async (id: string) => {
       include: { reviewer: { select: { name: true, avatarUrl: true } }, deal: { include: { listing: { select: { title: true } } } } },
     }),
     db.review.aggregate({ where: reviewWhere, _avg: { rating: true }, _count: { rating: true } }),
-    db.deal.count({ where: { sellerId: id, status: 'completed' } }),
-    db.deal.count({ where: { buyerId: id, status: 'completed' } }),
+    db.deal.count({ where: { sellerId: id, ...saleStatusWhere } }),
+    db.deal.count({ where: { buyerId: id, ...saleStatusWhere } }),
     db.listing.findMany({
       where: publicListingWhere,
       orderBy: { createdAt: 'desc' },
