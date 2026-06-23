@@ -2,6 +2,9 @@ import 'server-only';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
+import { childLogger } from './logger';
+
+const log = childLogger('otp');
 
 const TTL = Number(process.env.OTP_TTL_SECONDS ?? 300);
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -28,8 +31,10 @@ export async function generateOtp(phone: string, context = 'login'): Promise<str
   await db.otpCode.create({ data: { phone, codeHash, expiresAt, context } });
 
   if (MOCK || isTestPhone(phone)) {
-    // eslint-disable-next-line no-console
-    console.warn(`[MOCK SMS] OTP para ${phone}: ${code}`);
+    // Mock/dev path: nunca executa em produção (guard de !IS_PROD em MOCK + isTestPhone).
+    // Pino redaction marca 'code' nos campos sensíveis, então mesmo aqui o código não
+    // aparece no JSON do log — mantém o devCode acessível só pelo response do route.
+    log.warn({ event: 'mock_sms', phone, code }, 'mock SMS — dev only');
     return code;
   }
 
@@ -45,7 +50,7 @@ async function sendOtpSms(phone: string, code: string) {
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_SMS_FROM;
   if (!sid || !token || !from) {
-    console.error('[otp] Twilio não configurado — código não enviado');
+    log.error({ event: 'not_configured' }, 'Twilio não configurado — código não enviado');
     throw new Error('SMS provider não configurado');
   }
   const to = (phone.startsWith('+') ? phone : `+${phone}`).replace(/[^\d+]/g, '');
@@ -62,7 +67,7 @@ async function sendOtpSms(phone: string, code: string) {
   });
   if (!res.ok) {
     // Não logar res.text(): erros de validação da Twilio (e.g. 21211) ecoam o telefone.
-    console.error('[otp] sms failed', { status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
+    log.error({ event: 'send_failed', status: res.status, providerRequestId: res.headers.get('twilio-request-id') ?? null }, 'twilio recusou envio');
     throw new Error(`Twilio recusou o envio (${res.status})`);
   }
 }

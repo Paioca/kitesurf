@@ -2,6 +2,9 @@ import 'server-only';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import * as Sentry from '@sentry/nextjs';
 import { db } from './db';
+import { childLogger } from './logger';
+
+const log = childLogger('audit');
 
 // Trilha de auditoria para ações IRREVERSÍVEIS / financeiras.
 // Escopo deliberadamente estreito no MVP:
@@ -61,8 +64,7 @@ export async function recordAudit(client: Client, input: AuditInput): Promise<vo
     Sentry.captureException(err, {
       tags: { component: 'audit', action: input.action, entityType: input.entityType },
     });
-    // eslint-disable-next-line no-console
-    console.error('[audit] record_failed', { action: input.action, entityType: input.entityType });
+    log.error({ event: 'record_failed', action: input.action, entityType: input.entityType, entityId: input.entityId, err }, 'audit record failed');
   }
 }
 

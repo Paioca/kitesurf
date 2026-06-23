@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { db } from '../../../../../../lib/db';
 import { issueEmailToken, normalizeEmail, sendSecurityEmail } from '../../../../../../lib/email-security';
 import { clientIp, rateLimit, tooMany } from '../../../../../../lib/ratelimit';
+import { childLogger } from '../../../../../../lib/logger';
+
+const log = childLogger('route:recovery/email/request');
 
 export const runtime = 'nodejs';
 
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
     await sendSecurityEmail({ to: email, name: user.name, purpose: EmailTokenPurpose.recovery, rawToken: raw });
   } catch (error) {
     await db.emailToken.update({ where: { id: token.id }, data: { consumedAt: new Date() } }).catch(() => undefined);
-    console.error('[recovery] e-mail não enviado', error);
+    log.error({ event: 'email_not_sent', userId: user.id, err: error }, 'e-mail não enviado');
   }
   return generic();
 }

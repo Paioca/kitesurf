@@ -1,6 +1,9 @@
 import 'server-only';
 import * as Sentry from '@sentry/nextjs';
 import { db } from './db';
+import { childLogger } from './logger';
+
+const log = childLogger('ratelimit');
 
 // Rate limit de janela fixa via banco (sem infra extra). Para a escala de 1 hub.
 // Retorna true se PERMITIDO; false se estourou o limite.
@@ -42,8 +45,7 @@ export async function rateLimit(
     Sentry.captureException(err, {
       tags: { component: 'ratelimit', event: 'backend_failure', key_prefix: keyPrefix, fail_mode: opts.failClosed ? 'closed' : 'open' },
     });
-    // eslint-disable-next-line no-console
-    console.error('[ratelimit] backend_failure', { keyPrefix, failMode: opts.failClosed ? 'closed' : 'open' });
+    log.error({ event: 'backend_failure', keyPrefix, failMode: opts.failClosed ? 'closed' : 'open', err }, 'rate limit backend failure');
     return !opts.failClosed;
   }
 }

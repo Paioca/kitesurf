@@ -2,6 +2,9 @@ import 'server-only';
 import crypto from 'crypto';
 import { EmailTokenPurpose } from '@prisma/client';
 import { db } from './db';
+import { childLogger } from './logger';
+
+const log = childLogger('email-security');
 
 const TOKEN_TTL_MIN = Number(process.env.EMAIL_TOKEN_TTL_MINUTES ?? 30);
 
@@ -88,7 +91,7 @@ export async function sendSecurityEmail(opts: { to: string; name: string; purpos
   if (!res.ok) {
     // Não logar res.text(): erros de validação do Resend ecoam o e-mail destinatário.
     // Só status + ids — payload completo fica no Sentry breadcrumb.
-    console.error('[email] resend failed', { purpose: opts.purpose, status: res.status, requestId: res.headers.get('x-resend-request-id') ?? null });
+    log.error({ event: 'send_failed', purpose: opts.purpose, status: res.status, providerRequestId: res.headers.get('x-resend-request-id') ?? null }, 'resend recusou envio');
     throw new Error(`Resend recusou o envio (${res.status})`);
   }
 }

@@ -7,6 +7,9 @@ import { verifyOtp } from '../../../../../../lib/otp';
 import { normalizePhone } from '../../../../../../lib/phone';
 import { clientIp, rateLimit, tooMany } from '../../../../../../lib/ratelimit';
 import { setSession } from '../../../../../../lib/session';
+import { childLogger } from '../../../../../../lib/logger';
+
+const log = childLogger('route:recovery/phone/confirm');
 
 export const runtime = 'nodejs';
 
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
     if ((error as { code?: string }).code === 'P2002') {
       return NextResponse.json({ message: 'Esse telefone já está vinculado a outra conta.' }, { status: 409 });
     }
-    console.error('[recovery] telefone não atualizado', error);
+    log.error({ event: 'phone_update_failed', userId: user.id, err: error }, 'telefone não atualizado');
     return NextResponse.json({ message: 'Não foi possível atualizar o telefone agora.' }, { status: 500 });
   }
 }

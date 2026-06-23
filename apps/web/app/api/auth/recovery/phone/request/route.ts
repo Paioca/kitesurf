@@ -6,6 +6,9 @@ import { findValidEmailToken } from '../../../../../../lib/email-security';
 import { generateOtp } from '../../../../../../lib/otp';
 import { normalizePhone } from '../../../../../../lib/phone';
 import { clientIp, rateLimit, tooMany } from '../../../../../../lib/ratelimit';
+import { childLogger } from '../../../../../../lib/logger';
+
+const log = childLogger('route:recovery/phone/request');
 
 export const runtime = 'nodejs';
 
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
     const devCode = await generateOtp(phone, `recovery:${emailToken.id}`);
     return NextResponse.json({ ok: true, message: 'Código enviado por SMS.', ...(devCode ? { devCode } : {}) });
   } catch (error) {
-    console.error('[recovery] SMS não enviado', error);
+    log.error({ event: 'sms_not_sent', userId: user.id, err: error }, 'SMS não enviado');
     return NextResponse.json({ message: 'Não foi possível enviar o SMS agora. Tente novamente em instantes.' }, { status: 502 });
   }
 }

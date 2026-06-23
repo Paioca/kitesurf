@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { generateOtp } from '../../../../../lib/otp';
 import { normalizePhone } from '../../../../../lib/phone';
 import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
+import { childLogger } from '../../../../../lib/logger';
+
+const log = childLogger('route:otp/request');
 
 export const runtime = 'nodejs';
 
@@ -26,7 +29,7 @@ export async function POST(req: Request) {
   try {
     devCode = await generateOtp(phone);
   } catch (e) {
-    console.error('[otp] envio falhou', e);
+    log.error({ event: 'send_failed', err: e }, 'OTP send failed');
     return NextResponse.json({ message: 'Não foi possível enviar o SMS agora. Tente novamente em instantes.' }, { status: 502 });
   }
   return NextResponse.json({ ok: true, message: 'Código enviado por SMS.', ...(devCode ? { devCode } : {}) });

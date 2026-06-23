@@ -6,24 +6,47 @@ import { db } from './db';
 const COOKIE = 'kite_session';
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
 
-// Segredo do JWT. Sem fallback adivinhável: em produção exigimos uma chave forte
-// no startup — caso contrário qualquer um forjaria o cookie e assumiria contas.
-function resolveSecret(): string {
-  const s = process.env.JWT_SECRET;
+// Segredo(s) do JWT — suporte a ROTAÇÃO sem deslogar usuários.
+//
+// JWT_SECRETS (CSV, recomendado): lista. Primeiro entry ASSINA novos cookies; todos
+// os entries VERIFICAM (cookies emitidos antes da rotação ainda passam até expirar).
+// Fluxo de rotação:
+//   1. Gera nova chave forte: `openssl rand -hex 48`
+//   2. Adiciona como PRIMEIRA no JWT_SECRETS, mantém a antiga:
+//      JWT_SECRETS="<nova>,<antiga>"
+//   3. Redeploy. Cookies novos saem assinados com <nova>; antigos continuam válidos
+//      via <antiga>.
+//   4. Após 30 dias (MAX_AGE de sessão), todos os cookies foram emitidos com <nova>.
+//      Remove <antiga> do JWT_SECRETS. Redeploy.
+//
+// JWT_SECRET (legado, single): ainda aceito como fallback se JWT_SECRETS não estiver
+// setado. Mesma semântica de antes (single key sign+verify). Migração: setar
+// JWT_SECRETS com o mesmo valor e remover JWT_SECRET no próximo deploy.
+function resolveSecrets(): string[] {
+  const csv = process.env.JWT_SECRETS;
+  const single = process.env.JWT_SECRET;
+  const raw = csv
+    ? csv.split(',').map((s) => s.trim()).filter(Boolean)
+    : single
+    ? [single]
+    : [];
+
   if (process.env.NODE_ENV === 'production') {
-    if (!s || s.length < 32) {
-      throw new Error('JWT_SECRET ausente ou fraco: defina uma chave forte (>= 32 chars) em produção.');
+    if (raw.length === 0 || raw.some((s) => s.length < 32)) {
+      throw new Error('JWT_SECRETS/JWT_SECRET ausente ou fraco: cada chave precisa ter >= 32 chars em produção.');
     }
-    return s;
+    return raw;
   }
   // dev/test: fallback só fora de produção.
-  return s ?? 'dev-secret-troque';
+  return raw.length ? raw : ['dev-secret-troque'];
 }
-const SECRET = resolveSecret();
+const SECRETS = resolveSecrets();
+const SIGNING_SECRET = SECRETS[0];
 
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
+// SEMPRE assina com o primeiro secret da lista (a "current key").
 export async function setSession(userId: string, sessionVersion = 0) {
-  const token = jwt.sign({ sub: userId, sv: sessionVersion }, SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ sub: userId, sv: sessionVersion }, SIGNING_SECRET, { expiresIn: '30d' });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -40,12 +63,17 @@ export async function clearSession() {
 async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  try {
-    const payload = jwt.verify(token, SECRET) as { sub: string; sv?: number };
-    return { sub: payload.sub, sv: payload.sv ?? 0 };
-  } catch {
-    return null;
+  // Tenta cada secret na ordem (current primeiro, depois os antigos). Aceita o primeiro
+  // que verificar. Se nenhum verificar, sessão inválida.
+  for (const secret of SECRETS) {
+    try {
+      const payload = jwt.verify(token, secret) as { sub: string; sv?: number };
+      return { sub: payload.sub, sv: payload.sv ?? 0 };
+    } catch {
+      // tenta o próximo
+    }
   }
+  return null;
 }
 
 export async function getUserId(): Promise<string | null> {

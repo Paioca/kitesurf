@@ -1,4 +1,7 @@
 import 'server-only';
+import { childLogger } from './logger';
+
+const log = childLogger('notify');
 
 // Notificação de pedido novo pro vendedor (oferta/visita) com o contato do comprador.
 // Dois canais, escolhidos por env — nenhum configurado → no-op (não quebra o pedido):
@@ -69,9 +72,9 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
     // Não logar res.text(): a Twilio costuma ecoar o telefone destinatário em erros de
     // validação (e.g. 21211 'is not a valid phone number'), o que vazaria PII pros logs.
     // Status + twilio-request-id bastam pra triagem; payload fica no Sentry breadcrumb.
-    if (!res.ok) console.error('[notify] failed', { channel, status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
+    if (!res.ok) log.error({ event: 'send_failed', kind: 'new_request', channel, status: res.status, providerRequestId: res.headers.get('twilio-request-id') ?? null }, 'twilio send failed');
   } catch (e) {
-    console.error('[notify] error', { channel, message: e instanceof Error ? e.message : String(e) });
+    log.error({ event: 'send_error', kind: 'new_request', channel, err: e }, 'twilio send error');
   }
 }
 
@@ -118,8 +121,8 @@ export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPh
       body,
       signal: AbortSignal.timeout(4000),
     });
-    if (!res.ok) console.error('[notify] accept failed', { channel, status: res.status, requestId: res.headers.get('twilio-request-id') ?? null });
+    if (!res.ok) log.error({ event: 'send_failed', kind: 'accept', channel, status: res.status, providerRequestId: res.headers.get('twilio-request-id') ?? null }, 'twilio send failed');
   } catch (e) {
-    console.error('[notify] accept error', { channel, message: e instanceof Error ? e.message : String(e) });
+    log.error({ event: 'send_error', kind: 'accept', channel, err: e }, 'twilio send error');
   }
 }

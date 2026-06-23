@@ -53,6 +53,8 @@ Setar no projeto (Settings > Environment Variables), ambiente **Production** **e
 | `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | release do Sentry no client; linkar ao system env `VERCEL_GIT_COMMIT_SHA` |
 | `CRON_SECRET` | **obrigatório** — protege `/api/cron/*`; a Vercel injeta `Authorization: Bearer $CRON_SECRET` automaticamente nos crons quando esta env está setada |
 | `APP_URL` | base dos links de notificação (ex: `https://kitetropos.com`) |
+| `JWT_SECRETS` | CSV de chaves do JWT (primeira assina, todas verificam) — suporta rotação sem deslogar usuários. Ver [SECRETS.md](docs/SECRETS.md). Aceita `JWT_SECRET` legado se essa não existir. |
+| `LOG_LEVEL` | (opcional) `debug` \| `info` \| `warn` \| `error`. Default: `info` em prod, `debug` em dev. |
 
 `OTP_MOCK` e números de teste só valem fora de produção — em prod o login sempre
 exige SMS real.
@@ -83,6 +85,29 @@ em cima de outra rodando, ela retorna `{ok:true, skipped:true}` sem reprocessar.
 
 Hobby plan da Vercel limita crons a 2 schedules diários. Já estamos em 2 — para
 adicionar outro (ex: drain de outbox no Sprint 3), o projeto **precisa estar em Pro**.
+
+## Logs estruturados (Pino → stdout → Vercel Log Drain → Better Stack)
+
+A app escreve **logs JSON estruturados** via Pino em stdout (`lib/logger.ts`). Cada
+linha carrega `service`, `env`, `release`, `correlationId` (injetado pelo middleware
+em toda request) e os campos específicos do evento. PII e tokens são redatados pelo
+próprio Pino antes da serialização.
+
+Para reter e buscar (a retenção nativa da Vercel é curta), configurar **Log Drain**:
+
+1. **Better Stack → Telemetry** → cria um **Source** do tipo "HTTP" ou "Vercel".
+2. Copia a URL/token do source.
+3. Vercel → seu projeto → Settings → **Log Drains** → **Add Log Drain**:
+   - Sources: **Functions** (e opcionalmente **Edge**)
+   - Delivery format: **JSON** (o Pino já manda JSON, então a Vercel só repassa)
+   - URL: cola a URL do source do Better Stack
+4. Save. Vai começar a popular o Telemetry em ~1 min.
+
+Query útil no Better Stack: `correlationId="<id-do-cabecalho>"` reconstrói todos os
+logs de uma única request. O cliente recebe esse id em `x-correlation-id` no
+response e pode reportar em ticket de suporte.
+
+> Log Drains exigem **Vercel Pro**.
 
 ## Monitor externo de uptime (login)
 

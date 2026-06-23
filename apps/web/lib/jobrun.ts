@@ -1,6 +1,9 @@
 import 'server-only';
 import * as Sentry from '@sentry/nextjs';
 import { db } from './db';
+import { childLogger } from './logger';
+
+const log = childLogger('jobrun');
 
 // Envoltório de execução de job: cria linha JobRun(status=running), chama o trabalho,
 // fecha como ok|error com o resultado. Integra com Sentry Crons (captureCheckIn) pra
@@ -21,8 +24,7 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
   const locked = lockRow[0]?.locked === true;
   if (!locked) {
     Sentry.captureCheckIn({ checkInId, monitorSlug: `job-${job}`, status: 'ok' });
-    // eslint-disable-next-line no-console
-    console.warn('[jobrun] skipped (already running)', { job });
+    log.warn({ event: 'skipped', job, reason: 'already_running' }, 'job skipped — another instance is running');
     return { skipped: true };
   }
 
@@ -38,6 +40,7 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
       data: { status: 'ok', finishedAt: new Date(), result: (result as unknown) as object },
     });
     Sentry.captureCheckIn({ checkInId, monitorSlug: `job-${job}`, status: 'ok' });
+    log.info({ event: 'finished', job, runId: run.id, status: 'ok' }, 'job finished ok');
     return { skipped: false, result };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -47,6 +50,7 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
     }).catch(() => undefined);
     Sentry.captureCheckIn({ checkInId, monitorSlug: `job-${job}`, status: 'error' });
     Sentry.captureException(err, { tags: { component: 'jobrun', job } });
+    log.error({ event: 'finished', job, runId: run.id, status: 'error', err }, 'job failed');
     throw err;
   } finally {
     // Solta o advisory lock SEMPRE (mesmo em erro). Em serverless isso libera pro

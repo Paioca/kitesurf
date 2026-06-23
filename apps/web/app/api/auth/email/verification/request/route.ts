@@ -3,6 +3,9 @@ import { EmailTokenPurpose } from '@prisma/client';
 import { issueEmailToken, sendSecurityEmail } from '../../../../../../lib/email-security';
 import { clientIp, rateLimit, tooMany } from '../../../../../../lib/ratelimit';
 import { requireUser, UnauthorizedError } from '../../../../../../lib/session';
+import { childLogger } from '../../../../../../lib/logger';
+
+const log = childLogger('route:email/verification/request');
 
 export const runtime = 'nodejs';
 
@@ -22,13 +25,13 @@ export async function POST(req: Request) {
       await sendSecurityEmail({ to: user.email, name: user.name, purpose: EmailTokenPurpose.verify, rawToken: raw });
     } catch (error) {
       await import('../../../../../../lib/db').then(({ db }) => db.emailToken.update({ where: { id: token.id }, data: { consumedAt: new Date() } })).catch(() => undefined);
-      console.error('[email] confirmação não enviada', error);
+      log.error({ event: 'verification_send_failed', userId: user.id, err: error }, 'confirmação de e-mail não enviada');
       return NextResponse.json({ message: 'Não foi possível enviar o e-mail agora. Tente novamente em instantes.' }, { status: 502 });
     }
     return NextResponse.json({ ok: true, message: 'Enviamos o link de confirmação para seu e-mail.' });
   } catch (error) {
     if (error instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
-    console.error('[email] erro ao solicitar confirmação', error);
+    log.error({ event: 'request_failed', err: error }, 'erro ao solicitar confirmação');
     return NextResponse.json({ message: 'Não foi possível enviar o e-mail agora.' }, { status: 500 });
   }
 }
