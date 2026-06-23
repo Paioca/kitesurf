@@ -5,7 +5,7 @@ const { mockDb } = vi.hoisted(() => ({
     listing: { findFirst: vi.fn(), findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
     request: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
-    deal: { count: vi.fn() },
+    deal: { count: vi.fn(), findMany: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -30,6 +30,7 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.notification.create.mockResolvedValue({});
   mockDb.listing.findUnique.mockResolvedValue({ title: 't' });
+  mockDb.deal.findMany.mockResolvedValue([]); // §7 reserve-block: sem reservas ativas por padrão
 });
 
 describe('createRequest', () => {
@@ -70,6 +71,30 @@ describe('createRequest', () => {
     mockDb.request.upsert.mockResolvedValue({ id: 'R', status: 'pending' });
     await expect(createRequest('B', 'L', 'offer', 170000, 'barra')).resolves.toMatchObject({ id: 'R' });
   });
+  // §7/§15 #4 — peça com venda aguardando confirmação (reserva) rejeita nova solicitação
+  // no BACKEND (não só esconde). E #16: conjunto reservado bloqueia o kite.
+  it('rejeita solicitação numa peça reservada (seller_confirmed) — back rejeita', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
+    mockDb.deal.findMany.mockResolvedValue([{ component: 'conjunto' }]); // venda do conjunto em andamento
+    await expect(createRequest('B', 'L', 'offer', 170000, 'kite')).rejects.toThrow(/venda em andamento/i);
+  });
+  it('§15 #5 — kite reservado NÃO bloqueia oferta na barra do mesmo kit', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
+    mockDb.deal.findMany.mockResolvedValue([{ component: 'kite' }]); // só o kite reservado
+    mockDb.request.upsert.mockResolvedValue({ id: 'R', status: 'pending' });
+    await expect(createRequest('B', 'L', 'offer', 170000, 'barra')).resolves.toMatchObject({ id: 'R' });
+  });
+  // §12/§15 #13 — mesmo telefone (negociar com a própria conta) é rejeitado (oferta e visita).
+  it('rejeita quando o telefone do comprador == do vendedor (oferta)', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ user: { phone: '+5588' } }));
+    mockDb.user.findUnique.mockResolvedValue({ name: 'Bruno', phone: '+5588' });
+    await expect(createRequest('B', 'L', 'offer', 150000)).rejects.toThrow(/própria conta/i);
+  });
+  it('rejeita quando o telefone do comprador == do vendedor (visita)', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ user: { phone: '+5588' } }));
+    mockDb.user.findUnique.mockResolvedValue({ name: 'Bruno', phone: '+5588' });
+    await expect(createRequest('B', 'L', 'visit')).rejects.toThrow(/própria conta/i);
+  });
 });
 
 describe('setRequestStatus', () => {
@@ -93,14 +118,16 @@ describe('setRequestStatus', () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
     mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
     mockDb.request.update.mockResolvedValue({});
-    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted' });
+    // §8/§15 #1 — aceite devolve o link do WhatsApp do COMPRADOR (front navega na mesma aba).
+    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted', whatsapp: 'https://wa.me/5588' });
     expect(notifyRequestAccepted).toHaveBeenCalledWith(expect.objectContaining({ buyerPhone: '+5588', sellerPhone: '+5599' }));
   });
-  it('recusar NÃO manda SMS de interesse', async () => {
+  // §15 #2 — recusar não compartilha contato (sem SMS, sem link de WhatsApp).
+  it('recusar NÃO manda SMS de interesse nem devolve WhatsApp', async () => {
     mockDb.request.findUnique.mockResolvedValue(reqMock());
     mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
     mockDb.request.update.mockResolvedValue({});
-    await setRequestStatus('S', 'R', 'declined');
+    await expect(setRequestStatus('S', 'R', 'declined')).resolves.toMatchObject({ status: 'declined', whatsapp: null });
     expect(notifyRequestAccepted).not.toHaveBeenCalled();
   });
 });

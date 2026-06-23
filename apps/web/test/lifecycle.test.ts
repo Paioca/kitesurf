@@ -43,6 +43,20 @@ describe('removeListing', () => {
     expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'listing_removed' } }));
     expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'archived' }) }));
   });
+  // §10/§15 #10 — anúncio vendido é imutável: o dono não exclui (back bloqueia).
+  it('bloqueia exclusão de anúncio vendido (Listing.sold)', async () => {
+    mockDb.listing.findFirst.mockResolvedValue({ id: 'L', userId: 'S', status: 'sold' });
+    mockDb.deal.count.mockResolvedValue(0); // sem venda aguardando confirmação
+    await expect(removeListing('S', 'L')).rejects.toThrow(/registra uma venda|não pode ser excluído/i);
+    expect(mockDb.listing.update).not.toHaveBeenCalled();
+  });
+  it('bloqueia exclusão quando há Deal histórico (listingHasSaleRecord)', async () => {
+    mockDb.listing.findFirst.mockResolvedValue({ id: 'L', userId: 'S', status: 'active' });
+    // 1ª contagem = openDeal (seller_confirmed) = 0; 2ª = listingHasSaleRecord = 1
+    mockDb.deal.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+    await expect(removeListing('S', 'L')).rejects.toThrow(/registra uma venda|não pode ser excluído/i);
+    expect(mockDb.listing.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('deleteAccount', () => {

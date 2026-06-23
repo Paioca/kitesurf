@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sellables, shouldCloseListing, priceOf, type ListingLike } from '../lib/components';
+import { sellables, shouldCloseListing, priceOf, reservationConflict, applyReservations, type ListingLike } from '../lib/components';
 
 const L = (over: Partial<ListingLike> = {}): ListingLike => ({
   status: 'active', hasBarra: false, price: 620000, kitePrice: null, barraPrice: null,
@@ -60,5 +60,57 @@ describe('priceOf', () => {
   it('peça única → kite/barra dão null, conjunto dá price', () => {
     expect(priceOf(L(), 'kite')).toBe(null);
     expect(priceOf(L(), 'conjunto')).toBe(620000);
+  });
+});
+
+// §3/§15 #16 — matriz de reserva por unidade física.
+describe('reservationConflict', () => {
+  it('conjunto conflita com kite, barra e ele mesmo', () => {
+    expect(reservationConflict('conjunto', 'kite')).toBe(true);
+    expect(reservationConflict('conjunto', 'barra')).toBe(true);
+    expect(reservationConflict('conjunto', 'conjunto')).toBe(true);
+  });
+  it('kite e barra NÃO conflitam entre si (unidades distintas)', () => {
+    expect(reservationConflict('kite', 'barra')).toBe(false);
+    expect(reservationConflict('barra', 'kite')).toBe(false);
+  });
+  it('cada peça conflita consigo mesma', () => {
+    expect(reservationConflict('kite', 'kite')).toBe(true);
+    expect(reservationConflict('barra', 'barra')).toBe(true);
+  });
+});
+
+// §7/§15 #5/#16 — peça reservada vira indisponível; a outra do kit segue.
+describe('applyReservations', () => {
+  const kit = () => sellables(L({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
+  const by = (s: ReturnType<typeof kit>) => Object.fromEntries(s.map((x) => [x.component, x]));
+
+  it('sem reservas → inalterado', () => {
+    expect(applyReservations(kit(), [])).toEqual(kit());
+  });
+  it('conjunto reservado → conjunto, kite e barra indisponíveis', () => {
+    const r = by(applyReservations(kit(), ['conjunto']));
+    expect(r.conjunto).toMatchObject({ available: false, reserved: true });
+    expect(r.kite).toMatchObject({ available: false, reserved: true });
+    expect(r.barra).toMatchObject({ available: false, reserved: true });
+  });
+  it('kite reservado → kite e conjunto fora; barra segue disponível', () => {
+    const r = by(applyReservations(kit(), ['kite']));
+    expect(r.kite).toMatchObject({ available: false, reserved: true });
+    expect(r.conjunto).toMatchObject({ available: false, reserved: true });
+    expect(r.barra).toMatchObject({ available: true });
+    expect(r.barra.reserved).toBeUndefined();
+  });
+  it('barra reservada → barra e conjunto fora; kite segue disponível', () => {
+    const r = by(applyReservations(kit(), ['barra']));
+    expect(r.barra).toMatchObject({ available: false, reserved: true });
+    expect(r.conjunto).toMatchObject({ available: false, reserved: true });
+    expect(r.kite).toMatchObject({ available: true });
+  });
+  it('peça já vendida (indisponível) não é marcada como reservada', () => {
+    const s = sellables(L({ hasBarra: true, kitePrice: 480000, barraPrice: 180000, barraSoldAt: new Date() }));
+    const r = Object.fromEntries(applyReservations(s, ['barra']).map((x) => [x.component, x]));
+    expect(r.barra.available).toBe(false);
+    expect(r.barra.reserved).toBeUndefined(); // vendida ≠ reservada
   });
 });

@@ -162,16 +162,19 @@ export async function closeUnconfirmedExpired(now = new Date()): Promise<number>
   let n = 0;
   for (const { id } of venc) {
     try {
-      await db.$transaction(async (tx) => {
+      // o retorno do tx diz se ESTE deal foi de fato encerrado — assim n conta só
+      // encerramentos reais (corrida que pula, ou listing sumido, não inflam a contagem).
+      const closed = await db.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "Deal" WHERE id = ${id} FOR UPDATE`;
         const deal = await tx.deal.findUnique({ where: { id } });
-        if (!deal || deal.status !== 'seller_confirmed') return; // corrida: alguém já mexeu
+        if (!deal || deal.status !== 'seller_confirmed') return false; // corrida: alguém já mexeu
         const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
-        if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return; }
+        if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return false; }
         await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
         await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
+        return true;
       });
-      n++;
+      if (closed) n++;
     } catch { /* segue pros outros */ }
   }
   return n;
