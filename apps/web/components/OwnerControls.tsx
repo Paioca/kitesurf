@@ -8,7 +8,7 @@ import { color } from '../lib/tokens';
 import { isEditable, type ListingStatus } from '../lib/listing-status';
 import { useToast } from './Toast';
 
-export function OwnerControls({ listingId, status, compact = false }: { listingId: string; status: string; compact?: boolean }) {
+export function OwnerControls({ listingId, status, saleRecord = false, compact = false }: { listingId: string; status: string; saleRecord?: boolean; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const router = useRouter();
@@ -35,6 +35,11 @@ export function OwnerControls({ listingId, status, compact = false }: { listingI
     } catch (e: any) { setErr(e.message); toast.show(e.message, 'err'); setBusy(false); }
   }
 
+  // §10 — anúncio vendido/com venda registrada é imutável pra exclusão (fica como
+  // registro do negócio). Editar/Pausar/Reativar seguem governados pelo status: um kit
+  // parcialmente vendido continua ativo e gerenciável na peça que sobrou.
+  const locked = saleRecord || status === 'sold';
+
   return (
     <div style={compact ? { padding: '4px 0 0' } : { border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
       {!compact && <div style={{ fontSize: 13, fontWeight: 700, color: color.inkFaint2, marginBottom: 12 }}>Você é o dono deste anúncio</div>}
@@ -42,8 +47,9 @@ export function OwnerControls({ listingId, status, compact = false }: { listingI
         {isEditable(status as ListingStatus) && <Link href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</Link>}
         {status === 'active' && <button onClick={() => setStatus('paused')} disabled={busy} style={btnOutline}>Pausar</button>}
         {status === 'paused' && <button onClick={() => setStatus('active')} disabled={busy} style={btnOutline}>Reativar</button>}
-        <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>
+        {!locked && <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>}
       </div>
+      {locked && <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 10, lineHeight: 1.45 }}>{status === 'sold' ? 'Vendido — este anúncio fica no seu histórico e não pode ser excluído.' : 'Este anúncio tem uma venda registrada e não pode ser excluído.'}</div>}
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
     </div>
   );

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '../../../lib/session';
 import { getMyListings } from '../../../lib/browse';
+import { listingsWithSaleRecord } from '../../../lib/deals';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
@@ -25,6 +26,8 @@ export default async function MeusAnuncios() {
   const user = await getCurrentUser();
   if (!user) redirect('/entrar?next=%2Fconta%2Fanuncios');
   const items = await getMyListings(user.id);
+  // §10 — quais anúncios já registram venda (não podem ser excluídos). Batch, sem N+1.
+  const saleRecords = await listingsWithSaleRecord(items.map((it) => it.id));
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -51,7 +54,7 @@ export default async function MeusAnuncios() {
                   </div>
                   <span style={{ flex: 'none', alignSelf: 'flex-start', fontSize: 11.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.fg }}>{st.label}</span>
                 </a>
-                <OwnerControls listingId={it.id} status={it.status} compact />
+                <OwnerControls listingId={it.id} status={it.status} saleRecord={saleRecords.has(it.id)} compact />
               </div>
             );
           })}

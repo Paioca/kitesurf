@@ -2,21 +2,29 @@ import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
 import { emitMany, affectedBuyerIds } from './notifications';
+import { listingHasSaleRecord } from './deals';
 
 export class LifecycleError extends PublicError {}
 
 // Remoção de anúncio pelo dono. Centraliza a transição: encerra pedidos abertos como
 // `listing_removed` (não some sem explicação) e faz o soft-delete — tudo numa
-// transação. BLOQUEIA se há venda aguardando confirmação (resolver antes). Negócios
-// `completed` continuam intactos: o anúncio vira registro histórico no /pedidos.
+// transação. BLOQUEIA se há venda aguardando confirmação (resolver antes) e — §10 —
+// se o anúncio já registra uma venda (vendido ou negócio no histórico): aí fica
+// imutável como registro, visível no /pedidos.
 export async function removeListing(userId: string, listingId: string) {
-  const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null }, select: { id: true, userId: true, title: true } });
+  const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null }, select: { id: true, userId: true, title: true, status: true } });
   if (!listing) throw new LifecycleError('Anúncio não encontrado.', 404);
   if (listing.userId !== userId) throw new LifecycleError('Sem permissão.', 403);
 
   const openDeal = await db.deal.count({ where: { listingId, status: 'seller_confirmed' } });
   if (openDeal > 0) {
     throw new LifecycleError('Há uma venda aguardando confirmação do comprador. Conclua ou cancele essa venda antes de excluir o anúncio.', 409);
+  }
+
+  // §10 — anúncio vendido é imutável: não pode ser excluído (preserva o registro do
+  // negócio). Gatilho: Listing.sold OU qualquer Deal histórico/concluído.
+  if (listing.status === 'sold' || (await listingHasSaleRecord(listingId))) {
+    throw new LifecycleError('Este anúncio registra uma venda e não pode ser excluído — ele fica no seu histórico como vendido.', 409);
   }
 
   await db.$transaction(async (tx) => {

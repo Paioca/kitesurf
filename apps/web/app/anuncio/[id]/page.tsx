@@ -7,6 +7,7 @@ import { getListing } from '../../../lib/queries';
 import { getCurrentUser } from '../../../lib/session';
 import { db } from '../../../lib/db';
 import { getListingRequestState } from '../../../lib/requests';
+import { listingHasSaleRecord } from '../../../lib/deals';
 import { OwnerControls } from '../../../components/OwnerControls';
 import { ContactActions, type Target } from '../../../components/ContactActions';
 import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
@@ -60,6 +61,8 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
   const me = await getCurrentUser();
   const isOwner = !!me && me.id === l.userId;
+  // §10 — o dono não pode excluir um anúncio que já registra venda (sold/histórico).
+  const saleRecord = isOwner && (l.status === 'sold' || (await listingHasSaleRecord(l.id)));
   const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
   const emptyReq = { offer: null, visit: null, whatsapp: null };
   const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { conjunto: emptyReq, kite: emptyReq, barra: emptyReq };
@@ -206,7 +209,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           )}
 
           {isOwner ? (
-            <OwnerControls listingId={l.id} status={l.status} />
+            <OwnerControls listingId={l.id} status={l.status} saleRecord={saleRecord} />
           ) : (
             <>
               {l.status === 'active' && targets.length > 0 ? (

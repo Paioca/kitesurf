@@ -1,5 +1,5 @@
 import 'server-only';
-import type { DisputeReason } from '@prisma/client';
+import type { DealStatus, DisputeReason } from '@prisma/client';
 import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
@@ -301,6 +301,22 @@ export async function openNegotiationExists(listingId: string, component: Compon
     db.deal.count({ where: { listingId, component, status: 'seller_confirmed' } }),
   ]);
   return acceptedReq > 0 || openDeal > 0;
+}
+
+// §10 — estados de Deal que tornam o anúncio um REGISTRO de venda: o dono não pode
+// mais EXCLUIR (fica como histórico do negócio). Edição/reativação seguem governadas
+// por listing-status + os guards por peça (kit parcialmente vendido segue gerenciável).
+export const SOLD_RECORD_DEAL_STATUSES: DealStatus[] = ['completed', 'closed_unconfirmed', 'reversal_requested', 'disputed', 'reversed'];
+
+export async function listingHasSaleRecord(listingId: string): Promise<boolean> {
+  return (await db.deal.count({ where: { listingId, status: { in: SOLD_RECORD_DEAL_STATUSES } } })) > 0;
+}
+
+// Batch (sem N+1): quais dos listings têm venda registrada — pra "Meus anúncios".
+export async function listingsWithSaleRecord(listingIds: string[]): Promise<Set<string>> {
+  if (listingIds.length === 0) return new Set();
+  const rows = await db.deal.findMany({ where: { listingId: { in: listingIds }, status: { in: SOLD_RECORD_DEAL_STATUSES } }, select: { listingId: true }, distinct: ['listingId'] });
+  return new Set(rows.map((r) => r.listingId));
 }
 
 // Estado do deal para mostrar a ação certa no chat.
