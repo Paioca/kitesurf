@@ -46,6 +46,14 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
+  // Promove envs de build da Vercel pro bundle do CLIENTE como NEXT_PUBLIC_*. Em build
+  // time na Vercel, VERCEL_GIT_COMMIT_SHA e VERCEL_ENV existem no server; sem este `env`,
+  // o instrumentation-client.ts (Sentry) os lê como undefined porque rodam no browser.
+  // Resultado: release e environment do Sentry no client passam a casar com os do server.
+  env: {
+    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA,
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
+  },
   // Next 16: instrumentation.ts é estável e auto-detectada; o build não roda mais
   // ESLint (a chave `eslint` saiu do config) — lint é passo à parte.
   // TODO: migrar <a> internos para <Link> (regra no-html-link-for-pages).
