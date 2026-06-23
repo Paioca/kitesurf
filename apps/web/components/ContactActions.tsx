@@ -116,17 +116,19 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
 
       {!confirmVisit ? (
-        <button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Pedir visita'}</button>
+        // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
+        // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).
+        (<button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Quero ver pessoalmente'}</button>)
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
-            Vou ver e testar pessoalmente. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
+            Seu WhatsApp será compartilhado com o vendedor para vocês combinarem a visita. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
           </div>
-          <WarnBox>Combine só se for comparecer. Pedir visita só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
+          <WarnBox>Combine só se for comparecer. Pedir pra ver só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
           <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
             <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
-            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Confirmar pedido de visita'}</button>
+            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Enviar pedido e compartilhar WhatsApp'}</button>
           </div>
         </div>
       )}

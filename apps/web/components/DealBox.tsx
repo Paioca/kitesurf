@@ -29,6 +29,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [comment, setComment] = useState('');
+  const [reviewSkipped, setReviewSkipped] = useState(false); // §14 "Agora não" — avaliação é opcional
   const [err, setErr] = useState('');
   // ação irreversível aguardando confirmação inline (marcar vendido / confirmar compra / cancelar / corrigir / responder correção)
   const [pending, setPending] = useState<{ label: string; run: () => void } | null>(null);
@@ -148,6 +149,8 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   if (deal && deal.status === 'completed') {
     review = deal.myReviewDone
       ? <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ · já está pública</div>
+      : reviewSkipped
+      ? <div style={muted}>Avaliação é opcional — você pode avaliar quando quiser.</div>
       : (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa — é o que constrói a reputação da comunidade.</div>
@@ -162,7 +165,10 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
             })}
           </div>
           <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário (opcional)" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 10, fontSize: 14, fontFamily: font.sans, resize: 'vertical' }} />
-          <button onClick={() => rating > 0 && call(`/api/deals/${deal.id}/review`, { rating, tags, comment: comment || undefined })} disabled={busy || rating === 0} style={btn}>Enviar avaliação</button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+            <button onClick={() => rating > 0 && call(`/api/deals/${deal.id}/review`, { rating, tags, comment: comment || undefined })} disabled={busy || rating === 0} style={{ ...btn, marginTop: 0 }}>Enviar avaliação</button>
+            <button onClick={() => setReviewSkipped(true)} disabled={busy} style={linkBtn}>Agora não</button>
+          </div>
         </div>
       );
   } else if (deal && deal.myReviewDone && (deal.status === 'reversal_requested' || deal.status === 'disputed')) {
