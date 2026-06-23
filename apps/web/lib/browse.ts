@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { db } from './db';
 import { getCurrentUser } from './session';
 import { parseFilters, PRICE_RANGES, PRICE_LABELS, SIZE_RANGES, SIZE_LABELS, type SP } from './filters';
+import type { Component } from './components';
 
 export const PAGE_SIZE = 24;
 
@@ -149,6 +150,12 @@ type Filters = ReturnType<typeof parseFilters>;
 // de toda busca/faceta — sem isso, desativar uma categoria não tira os anúncios dela do ar.
 const BASE: Prisma.ListingWhereInput = { status: 'active', deletedAt: null, category: { is: { active: true } } };
 
+// §7 — exclui da busca a face cuja peça está reservada (Deal seller_confirmed que
+// conflita): "esconder não basta" é sobre o backend; aqui é só não listar como
+// disponível. NOT EXISTS — mantém count/paginação corretos.
+const noReservation = (...comps: Component[]): Prisma.ListingWhereInput =>
+  ({ NOT: { deals: { some: { status: 'seller_confirmed', component: { in: comps } } } } });
+
 // WHERE por perspectiva. Barra: barras compráveis (avulsa OU kit com barra avulsa),
 // filtro só por cidade (preço/marca/tamanho da barra ficam pra depois). Kite/all:
 // faceta completa (tamanho m², marca, cidade, preço, reparo, kit).
@@ -157,6 +164,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   if (persp === 'barra') {
     and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
     and.push({ barraSoldAt: null }); // esconde a barra do kit já vendida (anúncio fica na busca de kite)
+    and.push(noReservation('barra', 'conjunto')); // barra reservada (ou conjunto) sai da busca de barra
     if (f.city.length) and.push({ city: { in: f.city } });
     if (f.delivery.length) {
       const opts: Prisma.ListingWhereInput[] = [];
@@ -169,6 +177,15 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   if (persp === 'kite') {
     and.push({ category: { slug: 'kite' } });
     and.push({ kiteSoldAt: null }); // esconde o kite do kit já vendido (anúncio fica na busca de barra)
+    and.push(noReservation('kite', 'conjunto')); // kite reservado (ou conjunto) sai da busca de kite
+  }
+  if (persp === 'all') {
+    // 'all' mostra a face de kite (não-barra) ou de barra (categoria barra): esconde
+    // cada uma quando a peça mostrada está reservada.
+    and.push({ NOT: { OR: [
+      { category: { is: { slug: { not: 'barra' } } }, deals: { some: { status: 'seller_confirmed', component: { in: ['kite', 'conjunto'] as Component[] } } } },
+      { category: { is: { slug: 'barra' } }, deals: { some: { status: 'seller_confirmed', component: { in: ['barra', 'conjunto'] as Component[] } } } },
+    ] } });
   }
   if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });

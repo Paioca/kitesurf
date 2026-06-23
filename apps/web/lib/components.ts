@@ -23,7 +23,7 @@ export type ListingLike = {
   barraSoldAt: Date | null;
 };
 
-export type Sellable = { component: Component; price: number; available: boolean };
+export type Sellable = { component: Component; price: number; available: boolean; reserved?: boolean };
 
 // Peças vendáveis do anúncio + disponibilidade de cada. Peça única / kite-only /
 // barra-only têm só o alvo 'conjunto'.
@@ -62,6 +62,14 @@ const RESERVES: Record<Component, Component[]> = {
 export function reservationConflict(a: Component, b: Component): boolean {
   const ua = new Set(RESERVES[a] ?? [a]);
   return (RESERVES[b] ?? [b]).some((u) => ua.has(u));
+}
+
+// §7 — marca como reservado (venda em andamento → indisponível) cada vendável que
+// conflita com uma reserva ativa (componentes com Deal seller_confirmed). Mantém
+// sellables() puro: busca e detalhe injetam aqui as reservas carregadas do banco.
+export function applyReservations(items: Sellable[], reserved: Component[]): Sellable[] {
+  if (reserved.length === 0) return items;
+  return items.map((s) => (s.available && reserved.some((r) => reservationConflict(r, s.component)) ? { ...s, available: false, reserved: true } : s));
 }
 
 // Preço da peça (centavos) ou null se o anúncio não vende essa peça avulsa.

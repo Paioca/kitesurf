@@ -10,7 +10,7 @@ import { getListingRequestState } from '../../../lib/requests';
 import { listingHasSaleRecord } from '../../../lib/deals';
 import { OwnerControls } from '../../../components/OwnerControls';
 import { ContactActions, type Target } from '../../../components/ContactActions';
-import { sellables, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
+import { sellables, applyReservations, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
@@ -63,6 +63,12 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const isOwner = !!me && me.id === l.userId;
   // §10 — o dono não pode excluir um anúncio que já registra venda (sold/histórico).
   const saleRecord = isOwner && (l.status === 'sold' || (await listingHasSaleRecord(l.id)));
+  // §7 — peça com venda aguardando confirmação (seller_confirmed) está reservada e não
+  // recebe novas solicitações. Carrega as reservas pra refletir na UI (o gate de backend
+  // já rejeita em createRequest).
+  const reservedComponents = l.status === 'active'
+    ? (await db.deal.findMany({ where: { listingId: l.id, status: 'seller_confirmed' }, select: { component: true } })).map((d) => d.component)
+    : [];
   const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
   const emptyReq = { offer: null, visit: null, whatsapp: null };
   const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { conjunto: emptyReq, kite: emptyReq, barra: emptyReq };
@@ -117,9 +123,12 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
     kite: { summary: visitSummary, itemNoun: 'o kite' },
     barra: { summary: barraSummary, itemNoun: 'a barra' },
   };
-  const targets: Target[] = sellables(l as unknown as ListingLike)
+  const sell = applyReservations(sellables(l as unknown as ListingLike), reservedComponents);
+  const targets: Target[] = sell
     .filter((s) => s.available)
     .map((s) => ({ component: s.component, label: COMPONENT_LABEL[s.component], price: s.price, summary: compMeta[s.component].summary, itemNoun: compMeta[s.component].itemNoun }));
+  // peças reservadas (venda em andamento) — pra mostrar o estado, não só sumir o botão.
+  const reservedLabels = sell.filter((s) => s.reserved).map((s) => COMPONENT_LABEL[s.component]);
 
   // Ficha completa estruturada (seção "100% estruturado" do design).
   const ficha: { k: string; v: string }[] = [];
@@ -210,18 +219,27 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
           {isOwner ? (
             <OwnerControls listingId={l.id} status={l.status} saleRecord={saleRecord} />
-          ) : (
+          ) : l.status === 'active' && targets.length > 0 ? (
             <>
-              {l.status === 'active' && targets.length > 0 ? (
-                <ContactActions listingId={l.id} targets={targets} stateByComponent={reqState} />
-              ) : (
-                // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
-                // a fricção de preencher uma oferta que vai falhar).
-                (<div style={{ background: '#f3f1e9', border: `1px solid ${color.lineCard}`, borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: color.inkMute }}>
-                  {l.status === 'sold' ? 'Este item já foi vendido.' : 'Este anúncio está indisponível no momento.'}
-                </div>)
+              <ContactActions listingId={l.id} targets={targets} stateByComponent={reqState} />
+              {/* §7 — kit com uma peça reservada: a outra segue disponível acima; aqui o estado da reservada. */}
+              {reservedLabels.length > 0 && (
+                <div style={{ background: '#f3e7d3', border: '1px solid #e6d3ad', borderRadius: 12, padding: '12px 15px', marginBottom: 16, fontSize: 13, color: '#8a6a3a', lineHeight: 1.45 }}>
+                  <strong>{reservedLabels.join(' e ')}:</strong> venda em andamento. Disponível de novo se não se concretizar.
+                </div>
               )}
             </>
+          ) : l.status === 'active' && reservedLabels.length > 0 ? (
+            // §7 — todas as peças reservadas (venda aguardando confirmação): sem CTA, com estado.
+            (<div style={{ background: '#f3e7d3', border: '1px solid #e6d3ad', borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: '#8a6a3a' }}>
+              Venda em andamento — este item está reservado. Volte mais tarde: se não se concretizar, ele fica disponível de novo.
+            </div>)
+          ) : (
+            // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
+            // a fricção de preencher uma oferta que vai falhar).
+            (<div style={{ background: '#f3f1e9', border: `1px solid ${color.lineCard}`, borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: color.inkMute }}>
+              {l.status === 'sold' ? 'Este item já foi vendido.' : 'Este anúncio está indisponível no momento.'}
+            </div>)
           )}
 
           {/* SELLER */}
