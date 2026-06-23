@@ -64,7 +64,9 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
               </div>
             </a>
-            {(r.status === 'pending' || r.status === 'accepted') && r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar com {r.buyer.name} no WhatsApp</a>}
+            {/* §8 — antes do aceite o vendedor só tem Recusar/Conversar (RequestActions); o
+                contato do comprador só aparece depois do aceite. */}
+            {r.status === 'accepted' && r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
             {r.status === 'pending' && r.listing.status === 'paused' && <PausedHint />}
             {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
@@ -81,7 +83,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
                 <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
               </div>
             </a>
-            {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>}
+            {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
             {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
             {/* retirar: pendente, ou aceito sem venda marcada (com venda marcada, o caminho é "não comprei" no DealBox) */}
             {(r.status === 'pending' || (r.status === 'accepted' && (!r.deal || r.deal.status === 'cancelled'))) && <CancelRequestButton requestId={r.id} type={r.type} accepted={r.status === 'accepted'} />}

@@ -82,13 +82,18 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
   });
   // SMS de "interesse" pro comprador, FORA da transação (fetch awaited com timeout não
   // pode segurar a transação; fail-open não derruba o aceite já commitado).
+  // §8 — devolvemos o link do WhatsApp do COMPRADOR pro vendedor abrir na MESMA aba
+  // (o front faz window.location.assign no mesmo gesto — window.open pós-await é
+  // bloqueado no Safari). Mantém um link só no momento da transição, sem segurar antes.
+  let whatsapp: string | null = null;
   if (status === 'accepted') {
     const parties = await db.request.findUnique({ where: { id }, select: { buyer: { select: { phone: true } }, seller: { select: { phone: true } } } });
     if (parties?.buyer?.phone) {
+      whatsapp = waLink(parties.buyer.phone);
       await notifyRequestAccepted({ buyerPhone: parties.buyer.phone, sellerPhone: parties.seller?.phone ?? '', listingTitle: lst?.title ?? '' });
     }
   }
-  return { ok: true, status };
+  return { ok: true, status, whatsapp };
 }
 
 // Comprador desiste do próprio pedido (pendente OU aceito). Marcamos `withdrawn` em vez
@@ -121,7 +126,7 @@ export async function getRequestsForUser(userId: string) {
   const [incomingRaw, outgoingRaw, deals] = await Promise.all([
     db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } }),
     db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
-    db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } } } }),
+    db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } }, disputes: { where: { status: { in: ['open', 'under_review'] } }, orderBy: { createdAt: 'desc' }, take: 1, select: { openedByUserId: true, reason: true } } } }),
   ]);
   // teto + flag "há mais" (sem count extra): pede 51, mostra 50.
   const moreIncoming = incomingRaw.length > PEDIDOS_TAKE;
@@ -135,7 +140,17 @@ export async function getRequestsForUser(userId: string) {
   const dealState = (r: any) => {
     const d = dmap.get(dkey(r.listingId, r.buyerId, r.sellerId, r.component));
     if (!d) return null;
-    return { id: d.id, status: d.status, iAmSeller: d.sellerId === userId, iAmBuyer: d.buyerId === userId, myReviewDone: d.reviews.some((rv) => rv.reviewerId === userId) };
+    // disputa ativa (open = aguardando contraparte; under_review = na moderação): o
+    // front precisa saber se EU pedi a correção pra escolher entre "Desistir" e
+    // "Confirmar/Não concordo" (§11). reason só pra contraparte ver o motivo.
+    const dispute = d.disputes[0] ?? null;
+    return {
+      id: d.id, status: d.status,
+      iAmSeller: d.sellerId === userId, iAmBuyer: d.buyerId === userId,
+      myReviewDone: d.reviews.some((rv) => rv.reviewerId === userId),
+      iOpenedReversal: dispute ? dispute.openedByUserId === userId : false,
+      reversalReason: dispute?.reason ?? null,
+    };
   };
   const shape = (r: any) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, component: r.component, componentLabel: COMPONENT_LABEL[r.component as Component], listing: listingShape(r.listing), deal: dealState(r), createdAt: r.createdAt.toISOString() });
   return {
