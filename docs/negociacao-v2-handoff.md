@@ -6,11 +6,14 @@
 
 ## TL;DR
 
-- Branch: **`feat/negociacao-v2`** (5 commits à frente de `origin/main` / tag `negociacao-v2-base`).
-- **Backend essencialmente pronto** (domínio + API + cron + reserve-block), tudo `next build`-verificado.
-- Falta majoritariamente **UI** + alguns gauges de backend (resolução de disputa por admin, contadores de perfil).
+- Branch: **`feat/negociacao-v2`** — backend (5 commits) + **UI/testes/copy (8 commits desta sessão)**,
+  à frente de `origin/main` / tag `negociacao-v2-base`. **Não pushado** ainda.
+- **Código completo:** todos os chunks de UI + gauges de backend + testes + copy estão FEITOS
+  (ver "Feito nesta sessão"). `next build` verde; **vitest 141 passando**.
+- **Resta só execução GATED:** diagnóstico em staging → resolver duplicados/colisões → aplicar
+  migração → testes de concorrência/jornada em staging → migrar prod. Ver "Resta (gated)".
 - **GATES (não violar):** NÃO dar push pra `main`; migração **escrita mas NÃO aplicada**;
-  diagnóstico **não rodado em prod** (staging primeiro). Implementação só de código na branch.
+  diagnóstico **não rodado em prod** (staging primeiro, OK do Felipe). Só código na branch.
 
 ## Como buildar / verificar
 
@@ -66,58 +69,48 @@ JWT_SECRET="build_only_dummy_secret_0123456789_abcdefXYZ" \
 - `GET /api/cron/close-unconfirmed` — protegido por `CRON_SECRET` (Vercel manda `Authorization: Bearer`).
 - `vercel.json`: cron diário `0 3 * * *`.
 
-## O que FALTA (próximos chunks)
+## Feito nesta sessão (8 commits, todos `next build` + `vitest` verdes)
 
-### 1. §8 — Aceite simplificado + WhatsApp same-tab
-- `components/RequestActions.tsx`: hoje 3 botões → **2** (`Recusar` · `Conversar no WhatsApp`)
-  com confirmação inline ("seu WhatsApp também será compartilhado").
-- `lib/requests.ts setRequestStatus`: ao aceitar, **retornar o link** `{status:'accepted', whatsapp}`.
-- Rota `PATCH /api/requests/[id]`: repassar o link.
-- Front: `window.location.assign(whatsapp)` **no mesmo gesto** (NÃO `window.open` após await — bloqueio Safari).
+1. **§8 — Aceite + WhatsApp same-tab.** `RequestActions` → 2 botões (Recusar · Conversar no
+   WhatsApp) + confirmação inline; `setRequestStatus` devolve `{status, whatsapp}` (link do
+   comprador); front faz `window.location.assign` no mesmo gesto. Contato do comprador em
+   `/pedidos` só após o aceite.
+2. **DealBox — novos estados + review só em `completed` (§4/§11).** `closed_unconfirmed`
+   (→/correct), `completed` (Solicitar correção c/ motivo →/reversal), `reversal_requested`
+   (Confirmar/Não concordo/Desistir), `disputed`/`reversed` (display). Review oculta em
+   reversal/disputed/reversed; `dealState` expõe `iOpenedReversal`/`reversalReason`.
+3. **§11 — Resolução de disputa pelo admin.** `resolveDispute(adminId, disputeId, 'uphold'|'reverse')`
+   em `lib/deals.ts` (uphold→completed; reverse→reversed+unmarkPieceSale). Rota
+   `POST /api/disputes/[id]` (admin-only). 2ª fila `components/DisputeList.tsx` em `app/moderacao`.
+   Reusa `reversal_confirmed`/`reversal_rejected` (notificações são só badge) — não mexe na migração.
+4. **§10 — Anúncio vendido imutável.** `removeListing` bloqueia (409) quando `sold` OU há Deal em
+   `SOLD_RECORD_DEAL_STATUSES`; `OwnerControls` esconde Excluir + mostra "registro de venda".
+   Helpers `listingHasSaleRecord`/`listingsWithSaleRecord`. **Decisão:** editar/reativar seguem por
+   `listing-status` + guards por peça → kit parcialmente vendido continua gerenciável na peça que
+   sobrou (fully-sold já é terminal). Exceção admin (ocultar/placeholder de fotos): **não feita** —
+   ver "Resta".
+5. **§7 — UX de reserva.** `applyReservations(sellables, reservedComponents)` (puro); detalhe mostra
+   peça reservada sem CTA + estado "venda em andamento"; busca (`browse.buildWhere`) exclui via
+   NOT EXISTS por perspectiva (count/paginação intactos). Facetas e Favoritos **não** filtram reserva
+   (aproximação aceita).
+6. **§4 — Contadores de perfil.** `COUNTS_AS_SALE_STATUSES` (completed/reversal_requested/disputed)
+   em `salesCount`/`purchasesCount`; review pública segue só `completed`.
+7. **#7 — Badges em `/pedidos`.** `StatusBadge` reflete o estado do deal (Venda marcada/Concluído/
+   Correção pedida/Em disputa/Revertido/Encerrado); cancelled/voided caem no status do request.
+8. **§15 testes + §14 copy.** Suíte consertada (7 quebrados pelos commits de backend) + cobertura §15
+   → **141 passando**. Copy: "Quero ver pessoalmente" + "Enviar pedido e compartilhar WhatsApp"
+   (ContactActions); "Agora não" na avaliação (DealBox). Fix de produto: `closeUnconfirmedExpired`
+   agora conta só encerramentos reais (o tx devolve bool).
 
-### 2. §7 — lado UX (o gate de backend já existe)
-- Mostrar peça reservada como indisponível na **busca** e no **detalhe**.
-- ⚠️ Decisão pendente: `sellables()` NÃO conhece reservas (a trava é por query de deal + lock,
-  não por markers no Listing). Opções: (a) detalhe/`anuncio/[id]` consulta os seller_confirmed
-  e ajusta a UI; busca (`lib/browse.ts`) carrega os seller_confirmed (conjunto pequeno) e filtra
-  em memória; OU (b) adicionar markers de reserva no Listing (kiteReservedAt/barraReservedAt) —
-  mais schema, mas integra direto no `sellables` (fonte única). Recomendo (a) pro detalhe e
-  avaliar (b) se a busca pesar.
+## Resta (gated — staging + OK do Felipe)
 
-### 3. §10 — Anúncio vendido imutável
-- `components/OwnerControls.tsx`: esconder Excluir/Editar/Reativar p/ `sold`/Deal `completed`/
-  `closed_unconfirmed`/`reversal_requested`/`disputed`/`reversed`.
-- `lib/lifecycle.ts removeListing` + rota DELETE: **bloquear** nesses estados (hoje só bloqueia
-  se há seller_confirmed aberto — um anúncio `sold` AINDA é excluível pelo dono = lacuna).
-- Exceção admin: ocultar (não apagar Deal); fotos → placeholder.
-
-### 4. UI dos novos fluxos — `components/DealBox.tsx`
-- Novos estados/ações: `closed_unconfirmed` (vendedor: "Corrigir e voltar a anunciar" → `/correct`);
-  `completed` (qualquer parte: "Solicitar correção" → `/reversal` op:request, com motivo);
-  `reversal_requested` (contraparte: "Confirmar correção"/"Não concordo" → op:respond; solicitante:
-  "Desistir" → op:cancel); `disputed`/`reversed` (display).
-- Review: só mostrar o form em `completed` (§4). Hoje o DealBox mostra em seller_confirmed — ajustar.
-
-### 5. Fila de disputas na moderação (§11)
-- **Falta o backend de resolução pelo admin:** função `resolveDispute(adminId, disputeId, action)`
-  — `resolved_upheld` (Deal segue) / `resolved_reversed` (Deal → reversed + `unmarkPieceSale`) → `closed`.
-  + rota admin-only. (O `DealDispute` já é criado em `under_review`; falta o admin resolver.)
-- `components/ModerationList.tsx` / `app/moderacao/page.tsx`: **2ª fila** lendo `DealDispute`
-  (where status `under_review`) com contexto (dealId/partes/motivo/datas) + ações de resolução.
-
-### 6. Contadores de perfil (§4) — `lib/profile.ts` (getProfile)
-- **DOIS predicados distintos** (não reusar um só):
-  - Conta como venda: `status ∈ {completed, reversal_requested, disputed}`.
-  - Review pública: `status == completed`.
-- Verificar/ajustar as queries de reputação/contagem.
-
-### 7. `app/pedidos/page.tsx`
-- Garantir que os novos estados de Deal aparecem certos (o `StatusBadge` de Request já cobre os
-  estados de request; o DealBox cobre os de deal).
-
-### 8. §15 testes + §14 copy
-- Testes (lista na spec §15; inclui concorrência de 2 confirmações = 1 venda só, e
-  `cancelSale` notifica comprador). Copy: "Quero ver pessoalmente", confirmações, etc.
+- **Execução da spec §16 (passos 6–9, 21–22):** rodar `diag-negociacao-v2.mjs` em **staging** →
+  resolver duplicados de seller_confirmed + colisões de telefone (gate: zero) → **aplicar a migração**
+  (`20260623000000_negociacao_v2`) → testes de **concorrência real** (2 confirmações simultâneas = 1
+  venda; Postgres serializa o `FOR UPDATE`) e jornadas em staging → **migrar prod**. Nada disso rodado.
+- **Backlog curto (não-bloqueante):** exceção administrativa do §10 (admin oculta anúncio vendido /
+  fotos→placeholder, preservando o Deal); **lembrete 48h** do §9 (precisa de flag `remindedAt` pra ser
+  idempotente); antifraude §13 (só alertas, backlog).
 
 ## Gotchas / decisões já tomadas (não re-litigar)
 - **Trava** = query de seller_confirmed + `FOR UPDATE` na linha do Listing (não markers). Índice parcial = backstop.
@@ -128,5 +121,6 @@ JWT_SECRET="build_only_dummy_secret_0123456789_abcdefXYZ" \
 - **`voided`** sobrevive só no conflito cross-componente do kit (conjunto × peça) — ver §2.4 da spec.
 
 ## Ordem sugerida pra retomar
-UI primeiro (§8 aceite/WhatsApp → DealBox → fila de disputa + resolveDispute → §10 imutável →
-§7 UX → contadores), depois testes, depois copy. Migração/diagnóstico só com staging + OK do Felipe.
+Código FEITO (ver acima). Próximo passo é **execução em staging** (não código): `git push` da
+branch → diagnóstico em staging → resolver duplicados/colisões → aplicar migração → concorrência +
+jornadas em staging → migrar prod. Só com OK do Felipe.
