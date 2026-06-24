@@ -56,6 +56,10 @@ async function verifyByEmail(dto: z.infer<typeof schema>) {
   const email = normalizeEmail(dto.email!);
   if (!email) return NextResponse.json({ message: 'E-mail inválido.' }, { status: 400 });
 
+  // Teto por CONTA (10/h) além do per-IP: com IPs rotativos o brute-force ainda esbarra
+  // num limite por alvo, sem depender só do cap de 5 tentativas por código. failClosed.
+  if (!(await rateLimit(`otp:verify:email:${email}`, 10, 3600, { failClosed: true }))) return tooMany();
+
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !user.emailVerified || user.deletedAt || user.status === 'blocked') {
     // Mesma resposta de código errado pra não vazar existência da conta.
@@ -80,6 +84,9 @@ async function verifyByPhone(dto: z.infer<typeof schema>) {
   // diferente do que foi gravado e o código nunca casa.
   const phone = normalizePhone(dto.phone!);
   if (!phone) return NextResponse.json({ message: 'Telefone inválido.' }, { status: 400 });
+
+  // Teto por CONTA (10/h) além do per-IP — mesma lógica anti-brute-force do canal e-mail.
+  if (!(await rateLimit(`otp:verify:phone:${phone}`, 10, 3600, { failClosed: true }))) return tooMany();
 
   const existing = await db.user.findUnique({ where: { phone } });
   let user = existing;

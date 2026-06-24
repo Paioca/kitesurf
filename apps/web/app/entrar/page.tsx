@@ -102,8 +102,19 @@ export default function Entrar() {
       }
       if (!res.ok) throw new Error(data.message ?? 'Código inválido.');
       // Volta pro ponto de origem (ex.: o anúncio que o usuário ia contatar).
-      const next = new URLSearchParams(window.location.search).get('next');
-      if (next && next.startsWith('/')) { window.location.href = next; return; }
+      // SÓ caminhos same-origin: `startsWith('/')` sozinho deixa passar `//evil.com`
+      // e `/\evil.com` (open redirect — handoff de phishing pós-login). Resolve contra
+      // a origem atual e confirma que o destino continua na mesma origem.
+      const rawNext = new URLSearchParams(window.location.search).get('next');
+      if (rawNext) {
+        try {
+          const u = new URL(rawNext, window.location.origin);
+          if (u.origin === window.location.origin) {
+            window.location.href = u.pathname + u.search + u.hash;
+            return;
+          }
+        } catch { /* next malformado: ignora e segue pro fluxo normal */ }
+      }
       setStep('done');
     } catch (e: any) {
       setError(e.message);

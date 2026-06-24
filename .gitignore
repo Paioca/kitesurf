@@ -6,7 +6,8 @@ out/
 *.log
 *.tsbuildinfo
 .env
-.env.local
+.env.*
+!.env.example
 .DS_Store
 coverage/
 .turbo/

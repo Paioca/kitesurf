@@ -46,7 +46,10 @@ const SIGNING_SECRET = SECRETS[0];
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
 // SEMPRE assina com o primeiro secret da lista (a "current key").
 export async function setSession(userId: string, sessionVersion = 0) {
-  const token = jwt.sign({ sub: userId, sv: sessionVersion }, SIGNING_SECRET, { expiresIn: '30d' });
+  // algorithm explícito (HS256): trava o contrato num único algoritmo simétrico. Sem o
+  // pin, uma troca futura do secret pra KeyObject/PEM, ou mudança de default da lib,
+  // poderia alargar silenciosamente os algoritmos aceitos (CWE-347). Casa com o verify.
+  const token = jwt.sign({ sub: userId, sv: sessionVersion }, SIGNING_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -67,7 +70,9 @@ async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> 
   // que verificar. Se nenhum verificar, sessão inválida.
   for (const secret of SECRETS) {
     try {
-      const payload = jwt.verify(token, secret) as { sub: string; sv?: number };
+      // algorithms allowlist: só HS256. Fecha alg-confusion/alg:none de forma explícita
+      // (jsonwebtoken v9 já rejeita, mas o pin trava o contrato contra mudança futura).
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as { sub: string; sv?: number };
       return { sub: payload.sub, sv: payload.sv ?? 0 };
     } catch {
       // tenta o próximo

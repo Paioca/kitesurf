@@ -134,8 +134,21 @@ export async function processImage(
   if (!ALLOWED.includes(mimetype)) throw new PublicError('Formato inválido (use JPEG, PNG ou WebP).');
   if (size > MAX_BYTES) throw new PublicError('Imagem maior que 12 MB.');
 
-  const main = await sharp(buffer).rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
-  const thumb = await sharp(buffer).rotate().resize(400, 400, { fit: 'cover' }).jpeg({ quality: 75 }).toBuffer();
+  // Decompression bomb: o gate de 12 MB é sobre os BYTES comprimidos. Um PNG/WebP de
+  // <1 MB pode descomprimir pra ~256 MP (≈1 GB de bitmap) — abaixo do teto default do
+  // sharp (~268 MP) e suficiente pra OOM a função serverless. Defesas:
+  //  1. limitInputPixels apertado (40 MP ≈ 7300×5500) + failOn:'error' → estoura cedo,
+  //     antes de alocar o bitmap gigante, em vez do default permissivo.
+  //  2. metadata() valida dimensão ANTES de qualquer resize/decode pesado.
+  //  3. clone() deriva main+thumb decodificando o buffer UMA vez (era 2× — dobrava o pico).
+  const img = sharp(buffer, { limitInputPixels: 40_000_000, failOn: 'error' });
+  const meta = await img.metadata();
+  if (!meta.width || !meta.height || meta.width * meta.height > 40_000_000) {
+    throw new PublicError('Imagem com dimensões inválidas ou grandes demais.');
+  }
+
+  const main = await img.clone().rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
+  const thumb = await img.clone().rotate().resize(400, 400, { fit: 'cover' }).jpeg({ quality: 75 }).toBuffer();
 
   const [url, thumbUrl] = await Promise.all([save(main), save(thumb)]);
   return { url, thumbUrl };
