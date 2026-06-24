@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { db } from '../../../../../lib/db';
 import { verifyOtp } from '../../../../../lib/otp';
@@ -10,6 +11,11 @@ import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
 import { SPOTS } from '../../../../../lib/filters';
 
 export const runtime = 'nodejs';
+
+// Hash dummy (mesmo cost factor 8 do otp.ts) pra equalizar o trabalho de CPU no caminho
+// de e-mail INEXISTENTE: sem isto, conta válida faz um bcrypt.compare e conta inexistente
+// não, criando um oráculo de timing de existência (CWE-208). Computado uma vez no boot.
+const DUMMY_OTP_HASH = bcrypt.hashSync('000000', 8);
 
 // Aceita phone OU email — mesmo schema do request. Onboarding (cadastro novo) só
 // funciona pelo canal SMS, porque conta nova exige telefone obrigatório no schema
@@ -62,7 +68,9 @@ async function verifyByEmail(dto: z.infer<typeof schema>) {
 
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !user.emailVerified || user.deletedAt || user.status === 'blocked') {
-    // Mesma resposta de código errado pra não vazar existência da conta.
+    // Equaliza o custo de CPU com o caminho válido (que faz bcrypt.compare via verifyOtp),
+    // pra não vazar existência de conta por timing. Mesma resposta genérica.
+    await bcrypt.compare(dto.code, DUMMY_OTP_HASH);
     return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
   }
 
