@@ -21,6 +21,12 @@ const VALID_ID = /^[A-Za-z0-9_-]{16,64}$/;
 // Em prod, HMR/eval do Next não rodam — 'unsafe-eval' fica fora do script-src.
 const isProd = process.env.NODE_ENV === 'production';
 
+// Endpoint de violação de CSP (opcional). Setar com a URL de "Security Header" do Sentry
+// (formato: https://oXXX.ingest.sentry.io/api/<project>/security/?sentry_key=<key>). Quando
+// presente, a CSP estrita ganha report-uri/report-to e o proxy publica Reporting-Endpoints —
+// assim o Content-Security-Policy-Report-Only da Fase 1 vira telemetria real antes do flip.
+const CSP_REPORT_URI = process.env.CSP_REPORT_URI;
+
 // --- CSP por request com nonce ----------------------------------------------
 // O script-src migra de 'unsafe-inline' (que neutraliza a CSP como backstop de XSS)
 // pra um nonce por request. Mecânica:
@@ -62,7 +68,7 @@ function buildCsp(nonce: string, strict: boolean): string {
   const scriptSources = strict
     ? `'self' 'nonce-${nonce}' https://va.vercel-scripts.com`
     : `'self' 'unsafe-inline' https://va.vercel-scripts.com`;
-  return [
+  const directives = [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -73,7 +79,13 @@ function buildCsp(nonce: string, strict: boolean): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src ${scriptSources}${isProd ? '' : " 'unsafe-eval'"}`,
     "connect-src 'self' https:",
-  ].join('; ');
+  ];
+  // Reporting opcional (só com CSP_REPORT_URI): report-uri (legado, suporte amplo) +
+  // report-to (moderno, declarado no header Reporting-Endpoints). Cobre browser novo e antigo.
+  if (CSP_REPORT_URI) {
+    directives.push(`report-uri ${CSP_REPORT_URI}`, 'report-to csp-endpoint');
+  }
+  return directives.join('; ');
 }
 
 // Métodos que mudam estado. CSRF só importa nestes — GET/HEAD são (ou deviam ser)
@@ -129,6 +141,11 @@ export function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   // Devolve pra saída: cliente vê e pode reportar em ticket de suporte.
   res.headers.set('x-correlation-id', id);
+
+  // Declara o grupo 'csp-endpoint' usado pelo report-to da CSP (quando há endpoint).
+  if (CSP_REPORT_URI) {
+    res.headers.set('Reporting-Endpoints', `csp-endpoint="${CSP_REPORT_URI}"`);
+  }
 
   if (CSP_ENFORCE_STRICT) {
     // Fase 2 (flip): CSP ENFORCED por request — estrita em prod, loose em dev. Setar aqui

@@ -90,11 +90,18 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
     entrada de CSP do `next.config.mjs` e vire `CSP_ENFORCE_STRICT = true` no `proxy.ts`.
     (Fase 2 já validada localmente: enforced estrita sem `'unsafe-inline'`, hidratação OK,
     zero violação.)
-- **[BAIXA] CSP reporting** — adicionar `report-to`/`Reporting-Endpoints` apontando pro
-  Sentry pra ter telemetria de violação antes de apertar a `script-src`.
-- **[INFO] Timing de existência de conta** no `otp/verify` por email — dummy `bcrypt.compare`
-  no caminho negativo. Sinal abaixo do jitter de rede + rate-limit; baixíssimo valor.
-- **[INFO] Dead code** — `confirmSale()` em `lib/deals.ts` não tem caller; remover.
+- **[BAIXA] CSP reporting — CÓDIGO APLICADO, falta ligar o env.** O `proxy.ts` já emite
+  `report-uri`/`report-to` na CSP estrita + header `Reporting-Endpoints`, **gated em
+  `CSP_REPORT_URI`**. Pra ativar: setar `CSP_REPORT_URI` (URL "Security Header" do Sentry,
+  ver `.env.example`) na Vercel. Sem o env, fica inerte. Casa com o Report-Only da Fase 1.
+
+### Itens INFO já resolvidos (2026-06-24)
+- **[INFO] Timing de existência de conta** ✅ — dummy `bcrypt.compare` (cost 8) no caminho
+  de e-mail inexistente em `otp/verify`, equalizando o custo de CPU (CWE-208).
+- **[INFO] Dead code** ✅ — `confirmSale()` removido de `lib/deals.ts` (sem caller; referenciava
+  modelo `Conversation` legado).
+
+**Verificação (2026-06-24):** `tsc --noEmit` limpo, ESLint limpo, **141/141 testes** passando.
 
 ## Falsos-positivos descartados na verificação (não são bugs)
 - Upload "DoS por buffer de 200 MB": a Vercel limita o body antes; não amplifica.
