@@ -69,9 +69,10 @@ connection`. Padronize `?pgbouncer=true&connection_limit=1` no `DATABASE_URL`; o
 
 ## Crons (Vercel)
 
-Definidos em `apps/web/vercel.json`. Ambos POST autenticados via `Authorization:
-Bearer $CRON_SECRET` (a Vercel injeta o header automaticamente quando a env está
-setada). Schedule em UTC, lembrar que `0 3` = 00:00 BRT no horário-padrão.
+Definidos em `apps/web/vercel.json`. Ambos são **GET** (o Vercel Cron dispara GET),
+autenticados via `Authorization: Bearer $CRON_SECRET` (a Vercel injeta o header
+automaticamente quando a env está setada). Schedule em UTC, lembrar que `0 3` = 00:00
+BRT no horário-padrão. (O endpoint manual `/api/maintenance/cleanup` é POST — ver abaixo.)
 
 | Path | Schedule (UTC) | O que faz |
 |---|---|---|
