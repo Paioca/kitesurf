@@ -2,20 +2,22 @@ import 'server-only';
 import * as Sentry from '@sentry/nextjs';
 import { db } from './db';
 import { childLogger } from './logger';
+import { kvEnabled, kvFixedWindowIncr } from './kv';
 
 const log = childLogger('ratelimit');
 
-// Rate limit de janela fixa via banco (sem infra extra). Para a escala de 1 hub.
-// Retorna true se PERMITIDO; false se estourou o limite.
+// Rate limit de janela fixa. Retorna true se PERMITIDO; false se estourou o limite.
 //
-// Atomicidade: a janela é (bucketStart, bucketStart+windowSec], bucketStart é o
-// floor da hora atual em segundos pelo windowSec. O par (key, bucketStart) é UNIQUE,
-// então o upsert serializa requests concorrentes: dois inserts disputando a mesma
-// linha colidem no índice e o segundo cai no `update { count: increment }`. Sem race.
+// Backend: REDIS (Vercel KV) quando configurado, senão Postgres (tabela RateHit). O KV
+// tira do caminho quente o write síncrono no Postgres a cada mutação — crítico com
+// connection_limit=1 por lambda em escala. Ambos são atômicos:
+//   - KV  → INCR + EXPIRE NX (janela inteira expira junta; o Redis limpa a chave).
+//   - DB  → upsert no par UNIQUE (key, bucketStart): inserts concorrentes colidem no
+//           índice e o segundo cai no increment. Sem race. Fallback quando o KV some.
 //
-// failClosed (default false): se o BANCO falhar, o que fazer?
+// failClosed (default false): se o BACKEND falhar, o que fazer?
 //   - false → libera (fail-open). Usar em rotas não críticas onde bloquear usuário
-//     legítimo durante incidente de DB é pior que perder a proteção.
+//     legítimo durante incidente é pior que perder a proteção.
 //   - true  → bloqueia (fail-closed). USAR EM TUDO QUE PROTEGE custo/abuso real:
 //     OTP-send (Twilio cobra), recuperação/verify (brute-force de conta).
 // Em qualquer caso a falha vai pro Sentry com tag `ratelimit_backend_failure`.
@@ -25,12 +27,26 @@ export async function rateLimit(
   windowSec: number,
   opts: { failClosed?: boolean } = {},
 ): Promise<boolean> {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const bucketStart = Math.floor(nowSec / windowSec) * windowSec;
+  const keyPrefix = key.split(':').slice(0, 2).join(':');
+  // 1) KV (Redis) quando configurado. Se o KV FALHAR, NÃO aplicamos a fail policy aqui:
+  //    degradamos pro Postgres (limiter já provado). Um KV mal configurado/instável não
+  //    pode bloquear OTP (fail-closed) nem abrir abuso — só cai no backend de reserva.
+  if (kvEnabled) {
+    try {
+      // Janela fixa por chave; TTL = windowSec setado no primeiro hit (EXPIRE NX).
+      const count = await kvFixedWindowIncr(`rl:${key}:${windowSec}`, windowSec);
+      return count <= max;
+    } catch (err) {
+      Sentry.captureException(err, { tags: { component: 'ratelimit', event: 'kv_failure_fallback_db', key_prefix: keyPrefix } });
+      log.warn({ event: 'kv_failure_fallback_db', keyPrefix, err }, 'KV rate-limit falhou — degradando pro Postgres');
+      // segue pro backend Postgres abaixo
+    }
+  }
+  // 2) Postgres: janela (bucketStart, bucketStart+windowSec] alinhada ao relógio.
+  //    Backend default (sem KV) E rede de segurança quando o KV cai.
   try {
-    // Upsert atômico: cria a linha do bucket com count=1, ou incrementa se já existir.
-    // Confiar no INDEX UNIQUE para serializar; sob alta concorrência o segundo writer
-    // cai no UPDATE e ninguém escapa.
+    const nowSec = Math.floor(Date.now() / 1000);
+    const bucketStart = Math.floor(nowSec / windowSec) * windowSec;
     const row = await db.rateHit.upsert({
       where: { key_bucketStart: { key, bucketStart } },
       create: { key, bucketStart, count: 1 },
@@ -39,9 +55,7 @@ export async function rateLimit(
     });
     return row.count <= max;
   } catch (err) {
-    // O backend do rate limiter caiu. Não engolimos: emitimos pro Sentry e decidimos
-    // por política da rota se libera (fail-open) ou bloqueia (fail-closed).
-    const keyPrefix = key.split(':').slice(0, 2).join(':');
+    // Os DOIS backends caíram. Não engolimos: Sentry + política da rota (fail-open/closed).
     Sentry.captureException(err, {
       tags: { component: 'ratelimit', event: 'backend_failure', key_prefix: keyPrefix, fail_mode: opts.failClosed ? 'closed' : 'open' },
     });
