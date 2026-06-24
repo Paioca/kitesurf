@@ -42,26 +42,23 @@ const CSP_REPORT_URI = process.env.CSP_REPORT_URI;
 // não precisam de nonce. style-src segue com 'unsafe-inline' (fora de escopo aqui).
 //
 // IMPORTANTE — de onde o Next tira o nonce: ele lê o nonce do header 'Content-Security-
-// Policy' que enxerga no REQUEST, e o resolve-routes do Next COPIA todo header de RESPONSE
-// do proxy de volta pro request (req.headers[k]=v). Ou seja, se o proxy setar um
-// 'Content-Security-Policy' de RESPONSE, esse valor sobrescreve o override estrito e o
-// nonce some. Por isso, na Fase 1, a CSP loose ENFORCED vem ESTÁTICA do next.config
-// (não passa por esse merge) e o proxy NÃO seta Content-Security-Policy de response —
-// só o override estrito de request (pro nonce) + o report-only estrito.
+// Policy' que enxerga no REQUEST. Na Vercel, a plataforma injeta nesse request a CSP que vai
+// no RESPONSE (seja do next.config estático, seja deste proxy). Logo, a CSP ENFORCED precisa
+// SER a estrita (com nonce) — qualquer CSP loose enforced faz o render ler "sem nonce" e não
+// carimbar nada (testado: report-only com loose enforced nunca dá sinal limpo na Vercel).
+// Por isso a CSP loose foi REMOVIDA do next.config e aqui setamos a estrita como enforced.
 //
-// Rollout (Fase 1 → Fase 2):
-//   Fase 1 (CSP_ENFORCE_STRICT=false, atual): ENFORCED loose vem do next.config; o proxy
-//     aplica o nonce via override de request e publica a estrita em Content-Security-Policy-
-//     Report-Only (só prod). Como o nonce É aplicado, o report-only reporta ZERO violação —
-//     sinal limpo de que dá pra apertar.
-//   Fase 2 (flip): confirme zero violação em prod, REMOVA a CSP estática do next.config e
-//     vire CSP_ENFORCE_STRICT=true. O proxy passa a setar Content-Security-Policy ENFORCED
-//     por request (estrita em prod, loose em dev) e para o report-only.
+// CSP_ENFORCE_STRICT:
+//   true (atual, Fase 2): Content-Security-Policy ENFORCED por request — estrita (nonce, sem
+//     'unsafe-inline') em prod, loose em dev. É o estado final.
+//   false: NÃO seta Content-Security-Policy de response (deixa pra uma CSP estática externa)
+//     e publica a estrita só em Content-Security-Policy-Report-Only (prod). Mantido como
+//     escape hatch — porém NÃO produz sinal limpo na Vercel (ver acima); só serve com a CSP
+//     enforced vindo de fora num ambiente que não faça esse merge.
 //
-// DEV fica SEMPRE na loose: o dev server (Turbopack) não aplica o atributo nonce nos seus
-// <script> de HMR/bootstrap, então a estrita quebraria a hidratação local. Nonce estrita
-// é assunto de prod.
-const CSP_ENFORCE_STRICT = false;
+// DEV fica na loose: o dev server (Turbopack) não aplica o atributo nonce nos seus <script>
+// de HMR/bootstrap, então a estrita quebraria a hidratação local. Nonce estrita é só prod.
+const CSP_ENFORCE_STRICT = true;
 
 function buildCsp(nonce: string, strict: boolean): string {
   // 'unsafe-eval' só em dev: o React Refresh/HMR do Next precisa de eval.

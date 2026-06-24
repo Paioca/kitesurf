@@ -15,28 +15,11 @@ const supabaseHost = (() => {
   }
 })();
 
-// CSP ENFORCED (Fase 1 do rollout de nonce): segue com 'unsafe-inline' no script-src.
-// Fica ESTÁTICA aqui (e não no proxy.ts) de propósito: o proxy publica a CSP estrita em
-// Content-Security-Policy-Report-Only e injeta o nonce via override de request; se a loose
-// fosse setada no RESPONSE do proxy, o Next a copiaria pro request e apagaria o nonce
-// (ver comentário em proxy.ts). 'unsafe-eval' só em dev (HMR). img/connect liberam https:
-// porque as imagens vêm do Supabase Storage (host varia por ambiente; aperto feito no write).
-// FASE 2 (flip): remover esta entrada de CSP e virar CSP_ENFORCE_STRICT=true no proxy.ts.
-const csp = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com${isProd ? '' : " 'unsafe-eval'"}`,
-  "connect-src 'self' https:",
-].join('; ');
-
+// A CSP é montada por request no proxy.ts (script-src com nonce, ENFORCED — Fase 2).
+// NÃO declarar Content-Security-Policy aqui: na Vercel um header estático de CSP é injetado
+// no request que o render lê pra extrair o nonce; uma CSP loose aqui sobrescreveria a estrita
+// do proxy e zeraria o nonce. Os demais headers (sem parte dinâmica) seguem estáticos.
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

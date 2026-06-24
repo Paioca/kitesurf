@@ -70,30 +70,33 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
 
 ## Pendências recomendadas (NÃO aplicadas — exigem rodar o app)
 
-- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — FASE 1 APLICADA (flip pendente).**
+- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — ENFORCED STRICT (validar no Preview).**
   O nonce por request é gerado em `proxy.ts` (ex-`middleware.ts`; Next 16 renomeou a
   convenção) e propagado pro Next via override do header de REQUEST `Content-Security-Policy`,
-  que faz o App Router carimbar o atributo `nonce` em TODOS os seus `<script>` de hidratação
-  (verificado: 58/58 inline + 12/12 externos no build de prod). Os componentes Vercel
-  (Analytics/Speed Insights) NÃO precisam de nonce — injetam `<script src>` externo coberto
-  por `'self'`/`https://va.vercel-scripts.com` (e a v2 nem aceita prop `nonce`).
+  que faz o App Router carimbar o atributo `nonce` em TODOS os seus `<script>` (verificado:
+  58/58 inline + 12/12 externos no build de prod local). Os componentes Vercel (Analytics/
+  Speed Insights) NÃO precisam de nonce — injetam `<script src>` externo coberto por
+  `'self'`/`https://va.vercel-scripts.com` (e a v2 nem aceita prop `nonce`).
 
-  Descoberta que mudou o plano: o Next deriva o nonce do `Content-Security-Policy` que ELE
-  lê no request, e o `resolve-routes` copia todo header de RESPONSE do proxy de volta pro
-  request. Logo, se a CSP ENFORCED (loose) for setada no response do proxy, ela sobrescreve
-  o override estrito e o nonce some. Por isso o de-risco usa um **híbrido**:
-  - **Fase 1 (atual):** ENFORCED loose vem ESTÁTICA do `next.config.mjs` (não passa pelo
-    merge); o `proxy.ts` injeta o nonce via override de request e publica a estrita em
-    `Content-Security-Policy-Report-Only` (só prod). Como o nonce É aplicado, o report-only
-    reporta **zero violação** — sinal limpo. Dev fica sempre loose (Turbopack não aplica nonce).
-  - **Fase 2 (flip):** confirme zero violação report-only em prod por 1 release, REMOVA a
-    entrada de CSP do `next.config.mjs` e vire `CSP_ENFORCE_STRICT = true` no `proxy.ts`.
-    (Fase 2 já validada localmente: enforced estrita sem `'unsafe-inline'`, hidratação OK,
-    zero violação.)
+  **Como o nonce chega no render (e por que report-only falhou na Vercel):** o Next deriva o
+  nonce do `Content-Security-Policy` que ELE lê no REQUEST. Na Vercel, a plataforma injeta
+  nesse request a CSP que vai no RESPONSE — então a CSP ENFORCED precisa SER a estrita. Uma
+  CSP loose enforced (do `next.config` OU do proxy) faz o render ler "sem nonce" e não carimbar
+  nada. Comprovado no Preview: com loose enforced + estrita em `Report-Only`, **todo** script
+  acusava violação report-only (nonce nunca aplicado). No `next start` local o híbrido até
+  funcionava, mas a Vercel se comporta diferente. Conclusão: **não existe "loose enforced +
+  report-only limpo" na Vercel** — o caminho é enforced strict direto, validado no Preview.
+
+  **Estado:** `CSP_ENFORCE_STRICT = true` no `proxy.ts`; CSP removida do `next.config.mjs`.
+  A CSP estrita (nonce, sem `'unsafe-inline'`) é ENFORCED por request em prod; dev fica loose
+  (Turbopack não aplica nonce). De-risco = validar no Preview (enforced strict) antes do merge.
+  Notas de Preview: a home pode dar erro de Server Component se o escopo Preview não tiver
+  `DATABASE_URL`/`SUPABASE_*` (não é CSP); e `https://vercel.live/.../feedback.js` (toolbar de
+  Preview) é bloqueado pela CSP estrita — irrelevante pra prod (não é injetado em produção).
 - **[BAIXA] CSP reporting — CÓDIGO APLICADO, falta ligar o env.** O `proxy.ts` já emite
   `report-uri`/`report-to` na CSP estrita + header `Reporting-Endpoints`, **gated em
   `CSP_REPORT_URI`**. Pra ativar: setar `CSP_REPORT_URI` (URL "Security Header" do Sentry,
-  ver `.env.example`) na Vercel. Sem o env, fica inerte. Casa com o Report-Only da Fase 1.
+  ver `.env.example`) na Vercel. Com a CSP enforced, vira telemetria de violação real.
 
 ### Itens INFO já resolvidos (2026-06-24)
 - **[INFO] Timing de existência de conta** ✅ — dummy `bcrypt.compare` (cost 8) no caminho
