@@ -87,12 +87,22 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
   funcionava, mas a Vercel se comporta diferente. Conclusão: **não existe "loose enforced +
   report-only limpo" na Vercel** — o caminho é enforced strict direto, validado no Preview.
 
-  **Estado:** `CSP_ENFORCE_STRICT = true` no `proxy.ts`; CSP removida do `next.config.mjs`.
-  A CSP estrita (nonce, sem `'unsafe-inline'`) é ENFORCED por request em prod; dev fica loose
-  (Turbopack não aplica nonce). De-risco = validar no Preview (enforced strict) antes do merge.
-  Notas de Preview: a home pode dar erro de Server Component se o escopo Preview não tiver
-  `DATABASE_URL`/`SUPABASE_*` (não é CSP); e `https://vercel.live/.../feedback.js` (toolbar de
-  Preview) é bloqueado pela CSP estrita — irrelevante pra prod (não é injetado em produção).
+  **Nonce exige render DINÂMICO (descoberto no Preview):** o nonce só é carimbado nos `<script>`
+  de páginas renderizadas por request. Página ESTÁTICA (pré-renderada no build) tem os scripts
+  inline congelados SEM nonce → sob CSP estrita eles são BLOQUEADOS e a página não hidrata.
+  No Preview, as estáticas (`/entrar`, `/anuncios`, `/anunciar`, `/chat`, `/termos`,
+  `/privacidade`, `/_not-found`) quebravam; as dinâmicas (home, `/anuncio/[id]`) funcionavam.
+  (Nada a ver com Turbopack: tanto Turbopack quanto webpack carimbam nonce em página dinâmica.)
+  **Fix:** `export const dynamic = 'force-dynamic'` no `app/layout.tsx` → todas as rotas viram
+  dinâmicas e recebem nonce. **Trade-off aceito:** perde render estático/ISR (cada página bate
+  no servidor por request). Verificado: 6–13/6–13 scripts com nonce em todas as antes-estáticas.
+
+  **Estado:** `CSP_ENFORCE_STRICT = true` (`proxy.ts`); CSP removida do `next.config.mjs`;
+  `force-dynamic` no layout raiz. CSP estrita (nonce, sem `'unsafe-inline'`) ENFORCED por
+  request em prod; dev fica loose (Turbopack não aplica nonce em dev). De-risco = validar no
+  Preview antes do merge. Notas de Preview: a home pode dar erro de Server Component se o escopo
+  Preview não tiver `DATABASE_URL`/`SUPABASE_*` (não é CSP); e `https://vercel.live/.../feedback.js`
+  (toolbar de Preview) é bloqueado pela CSP estrita — irrelevante pra prod (não injetado lá).
 - **[BAIXA] CSP reporting — CÓDIGO APLICADO, falta ligar o env.** O `proxy.ts` já emite
   `report-uri`/`report-to` na CSP estrita + header `Reporting-Endpoints`, **gated em
   `CSP_REPORT_URI`**. Pra ativar: setar `CSP_REPORT_URI` (URL "Security Header" do Sentry,
