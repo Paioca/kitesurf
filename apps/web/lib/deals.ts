@@ -12,20 +12,6 @@ const RESERVE_HOURS = 72; // prazo do comprador confirmar antes do vendedor pode
 
 const sellableSel = { status: true, hasBarra: true, price: true, kitePrice: true, barraPrice: true, kiteSoldAt: true, barraSoldAt: true } as const;
 
-// Vendedor confirma a venda (a partir da conversa) → cria o Deal.
-export async function confirmSale(userId: string, conversationId: string) {
-  const convo = await db.conversation.findUnique({ where: { id: conversationId } });
-  if (!convo) throw new DealError('Conversa não encontrada.', 404);
-  if (convo.sellerId !== userId) throw new DealError('Só o vendedor pode marcar como vendido.', 403);
-
-  const deal = await db.deal.upsert({
-    where: { conversationId },
-    update: {},
-    create: { conversationId, listingId: convo.listingId, sellerId: convo.sellerId, buyerId: convo.buyerId, status: 'seller_confirmed', sellerConfirmedAt: new Date() },
-  });
-  return deal.id;
-}
-
 // Vendedor marca "vendido pra esse comprador" a partir de um pedido aceito.
 // 1 negócio por listing+comprador (mesmo com oferta E visita aceitas).
 export async function confirmSaleFromRequest(userId: string, requestId: string) {

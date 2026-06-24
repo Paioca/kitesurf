@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
 };
 
+// Render dinâmico em TODAS as rotas (CSP nonce por request). O nonce só é carimbado nos
+// <script> de páginas renderizadas por request; uma página estática (pré-renderada no build)
+// teria scripts inline SEM nonce e seria bloqueada pela CSP estrita (script-src com nonce,
+// sem 'unsafe-inline'). Forçar dinâmico aqui no layout raiz cobre todas as rotas — inclusive
+// as antes estáticas (entrar/anuncios/termos/etc.). Trade-off aceito: perde cache estático/ISR.
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
