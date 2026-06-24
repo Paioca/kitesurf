@@ -118,6 +118,26 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
 
 **Verificação (2026-06-24):** `tsc --noEmit` limpo, ESLint limpo, **141/141 testes** passando.
 
+## Dependências vulneráveis (npm audit — 2026-06-24)
+
+`npm audit` aponta 4 advisories em PROD-view e mais no full (dev). Triagem:
+- **`vitest`/`vite`/`esbuild`/`@vitest/mocker`/`vite-node` (até CRITICAL)** — são o **test runner**
+  (devDependencies). NÃO vão pro bundle de produção; o "critical" é o dev-server do esbuild,
+  sem superfície pra usuário real. **Não force-upgrade** (vitest 2→4 quebra a config de teste);
+  tratar num passo dedicado de dev quando der.
+- **`postcss <8.5.10` (moderate, XSS no stringify)** — usado em **build-time sobre o NOSSO CSS**
+  (Tailwind), nunca sobre CSS de usuário → não explorável. Aplicado `overrides.postcss ^8.5.10`
+  no `package.json` raiz (hoisted → 8.5.15). A cópia **vendada dentro do Next (8.4.31)** é
+  bundlada no pacote publicado e o npm não consegue substituir — **só sai com Next 16.3 estável**
+  (hoje só há previews). Remover o override quando subir o Next.
+
+**Conclusão:** exposição de dependência em produção é praticamente nula (build-time, CSS próprio).
+**Verificado:** `next build` completa OK (com `JWT_SECRET` ≥32), CSS compila, **141/141 testes**.
+
+> Nota lateral: o `.env` LOCAL tem `JWT_SECRET` de 27 chars (< 32). Em dev tudo bem (fallback),
+> mas o `next build` roda em modo prod e TRAVA com segredo fraco. Garantir que o `JWT_SECRET`
+> de produção na Vercel tenha ≥32 chars (se o app está no ar, já tem).
+
 ## Falsos-positivos descartados na verificação (não são bugs)
 - Upload "DoS por buffer de 200 MB": a Vercel limita o body antes; não amplifica.
 - "Content-type confia em `file.type`": o `sharp` re-encoda pra JPEG, neutralizando polyglot.

@@ -3,23 +3,25 @@ import { childLogger } from './logger';
 
 const log = childLogger('notify');
 
-// Notificação de pedido novo pro vendedor (oferta/visita) com o contato do comprador.
+// Notificação de pedido novo pro vendedor (oferta/visita). NÃO carrega o contato do
+// comprador: o telefone/WhatsApp só é liberado quando o vendedor ACEITA o pedido
+// (solicita → aceita → libera WhatsApp). Aqui só avisamos que há um pedido a responder.
 // Dois canais, escolhidos por env — nenhum configurado → no-op (não quebra o pedido):
 //
 //   WhatsApp (preferido). Mensagem iniciada pela empresa fora da janela de 24h EXIGE
 //   template aprovado pela Meta. Configure:
 //     TWILIO_ACCOUNT_SID · TWILIO_AUTH_TOKEN
 //     TWILIO_WHATSAPP_FROM = whatsapp:+55...   (sender WhatsApp Business aprovado)
-//     TWILIO_CONTENT_SID   = HX...             (template UTILITY aprovado, 5 variáveis)
+//     TWILIO_CONTENT_SID   = HX...             (template UTILITY aprovado, 4 variáveis)
 //   Template sugerido (cadastrar no Twilio Content Builder, categoria UTILITY):
-//     "Olá! {{1}} fez {{2}} no seu anúncio \"{{3}}\" na Kitetropos. Fale com o comprador no
-//      WhatsApp: {{4}} — ou gerencie em {{5}}. Bons ventos!"
+//     "Olá! {{1}} fez {{2}} no seu anúncio \"{{3}}\" na Kitetropos. Aceite em {{4}} para
+//      liberar o contato do comprador. Bons ventos!"
 //
 //   SMS (fallback). Usado quando o WhatsApp não está configurado:
 //     TWILIO_SMS_FROM = +1...
 //
 //   APP_URL (default: prod).
-export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string; buyerName?: string; buyerPhone?: string }) {
+export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string; buyerName?: string }) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   if (!sid || !token || !opts.sellerPhone) return; // não configurado → silencioso
@@ -30,13 +32,13 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
 
   const what = opts.type === 'offer' ? 'uma oferta' : 'um pedido de visita';
   const who = opts.buyerName ? `${opts.buyerName} fez` : 'Você recebeu';
-  const waLink = opts.buyerPhone ? `https://wa.me/${opts.buyerPhone.replace(/\D/g, '')}` : '';
   const url = `${process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'}/pedidos`;
   const to = opts.sellerPhone.replace(/[^\d+]/g, '');
 
   let body: URLSearchParams;
   if (waFrom && contentSid) {
     // WhatsApp via template aprovado (business-initiated fora da janela de 24h).
+    // Sem contato do comprador: o vendedor aceita em {{4}} pra liberar o WhatsApp.
     body = new URLSearchParams({
       From: waFrom,
       To: `whatsapp:${to}`,
@@ -45,16 +47,14 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
         '1': opts.buyerName ?? 'Alguém',
         '2': what,
         '3': opts.listingTitle,
-        '4': waLink || 'veja no app',
-        '5': url,
+        '4': url,
       }),
     });
   } else if (smsFrom) {
-    const contato = waLink ? ` Fale com o comprador: ${waLink}.` : '';
     body = new URLSearchParams({
       From: smsFrom,
       To: to,
-      Body: `Kitetropos: ${who} ${what} no anúncio "${opts.listingTitle}".${contato} Veja em ${url}`,
+      Body: `Kitetropos: ${who} ${what} no anúncio "${opts.listingTitle}". Aceite em ${url} para liberar o contato.`,
     });
   } else {
     return; // nenhum canal configurado

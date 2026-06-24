@@ -40,6 +40,15 @@ export async function POST(req: Request) {
     if (!(await rateLimit(`report:${user.id}`, 10, 3600))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
+    const { targetType, targetId } = parsed.data;
+    // O alvo PRECISA existir — senão a fila de moderação vira lixeira de IDs inventados.
+    const exists =
+      targetType === 'user' ? await db.user.count({ where: { id: targetId } })
+      : targetType === 'listing' ? await db.listing.count({ where: { id: targetId, deletedAt: null } })
+      : await db.message.count({ where: { id: targetId } });
+    if (!exists) return NextResponse.json({ message: 'Conteúdo não encontrado.' }, { status: 404 });
+    // Ninguém denuncia a própria conta (ruído puro).
+    if (targetType === 'user' && targetId === user.id) return NextResponse.json({ message: 'Você não pode denunciar a própria conta.' }, { status: 400 });
     await db.report.create({ data: { reporterId: user.id, ...parsed.data } });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e) {

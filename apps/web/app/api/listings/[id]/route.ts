@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { db } from '../../../../lib/db';
 import { getListing } from '../../../../lib/queries';
-import { requireUser, UnauthorizedError } from '../../../../lib/session';
+import { requireUser, getCurrentUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
-import { canTransition, isEditable, type ListingStatus, ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../../lib/listing-status';
+import { canTransition, isEditable, isPubliclyVisible, type ListingStatus, ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../../lib/listing-status';
 import { openNegotiationExists } from '../../../../lib/deals';
 import { removeListing, LifecycleError } from '../../../../lib/lifecycle';
 import { type Component } from '../../../../lib/components';
@@ -18,6 +18,12 @@ export async function GET(_req: Request, props: { params: Promise<{ id: string }
   const params = await props.params;
   const listing = await getListing(params.id);
   if (!listing) return NextResponse.json({ message: 'Anúncio não encontrado.' }, { status: 404 });
+  // draft/paused/archived são privados do dono — terceiro recebe 404 (mesmo corpo do
+  // inexistente, sem revelar que o anúncio existe e está oculto).
+  if (!isPubliclyVisible(listing.status)) {
+    const me = await getCurrentUser();
+    if (!me || me.id !== listing.userId) return NextResponse.json({ message: 'Anúncio não encontrado.' }, { status: 404 });
+  }
   return NextResponse.json(listing);
 }
 

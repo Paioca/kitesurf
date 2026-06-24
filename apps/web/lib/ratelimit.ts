@@ -51,9 +51,25 @@ export async function rateLimit(
 }
 
 // IP do cliente atrás do proxy da Vercel.
+//
+// NUNCA confiar no x-forwarded-for[0]: esse é o valor mais à esquerda, controlado
+// pelo cliente. Um atacante manda `X-Forwarded-For: <aleatório>` por request e cada
+// chamada cai num bucket de rate-limit diferente, anulando todo limite por-IP
+// (otp:reqip, otp:verify). A Vercel injeta o IP REAL em headers próprios que ela
+// sobrescreve na borda (não spoofáveis): x-vercel-forwarded-for / x-real-ip.
+// Só caímos no XFF como último recurso, e aí pegamos o ÚLTIMO hop (o appendado
+// pela infra), não o primeiro.
 export function clientIp(req: Request): string {
+  const vercel = req.headers.get('x-vercel-forwarded-for');
+  if (vercel) return vercel.split(',')[0].trim();
+  const real = req.headers.get('x-real-ip');
+  if (real) return real.trim();
   const xff = req.headers.get('x-forwarded-for');
-  return (xff?.split(',')[0] ?? req.headers.get('x-real-ip') ?? 'unknown').trim();
+  if (xff) {
+    const hops = xff.split(',');
+    return hops[hops.length - 1].trim(); // hop mais à direita = injetado pelo proxy
+  }
+  return 'unknown';
 }
 
 export const tooMany = () =>

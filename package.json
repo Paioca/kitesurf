@@ -17,5 +17,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "_comment_overrides": "Segurança: força postcss >=8.5.10 (corrige GHSA-qx2v-qp2m-jg93, XSS no stringify) na árvore do Next, que ainda empacota versão antiga. Remover quando Next 16.3+ estável bundlar postcss corrigido.",
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }
