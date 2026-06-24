@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { db } from '../../../../../lib/db';
 import { verifyOtp } from '../../../../../lib/otp';
@@ -10,6 +11,11 @@ import { rateLimit, clientIp, tooMany } from '../../../../../lib/ratelimit';
 import { SPOTS } from '../../../../../lib/filters';
 
 export const runtime = 'nodejs';
+
+// Hash dummy (mesmo cost factor 8 do otp.ts) pra equalizar o trabalho de CPU no caminho
+// de e-mail INEXISTENTE: sem isto, conta válida faz um bcrypt.compare e conta inexistente
+// não, criando um oráculo de timing de existência (CWE-208). Computado uma vez no boot.
+const DUMMY_OTP_HASH = bcrypt.hashSync('000000', 8);
 
 // Aceita phone OU email — mesmo schema do request. Onboarding (cadastro novo) só
 // funciona pelo canal SMS, porque conta nova exige telefone obrigatório no schema
@@ -56,9 +62,15 @@ async function verifyByEmail(dto: z.infer<typeof schema>) {
   const email = normalizeEmail(dto.email!);
   if (!email) return NextResponse.json({ message: 'E-mail inválido.' }, { status: 400 });
 
+  // Teto por CONTA (10/h) além do per-IP: com IPs rotativos o brute-force ainda esbarra
+  // num limite por alvo, sem depender só do cap de 5 tentativas por código. failClosed.
+  if (!(await rateLimit(`otp:verify:email:${email}`, 10, 3600, { failClosed: true }))) return tooMany();
+
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !user.emailVerified || user.deletedAt || user.status === 'blocked') {
-    // Mesma resposta de código errado pra não vazar existência da conta.
+    // Equaliza o custo de CPU com o caminho válido (que faz bcrypt.compare via verifyOtp),
+    // pra não vazar existência de conta por timing. Mesma resposta genérica.
+    await bcrypt.compare(dto.code, DUMMY_OTP_HASH);
     return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
   }
 
@@ -80,6 +92,9 @@ async function verifyByPhone(dto: z.infer<typeof schema>) {
   // diferente do que foi gravado e o código nunca casa.
   const phone = normalizePhone(dto.phone!);
   if (!phone) return NextResponse.json({ message: 'Telefone inválido.' }, { status: 400 });
+
+  // Teto por CONTA (10/h) além do per-IP — mesma lógica anti-brute-force do canal e-mail.
+  if (!(await rateLimit(`otp:verify:phone:${phone}`, 10, 3600, { failClosed: true }))) return tooMany();
 
   const existing = await db.user.findUnique({ where: { phone } });
   let user = existing;

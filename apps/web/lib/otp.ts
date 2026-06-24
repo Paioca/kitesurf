@@ -130,11 +130,23 @@ export async function verifyOtp(target: OtpTarget, code: string, consume = true,
     ? { phone: target.phone, context, consumed: false, expiresAt: { gt: new Date() } }
     : { email: target.email, context, consumed: false, expiresAt: { gt: new Date() } };
   const otp = await db.otpCode.findFirst({ where, orderBy: { createdAt: 'desc' } });
-  if (!otp || otp.attempts >= 5) return false;
-  const ok = await bcrypt.compare(code, otp.codeHash);
-  await db.otpCode.update({
-    where: { id: otp.id },
-    data: { attempts: { increment: 1 }, consumed: ok && consume ? true : undefined },
+  if (!otp) return false;
+
+  // Cobra a tentativa de forma ATÔMICA antes de comparar. O read-then-increment antigo
+  // era TOCTOU (CWE-367): N requests concorrentes liam attempts<5 e todas passavam,
+  // furando o teto de 5 chutes por código. O updateMany condicional (WHERE attempts<5)
+  // serializa no índice do banco — no máximo 5 tentativas "ganham" a linha. Espelha o
+  // padrão de upsert atômico já usado em lib/ratelimit.ts.
+  const claim = await db.otpCode.updateMany({
+    where: { id: otp.id, attempts: { lt: 5 }, consumed: false },
+    data: { attempts: { increment: 1 } },
   });
+  if (claim.count !== 1) return false; // já esgotou as 5 tentativas (ou foi consumido)
+
+  const ok = await bcrypt.compare(code, otp.codeHash);
+  // Queima o código só no acerto+consume, também de forma condicional (uso único real).
+  if (ok && consume) {
+    await db.otpCode.updateMany({ where: { id: otp.id, consumed: false }, data: { consumed: true } });
+  }
   return ok;
 }

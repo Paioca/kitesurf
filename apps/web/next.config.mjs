@@ -15,29 +15,32 @@ const supabaseHost = (() => {
   }
 })();
 
-// CSP pragmática pra Fase 0: bloqueia clickjacking, plugins e base/form hijack
-// sem exigir nonce middleware. 'unsafe-eval' só em dev (HMR do Next precisa).
-// img/connect liberam https: porque as imagens vêm do Supabase Storage (host varia
-// por ambiente) — o aperto de origem da imagem é feito no write (allowlist de host).
-const csp = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com${isProd ? '' : " 'unsafe-eval'"}`,
-  "connect-src 'self' https:",
-].join('; ');
-
+// A CSP é montada por request no proxy.ts (script-src com nonce, ENFORCED — Fase 2).
+// NÃO declarar Content-Security-Policy aqui: na Vercel um header estático de CSP é injetado
+// no request que o render lê pra extrair o nonce; uma CSP loose aqui sobrescreveria a estrita
+// do proxy e zeraria o nonce. Os demais headers (sem parte dinâmica) seguem estáticos.
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // X-XSS-Protection: 0 = DESLIGA o "XSS auditor" legado. Recomendação atual de OWASP/MDN:
+  // o filtro foi removido dos browsers modernos e, nos antigos, ele mesmo abria buracos
+  // (XS-leaks, falso-bloqueio). Nossa proteção de XSS real é a CSP + auto-escape do React.
+  { key: 'X-XSS-Protection', value: '0' },
+  // Isolamento cross-origin: COOP corta a referência window.opener de popups de terceiros
+  // (anti tabnabbing / XS-leaks); CORP impede que outros sites embutam nossas respostas
+  // como subrecurso. Nossas imagens vêm do Supabase (origem própria deles), então isto não
+  // afeta o carregamento das páginas — só fecha embedding cross-origin das NOSSAS respostas.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
+  // Permissions-Policy: nega explicitamente APIs poderosas que o app nunca usa, encolhendo
+  // a superfície que um script injetado poderia abusar. NÃO inclui fullscreen/autoplay —
+  // o iframe de vídeo do HowItWorks depende deles.
+  {
+    key: 'Permissions-Policy',
+    value:
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), browsing-topics=()',
+  },
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
   ...(isProd
     ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]

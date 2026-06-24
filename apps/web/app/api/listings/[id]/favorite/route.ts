@@ -10,6 +10,10 @@ export async function POST(_req: Request, props: { params: Promise<{ id: string 
   const params = await props.params;
   try {
     const user = await requireUser();
+    // Valida que o anúncio existe ANTES do upsert: um id inválido bateria na FK (P2003)
+    // e viraria um 500 genérico + ruído no Sentry. Aqui vira um 404 limpo.
+    const listing = await db.listing.findUnique({ where: { id: params.id }, select: { id: true } });
+    if (!listing) return NextResponse.json({ message: 'Anúncio não encontrado.' }, { status: 404 });
     await db.favorite.upsert({
       where: { userId_listingId: { userId: user.id, listingId: params.id } },
       update: {},

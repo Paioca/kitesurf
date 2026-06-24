@@ -29,6 +29,9 @@ export async function POST(req: Request) {
 
   const emailToken = await findValidEmailToken(parsed.data.token, EmailTokenPurpose.recovery);
   if (!emailToken) return NextResponse.json({ message: 'Este link é inválido ou expirou.' }, { status: 400 });
+  // Teto por TOKEN (10/h) além do per-IP: limita o brute-force do OTP de 6 dígitos a um
+  // alvo específico mesmo com IPs rotativos. failClosed — fluxo sensível de recuperação.
+  if (!(await rateLimit(`recovery:confirm:token:${emailToken.id}`, 10, 3600, { failClosed: true }))) return tooMany();
   const user = await db.user.findUnique({ where: { id: emailToken.userId } });
   if (!user || user.deletedAt || !user.emailVerified || user.email !== emailToken.email) {
     return NextResponse.json({ message: 'Este link não pode mais ser usado.' }, { status: 409 });
