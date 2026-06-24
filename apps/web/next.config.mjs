@@ -15,10 +15,13 @@ const supabaseHost = (() => {
   }
 })();
 
-// CSP pragmática pra Fase 0: bloqueia clickjacking, plugins e base/form hijack
-// sem exigir nonce middleware. 'unsafe-eval' só em dev (HMR do Next precisa).
-// img/connect liberam https: porque as imagens vêm do Supabase Storage (host varia
-// por ambiente) — o aperto de origem da imagem é feito no write (allowlist de host).
+// CSP ENFORCED (Fase 1 do rollout de nonce): segue com 'unsafe-inline' no script-src.
+// Fica ESTÁTICA aqui (e não no proxy.ts) de propósito: o proxy publica a CSP estrita em
+// Content-Security-Policy-Report-Only e injeta o nonce via override de request; se a loose
+// fosse setada no RESPONSE do proxy, o Next a copiaria pro request e apagaria o nonce
+// (ver comentário em proxy.ts). 'unsafe-eval' só em dev (HMR). img/connect liberam https:
+// porque as imagens vêm do Supabase Storage (host varia por ambiente; aperto feito no write).
+// FASE 2 (flip): remover esta entrada de CSP e virar CSP_ENFORCE_STRICT=true no proxy.ts.
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -37,7 +40,24 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // X-XSS-Protection: 0 = DESLIGA o "XSS auditor" legado. Recomendação atual de OWASP/MDN:
+  // o filtro foi removido dos browsers modernos e, nos antigos, ele mesmo abria buracos
+  // (XS-leaks, falso-bloqueio). Nossa proteção de XSS real é a CSP + auto-escape do React.
+  { key: 'X-XSS-Protection', value: '0' },
+  // Isolamento cross-origin: COOP corta a referência window.opener de popups de terceiros
+  // (anti tabnabbing / XS-leaks); CORP impede que outros sites embutam nossas respostas
+  // como subrecurso. Nossas imagens vêm do Supabase (origem própria deles), então isto não
+  // afeta o carregamento das páginas — só fecha embedding cross-origin das NOSSAS respostas.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
+  // Permissions-Policy: nega explicitamente APIs poderosas que o app nunca usa, encolhendo
+  // a superfície que um script injetado poderia abusar. NÃO inclui fullscreen/autoplay —
+  // o iframe de vídeo do HowItWorks depende deles.
+  {
+    key: 'Permissions-Policy',
+    value:
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), browsing-topics=()',
+  },
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
   ...(isProd
     ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
