@@ -10,6 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # histórico completo: o check de migration compara base do PR...HEAD
+          fetch-depth: 0
+
+      # Em PR: barra mudança em schema.prisma sem migration nova.
+      # Roda antes do install (é só git diff, não precisa de deps).
+      - name: Migrations (schema sem migration)
+        if: github.event_name == 'pull_request'
+        run: bash scripts/check-migration-drift.sh "origin/${{ github.base_ref }}"
 
       - uses: actions/setup-node@v4
         with:
