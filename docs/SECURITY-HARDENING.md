@@ -70,7 +70,7 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
 
 ## Pendências recomendadas (NÃO aplicadas — exigem rodar o app)
 
-- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — ENFORCED STRICT (validar no Preview).**
+- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — ✅ CONCLUÍDO EM PRODUÇÃO (2026-06-24).**
   O nonce por request é gerado em `proxy.ts` (ex-`middleware.ts`; Next 16 renomeou a
   convenção) e propagado pro Next via override do header de REQUEST `Content-Security-Policy`,
   que faz o App Router carimbar o atributo `nonce` em TODOS os seus `<script>` (verificado:
@@ -97,10 +97,12 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
   dinâmicas e recebem nonce. **Trade-off aceito:** perde render estático/ISR (cada página bate
   no servidor por request). Verificado: 6–13/6–13 scripts com nonce em todas as antes-estáticas.
 
-  **Estado:** `CSP_ENFORCE_STRICT = true` (`proxy.ts`); CSP removida do `next.config.mjs`;
+  **Estado (no ar):** `CSP_ENFORCE_STRICT = true` (`proxy.ts`); CSP removida do `next.config.mjs`;
   `force-dynamic` no layout raiz. CSP estrita (nonce, sem `'unsafe-inline'`) ENFORCED por
-  request em prod; dev fica loose (Turbopack não aplica nonce em dev). De-risco = validar no
-  Preview antes do merge. Notas de Preview: a home pode dar erro de Server Component se o escopo
+  request em prod; dev fica loose (Turbopack não aplica nonce em dev). **Verificado em produção
+  (`kitesurf-web.vercel.app`, 2026-06-24):** home 57/57 e `/entrar` 5/5 scripts inline com nonce;
+  header `script-src 'self' 'nonce-…' https://va.vercel-scripts.com` (sem `'unsafe-inline'`, sem
+  `report-only`). Notas de Preview (não-prod): a home dá erro de Server Component se o escopo
   Preview não tiver `DATABASE_URL`/`SUPABASE_*` (não é CSP); e `https://vercel.live/.../feedback.js`
   (toolbar de Preview) é bloqueado pela CSP estrita — irrelevante pra prod (não injetado lá).
 - **[BAIXA] CSP reporting — CÓDIGO APLICADO, falta ligar o env.** O `proxy.ts` já emite
