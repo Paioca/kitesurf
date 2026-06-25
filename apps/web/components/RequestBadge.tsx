@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 export function RequestBadge() {
   const [n, setN] = useState(0);
   useEffect(() => {
-    fetch('/api/requests/count').then((r) => r.json()).then((d) => setN(d.unread ?? d.pending ?? 0)).catch(() => {});
+    fetch('/api/requests/count').then((r) => r.json()).then((d) => setN(d.unread ?? 0)).catch(() => {});
   }, []);
   if (!n) return null;
   return (

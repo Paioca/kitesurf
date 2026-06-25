@@ -18,9 +18,9 @@ describe('canTransition', () => {
     expect(canTransition('sold', 'archived')).toBe(false);
   });
 
-  it('archived não ressuscita por PATCH cru (só via republicar)', () => {
-    expect(canTransition('archived', 'active')).toBe(false);
-    expect(canTransition('archived', 'paused')).toBe(false);
+  it('archived é reversível: republicação archived → active/paused (soft-deleted é barrado no caller)', () => {
+    expect(canTransition('archived', 'active')).toBe(true);
+    expect(canTransition('archived', 'paused')).toBe(true);
   });
 
   it('no-op (from === to) é idempotente', () => {

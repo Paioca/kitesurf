@@ -1,7 +1,9 @@
 // Máquina de estados do Listing (pura, sem Prisma — testável isolada).
-// Regra de domínio: `sold` é TERMINAL (não ressuscita) e anúncio vendido/arquivado
-// não tem campos editáveis (preserva o histórico de venda). `archived` só volta a
-// `active` por um fluxo de republicação dedicado (ainda não existe), nunca por PATCH cru.
+// Regra de domínio: `sold` é TERMINAL (não ressuscita) e anúncio vendido não tem campos
+// editáveis (preserva o histórico de venda). `archived` é REVERSÍVEL (republicação): o
+// dono reativa/pausa um anúncio que ele mesmo arquivou. Os arquivados por EXCLUSÃO ou
+// MODERAÇÃO têm `deletedAt` setado e continuam terminais — esse guard mora no caller (a
+// rota PATCH só acha listing com deletedAt=null, então soft-deleted dá 404).
 export type ListingStatus = 'draft' | 'active' | 'paused' | 'sold' | 'archived';
 
 const ALLOWED: Record<ListingStatus, ListingStatus[]> = {
@@ -9,7 +11,7 @@ const ALLOWED: Record<ListingStatus, ListingStatus[]> = {
   active: ['paused', 'archived'],
   paused: ['active', 'archived'],
   sold: [], // terminal
-  archived: [], // só via republicar (fluxo dedicado)
+  archived: ['active', 'paused'], // republicação: arquivar (manual) é reversível pelo dono
 };
 
 // Pode ir de `from` pra `to`? No-op (from === to) é idempotente e sempre permitido.
@@ -22,6 +24,15 @@ export function canTransition(from: ListingStatus, to: ListingStatus): boolean {
 // não foi vendido nem arquivado.
 export function isEditable(status: ListingStatus): boolean {
   return status === 'draft' || status === 'active' || status === 'paused';
+}
+
+// Visibilidade pública do detalhe do anúncio. Um anúncio só aparece pra terceiros
+// quando está 'active' (à venda) ou 'sold' (histórico, exibido como "Vendido").
+// 'draft'/'paused'/'archived' são privados do dono — sem isso, um rascunho/pausado de
+// outra pessoa seria legível por quem souber o UUID (vaza preço/fotos/ficha não publicados).
+// O dono sempre vê o próprio anúncio em qualquer status (a checagem de owner mora no caller).
+export function isPubliclyVisible(status: ListingStatus): boolean {
+  return status === 'active' || status === 'sold';
 }
 
 // Teto de anúncios ATIVOS por usuário (anti-spam). Decisão do dono: conta SÓ status
