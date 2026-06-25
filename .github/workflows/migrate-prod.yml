@@ -1,0 +1,51 @@
+name: Migrate (prod)
+
+# Aplica as migrations PENDENTES no banco de produção via `prisma migrate deploy`.
+#
+# Disparo MANUAL (workflow_dispatch): você roda ANTES de promover o código que usa a
+# migration — honra a regra aditiva do docs/MIGRATIONS.md (migrate antes do deploy).
+# Tira a aplicação de migration do laptop com credencial de prod: o segredo
+# (PROD_DIRECT_URL) vive no GitHub, não na sua máquina.
+#
+# Pré-requisito (uma vez): em Settings → Secrets and variables → Actions, criar o secret
+#   PROD_DIRECT_URL  = conexão DIRETA do Supabase de prod (porta 5432, NÃO o pooler 6543).
+# Opcional: criar um Environment "production" com required reviewers pra exigir aprovação.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Digite "migrar" para confirmar a aplicação em PRODUÇÃO'
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production # se houver protection rules nesse environment, exige aprovação
+    steps:
+      - name: Confirmação
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "migrar" ]; then
+            echo "::error::Confirmação inválida — digite exatamente 'migrar'." ; exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # `migrate deploy` só APLICA as migrations pendentes da pasta (não reseta, não
+      # gera, não apaga dado). Usa a conexão DIRETA (directUrl) — migrations não passam
+      # pelo pooler. DATABASE_URL é exigido pelo schema mas não é usado aqui.
+      - name: prisma migrate deploy (prod)
+        working-directory: apps/web
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
