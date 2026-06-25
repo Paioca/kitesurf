@@ -82,7 +82,13 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
           <div style={muted}>Você marcou como vendido · aguardando o comprador confirmar.</div>
           <button onClick={() => ask('Cancelar a venda marcada? O negócio volta atrás e você pode marcar de novo.', () => call(`/api/deals/${deal!.id}/cancel`))} disabled={busy} style={btnGhost}>Cancelar venda</button>
         </div>
-      : <button onClick={() => ask('Confirmar que você comprou? O anúncio será marcado como vendido — não dá pra desfazer.', () => call(`/api/deals/${deal!.id}/confirm`))} disabled={busy} style={btn}>Confirmar que comprei</button>;
+      : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={() => ask('Confirmar que você comprou? O anúncio será marcado como vendido — não dá pra desfazer.', () => call(`/api/deals/${deal!.id}/confirm`))} disabled={busy} style={btn}>Confirmar que comprei</button>
+          {/* Saída pro comprador marcado por engano: sem isto, só restava esperar 72h
+              até o cron encerrar como closed_unconfirmed. Desfaz o negócio e a peça
+              volta a ficar disponível (rota /deny → denyPurchase). */}
+          <button onClick={() => ask('Marcar que você NÃO comprou? O negócio é desfeito e o anúncio volta a ficar disponível.', () => call(`/api/deals/${deal!.id}/deny`))} disabled={busy} style={btnGhost}>Não comprei</button>
+        </div>;
   } else if (deal!.status === 'closed_unconfirmed') {
     // 72h sem o comprador confirmar (cron) → encerrado como vendido. O vendedor corrige
     // sozinho (o comprador nunca confirmou — unilateral).

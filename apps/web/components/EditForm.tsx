@@ -10,6 +10,18 @@ type Img = { url: string; thumbUrl?: string | null; component?: 'kite' | 'barra'
 type Spec = { type: string; enum?: (string | number)[]; label?: string };
 type Schema = { required?: string[]; properties?: Record<string, Spec> };
 const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
+const MIN_PRICE = 100; // R$100 (MIN_LISTING_PRICE_CENTS = 10000) — espelha a criação e o backend
+
+// Ficha completa = todos os campos do schema preenchidos (mesma regra do cadastro,
+// que valida com requireAll). Sem isto a edição podia salvar esvaziando um atributo
+// essencial (ex.: tamanho/condição) e o anúncio sumia dos filtros.
+function fichaComplete(schema: Schema, values: Record<string, any>): boolean {
+  const props = schema?.properties ?? {};
+  return Object.keys(props).every((k) => {
+    const v = values[k];
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  });
+}
 
 export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSchema: Schema; barraSchema: Schema | null }) {
   const isKit = !!data.hasBarra;
@@ -70,8 +82,15 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
     } catch (e: any) { setError(e.message); setSaving(false); }
   }
 
-  const priceOk = Number(price) > 0 && (!sellKite || Number(kitePrice) > 0) && (!sellBarra || Number(barraPrice) > 0);
-  const canSave = title.trim().length >= 4 && images.length >= 3 && priceOk && !saving && !uploading;
+  // Preço mínimo R$100 validado inline (antes só o backend reclamava, tarde, após o PATCH).
+  const priceErr =
+    price !== '' && Number(price) < MIN_PRICE ? 'O preço mínimo é R$100.'
+    : sellKite && kitePrice !== '' && Number(kitePrice) < MIN_PRICE ? 'O preço do kite avulso mínimo é R$100.'
+    : sellBarra && barraPrice !== '' && Number(barraPrice) < MIN_PRICE ? 'O preço da barra avulsa mínimo é R$100.'
+    : '';
+  const priceOk = Number(price) >= MIN_PRICE && (!sellKite || Number(kitePrice) >= MIN_PRICE) && (!sellBarra || Number(barraPrice) >= MIN_PRICE);
+  const fichaOk = fichaComplete(mainSchema, attrs) && (!isKit || !barraSchema || fichaComplete(barraSchema, barraAttrs));
+  const canSave = title.trim().length >= 4 && images.length >= 3 && priceOk && fichaOk && !saving && !uploading;
 
   return (
     <div style={{ maxWidth: 620, margin: '0 auto' }}>
@@ -116,6 +135,7 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
         ) : (
           <PriceInput value={price} onChange={setPrice} />
         )}
+        {priceErr && <div style={{ color: '#b3261e', fontSize: 12.5, marginTop: 10 }}>{priceErr}</div>}
       </Section>
 
       <Section title="Entrega e local">
@@ -128,6 +148,12 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
           <div><Label>Spot (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} /></div>
         </div>
       </Section>
+
+      {!fichaOk && title.trim().length >= 4 && images.length >= 3 && priceOk && (
+        <div style={{ color: '#8a6d00', background: '#fdf6e3', fontSize: 12.5, padding: '9px 12px', borderRadius: 9, marginTop: 4 }}>
+          Preencha todos os campos da ficha antes de salvar — campos vazios fazem o anúncio sumir dos filtros de busca.
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
         <a href={`/anuncio/${data.id}`} style={{ ...btn, background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink }}>Cancelar</a>
