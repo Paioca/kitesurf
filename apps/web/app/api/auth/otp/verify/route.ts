@@ -29,7 +29,6 @@ const schema = z.object({
   spot: z.string().max(80).optional(),
   country: z.string().max(80).optional(),
   avatarUrl: z.string().optional(),
-  instagramHandle: z.string().optional(),
   locale: z.string().optional(),
 }).refine((d) => Boolean(d.phone) !== Boolean(d.email), {
   message: 'Forneça telefone OU e-mail.',
@@ -133,7 +132,6 @@ async function verifyByPhone(dto: z.infer<typeof schema>) {
         country: dto.country?.trim() || null,
         email: onboardEmail,
         avatarUrl: dto.avatarUrl,
-        instagramHandle: dto.instagramHandle ?? null,
         locale: dto.locale ?? 'pt',
       },
     });

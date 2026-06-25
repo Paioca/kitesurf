@@ -23,7 +23,7 @@ function condStyle(label: string): { color: string; bg: string } {
 
 export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?: number }) {
   const cond = item.condLabel ? condStyle(item.condLabel) : null;
-  const sub = item.seller?.ig || `📍 ${item.city}`;
+  const sub = `📍 ${item.city}`;
   return (
     // Favoritar fora do <a> (evita interativo aninhado / clique conflitante; melhora leitor de tela).
     <div className="listing-card" style={{ ...card, position: 'relative' }}>
