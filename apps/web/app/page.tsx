@@ -2,6 +2,7 @@
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import Image from 'next/image';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
 import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, currentHref, SIZE_RANGES, SIZE_LABELS, SPOTS, type SP } from '../lib/filters';
@@ -33,6 +34,12 @@ export const metadata = {
 export default async function Home(props: { searchParams: Promise<SP> }) {
   const searchParams = await props.searchParams;
   const sp = searchParams;
+  // A home renderiza AS DUAS árvores (mobile + desktop, alternadas por CSS), cada uma
+  // com seu próprio herói. Sem isto, os dois <Image priority> emitiam <link rel=preload>
+  // e o viewport baixava também a versão do layout ESCONDIDO (desperdício de 1 fetch de
+  // LCP no 4G). Heurística por user-agent dá o priority só ao herói do layout provável;
+  // é só uma dica de preload (sem risco de correção se a heurística errar).
+  const isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test((await headers()).get('user-agent') ?? '');
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
   const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
   const countLocation = filters.city.length === 1
@@ -62,7 +69,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
           <div style={{ position: 'relative', height: 188, overflow: 'hidden' }}>
-            <Image src="/hero-beach.jpg" alt="" fill priority sizes="430px" style={{ objectFit: 'cover' }} />
+            <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
               <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Nascido em Cumbuco · Feito para o mundo</div>
@@ -128,7 +135,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
         <SiteHeader />
         {landing ? (
           <>
-            <Hero />
+            <Hero priority={!isMobileUA} />
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
@@ -209,10 +216,10 @@ const TYPE_OPTS = [{ value: 'kite', label: 'Kite' }, { value: 'kit', label: 'Kit
 const SIZE_OPTS = Object.keys(SIZE_RANGES).map((k) => ({ value: k, label: SIZE_LABELS[k] }));
 const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
 
-function Hero() {
+function Hero({ priority = true }: { priority?: boolean }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
-      <Image src="/hero-beach.jpg" alt="" fill priority sizes="100vw" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
+      <Image src="/hero-beach.jpg" alt="" fill priority={priority} sizes="100vw" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>

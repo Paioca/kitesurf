@@ -33,9 +33,11 @@ export const color = {
   darkBlue: '#0c3a52',
 } as const;
 
+// As famílias vêm do next/font (self-hosted) via CSS variables definidas no
+// <html> em app/layout.tsx. O fallback literal cobre SSR antes da var resolver.
 export const font = {
-  sans: "'Archivo', system-ui, -apple-system, sans-serif",
-  serif: "'Spectral', Georgia, serif",
+  sans: "var(--font-archivo), 'Archivo', system-ui, -apple-system, sans-serif",
+  serif: "var(--font-spectral), 'Spectral', Georgia, serif",
 } as const;
 
 export const radius = {

@@ -30,7 +30,11 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
       <Link href={`/anuncio/${item.id}`} aria-label={`${item.brand} ${item.model}`} style={cardLink}>
         <div style={{ ...img, height: imgHeight }}>
           {item.photo ? (
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${item.photo}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            // <img loading="lazy"> em vez de background-image: ganha lazy-load NATIVO
+            // (os cards abaixo da dobra só baixam ao rolar) + decode assíncrono. Antes,
+            // os 24 thumbs da página disparavam todos juntos no load. Altura via CSS
+            // (contêiner tem altura fixa) — sem CLS.
+            <img src={item.photo} alt="" loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <span style={{ fontSize: 13, fontWeight: 500, color: color.inkFaint2 }}>{item.cat}{item.sizeM2 ? ` · ${item.sizeM2} m²` : ''}</span>
           )}

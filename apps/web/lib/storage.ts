@@ -19,11 +19,16 @@ function supabase(): SupabaseClient {
   return client;
 }
 
-async function save(buffer: Buffer): Promise<string> {
-  const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.jpg`;
+// Salva o buffer já processado. `format` define extensão + content-type — WebP
+// corta ~25-35% dos bytes vs JPEG na mesma qualidade, com suporte universal nos
+// browsers atuais (e os anúncios são servidos direto do Supabase via <img>, então
+// o content-type correto basta — sem depender do Image Optimizer da Vercel).
+async function save(buffer: Buffer, format: 'webp' | 'jpeg' = 'webp'): Promise<string> {
+  const ext = format === 'webp' ? 'webp' : 'jpg';
+  const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase()
     .storage.from(BUCKET)
-    .upload(path, buffer, { contentType: 'image/jpeg', upsert: false });
+    .upload(path, buffer, { contentType: `image/${format}`, upsert: false });
   if (error) throw new Error(`Upload Supabase falhou: ${error.message}`); // interno → vira genérico + Sentry
   return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
@@ -130,9 +135,13 @@ export async function processImage(
   buffer: Buffer,
   mimetype: string,
   size: number,
+  opts: { maxBytes?: number } = {},
 ): Promise<ProcessedImage> {
   if (!ALLOWED.includes(mimetype)) throw new PublicError('Formato inválido (use JPEG, PNG ou WebP).');
-  if (size > MAX_BYTES) throw new PublicError('Imagem maior que 12 MB.');
+  // Teto de bytes configurável: anúncio aceita até 12 MB; avatar (upload PÚBLICO,
+  // pré-conta) usa um cap menor pra encolher a superfície de abuso de storage/CPU.
+  const maxBytes = opts.maxBytes ?? MAX_BYTES;
+  if (size > maxBytes) throw new PublicError(`Imagem maior que ${Math.round(maxBytes / (1024 * 1024))} MB.`);
 
   // Decompression bomb: o gate de 12 MB é sobre os BYTES comprimidos. Um PNG/WebP de
   // <1 MB pode descomprimir pra ~256 MP (≈1 GB de bitmap) — abaixo do teto default do
@@ -147,9 +156,12 @@ export async function processImage(
     throw new PublicError('Imagem com dimensões inválidas ou grandes demais.');
   }
 
-  const main = await img.clone().rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
-  const thumb = await img.clone().rotate().resize(400, 400, { fit: 'cover' }).jpeg({ quality: 75 }).toBuffer();
+  // WebP em vez de JPEG: ~25-35% menos bytes na mesma qualidade percebida — menos
+  // dados no 4G e cards que pintam mais rápido. `effort: 4` equilibra tempo de
+  // encode (serverless) e tamanho final.
+  const main = await img.clone().rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80, effort: 4 }).toBuffer();
+  const thumb = await img.clone().rotate().resize(400, 400, { fit: 'cover' }).webp({ quality: 72, effort: 4 }).toBuffer();
 
-  const [url, thumbUrl] = await Promise.all([save(main), save(thumb)]);
+  const [url, thumbUrl] = await Promise.all([save(main, 'webp'), save(thumb, 'webp')]);
   return { url, thumbUrl };
 }

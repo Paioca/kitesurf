@@ -13,7 +13,7 @@ export function ReportButton({ targetType, targetId, label }: { targetType: 'use
     } catch { window.alert('Sem conexão. Tenta de novo.'); }
   }
   return (
-    <button onClick={go} style={{ background: 'none', border: 'none', color: color.inkFaint2, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 6px', fontFamily: "'Archivo',sans-serif", textDecoration: 'underline' }}>
+    <button onClick={go} style={{ background: 'none', border: 'none', color: color.inkFaint2, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 6px', fontFamily: "var(--font-archivo),'Archivo',sans-serif", textDecoration: 'underline' }}>
       {label}
     </button>
   );

@@ -14,7 +14,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Archivo', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-archivo), 'Archivo', system-ui, -apple-system, sans-serif;
   color: #23332e;
   background: #f6f3ec;
   -webkit-font-smoothing: antialiased;
@@ -83,7 +83,7 @@ a {
 .kl-select,
 .kl-input,
 .kl-textarea {
-  font-family: 'Archivo', sans-serif;
+  font-family: var(--font-archivo), 'Archivo', sans-serif;
   font-size: 16px; /* 16px evita o auto-zoom do iOS ao focar o campo */
   color: #23332e;
   background: #fff;

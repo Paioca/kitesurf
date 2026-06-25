@@ -55,9 +55,12 @@ export default function Criar() {
   const [pickup, setPickup] = useState(true); // retirada no local
   const [shippable, setShippable] = useState(false); // envio
   const [uploading, setUploading] = useState(false);
+  const [uploadCount, setUploadCount] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const [uploadPct, setUploadPct] = useState(0); // % média de bytes do lote em voo
   const [uploadTarget, setUploadTarget] = useState<'kite' | 'barra'>('kite');
   const [error, setError] = useState('');
   const [createdId, setCreatedId] = useState('');
+  const [publishing, setPublishing] = useState(false); // trava anti duplo-clique no Publicar
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
   const [restored, setRestored] = useState(false); // rascunho recuperado
   const [detailOpen, setDetailOpen] = useState(false); // seção "Estado detalhado" colapsável (auditoria #02)
@@ -153,20 +156,44 @@ export default function Criar() {
     const component = uploadTarget;
     setUploading(true); setError('');
     const list = Array.from(files).slice(0, 40 - images.length);
+    const total = list.length;
+    const fracs = new Array(total).fill(0); // progresso de bytes (0..1) por foto do lote
+    let done = 0;
+    setUploadCount({ done: 0, total }); setUploadPct(0);
     const CONCURRENCY = 3; // fila com concorrência limitada: rápido em rede móvel sem afogar o servidor
-    const uploadOne = async (file: File) => {
+    const uploadOne = async (file: File, idx: number) => {
       const small = await downscaleImage(file, 1600); // reduz no cliente: upload rápido, sem estourar 4,5MB
-      const fd = new FormData(); fd.append('file', small);
-      const res = await fetch('/api/uploads/image', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Falha no upload.');
+      // XHR (não fetch) porque só ele expõe upload.onprogress: no 4G a foto demora
+      // segundos e sem barra o usuário acha que travou e reclica/abandona.
+      const data = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/uploads/image');
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          fracs[idx] = e.loaded / e.total;
+          setUploadPct(Math.round((fracs.reduce((a, b) => a + b, 0) / total) * 100));
+        };
+        xhr.onload = () => {
+          let body: any = {};
+          try { body = JSON.parse(xhr.responseText); } catch {}
+          if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+          else reject(new Error(body.message ?? 'Falha no upload.'));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no upload.'));
+        const fd = new FormData(); fd.append('file', small);
+        xhr.send(fd);
+      });
+      fracs[idx] = 1;
+      done += 1;
+      setUploadCount({ done, total });
+      setUploadPct(Math.round((fracs.reduce((a, b) => a + b, 0) / total) * 100));
       setImages((imgs) => [...imgs, { url: data.url, thumbUrl: data.thumbUrl, component }]);
     };
     try {
       for (let i = 0; i < list.length; i += CONCURRENCY) {
-        await Promise.all(list.slice(i, i + CONCURRENCY).map(uploadOne));
+        await Promise.all(list.slice(i, i + CONCURRENCY).map((file, j) => uploadOne(file, i + j)));
       }
-    } catch (e: any) { setError(e.message); } finally { setUploading(false); }
+    } catch (e: any) { setError(e.message); } finally { setUploading(false); setUploadCount({ done: 0, total: 0 }); setUploadPct(0); }
   }
 
   // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
@@ -201,7 +228,7 @@ export default function Criar() {
     && (!sellBarraAlone || Number(barraPrice) >= MIN_PRICE);
   const priceMsg = priceErr(price) || (sellKiteAlone ? priceErr(kitePrice) : '') || (sellBarraAlone ? priceErr(barraPrice) : '') || (!priceOk ? 'Defina o preço' : '');
   const deliveryOk = pickup || shippable;
-  const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading;
+  const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading && !publishing;
   const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
 
   // wizard: validade e mensagem por passo
@@ -226,7 +253,9 @@ export default function Criar() {
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
   async function publish() {
+    if (publishing) return; // guarda extra contra duplo-clique / Enter repetido
     setError('');
+    setPublishing(true);
     try {
       const res = await fetch('/api/listings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -244,7 +273,7 @@ export default function Criar() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Erro ao publicar.');
       setCreatedId(data.id);
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) { setError(e.message); } finally { setPublishing(false); }
   }
 
   if (authed === null) {
@@ -427,8 +456,8 @@ export default function Criar() {
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '8px 14px', borderRadius: 999, marginBottom: 22 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de no mínimo 3 — pode adicionar mais
               </div>
-              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
-              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
+              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
+              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
             </>
           )}
 
@@ -499,7 +528,7 @@ export default function Criar() {
                 // sempre clicável: se o passo está incompleto, abre o detalhado / mostra o que falta (não fica "morto")
                 <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.primary : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar ›</button>
               ) : (
-                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>Publicar anúncio</button>
+                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>{publishing ? 'Publicando…' : 'Publicar anúncio'}</button>
               )}
             </div>
           </div>
@@ -602,10 +631,22 @@ function ChipSelect({ options, value, onChange, labels }: { options: (string | n
   );
 }
 
-function PhotoSection({ title, slots, photos, uploading, onPick, onRemove }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; onPick: () => void; onRemove: (img: Img) => void }) {
+function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRemove }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; progress?: { done: number; total: number; pct: number } | null; onPick: () => void; onRemove: (img: Img) => void }) {
   return (
     <div style={{ marginBottom: 22 }}>
       <SubHead>{title}</SubHead>
+      {progress && (
+        // Barra de progresso real do lote (bytes enviados) — substitui o "…" mudo.
+        <div role="status" aria-live="polite" style={{ marginTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: color.inkFaint, marginBottom: 6 }}>
+            <span>Enviando {Math.min(progress.done + 1, progress.total)} de {progress.total}…</span>
+            <span>{progress.pct}%</span>
+          </div>
+          <div style={{ height: 6, borderRadius: 999, background: '#e8e2d4', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress.pct}%`, background: color.primary, transition: 'width 0.2s ease' }} />
+          </div>
+        </div>
+      )}
       <div className="criar-photos" style={{ display: 'grid', gap: 14, marginTop: 10 }}>
         {slots.map((label, i) => {
           const img = photos[i];

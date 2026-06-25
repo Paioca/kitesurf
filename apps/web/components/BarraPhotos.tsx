@@ -15,8 +15,10 @@ export function BarraPhotos({ photos }: { photos: string[] }) {
           type="button"
           onClick={() => setOpen(i)}
           aria-label={`Ampliar foto ${i + 1} da barra`}
-          style={{ width: 92, height: 92, borderRadius: 10, flex: 'none', border: 'none', padding: 0, cursor: 'zoom-in', backgroundImage: `url("${u}")`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-        />
+          style={{ width: 92, height: 92, borderRadius: 10, flex: 'none', border: 'none', padding: 0, cursor: 'zoom-in', overflow: 'hidden' }}
+        >
+          <img src={u} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </button>
       ))}
       {open !== null && <Lightbox photos={photos} start={open} onClose={() => setOpen(null)} />}
     </div>
