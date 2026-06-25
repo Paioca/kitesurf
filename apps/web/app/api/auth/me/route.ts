@@ -22,7 +22,6 @@ export async function GET() {
     email: user.email,
     emailVerified: user.emailVerified,
     avatarUrl: user.avatarUrl,
-    instagramHandle: user.instagramHandle,
     phoneVerified: user.phoneVerified,
     locale: user.locale,
     role: user.role,
@@ -35,7 +34,6 @@ const patchSchema = z.object({
   spot: z.string().max(80).nullable().optional(),
   country: z.string().max(80).nullable().optional(),
   email: z.string().email().max(120).nullable().optional(),
-  instagramHandle: z.string().max(40).nullable().optional(),
   avatarUrl: z.string().min(1).optional(),
   locale: z.enum(['pt', 'en']).optional(),
 });
@@ -50,7 +48,6 @@ export async function PATCH(req: Request) {
     if (dto.avatarUrl !== undefined && !isOfficialImageUrl(dto.avatarUrl)) {
       return NextResponse.json({ message: 'Foto de perfil inválida.' }, { status: 400 });
     }
-    const ig = dto.instagramHandle === undefined ? undefined : dto.instagramHandle ? dto.instagramHandle.replace(/^@/, '').trim() || null : null;
     // Só zera a verificação quando o endereço realmente mudou.
     const email = dto.email === undefined ? undefined : (dto.email ? dto.email.toLowerCase().trim() : null);
     const emailChanged = email !== undefined && email !== user.email;
@@ -62,7 +59,7 @@ export async function PATCH(req: Request) {
       // Trocar o e-mail muda o canal de recuperação de conta: bump sessionVersion
       // derruba sessões concorrentes (inclusive uma sessão sequestrada). Reemitimos o
       // cookie da sessão atual logo abaixo para o próprio usuário não se deslogar.
-      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, sessionVersion: emailChanged ? { increment: 1 } : undefined, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
+      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, sessionVersion: emailChanged ? { increment: 1 } : undefined, avatarUrl: dto.avatarUrl, locale: dto.locale },
     });
     if (emailChanged) {
       await setSession(updated.id, updated.sessionVersion);
@@ -79,7 +76,7 @@ export async function PATCH(req: Request) {
         after: { email: updated.email, emailVerified: updated.emailVerified },
       });
     }
-    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, instagramHandle: updated.instagramHandle, locale: updated.locale });
+    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, locale: updated.locale });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if ((e as { code?: string }).code === 'P2002') return NextResponse.json({ message: 'Esse e-mail já está em uso por outra conta.' }, { status: 409 });

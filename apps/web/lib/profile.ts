@@ -12,7 +12,7 @@ function brl(c: number) {
 export const getProfile = cache(async (id: string) => {
   const user = await db.user.findFirst({
     where: { id, deletedAt: null },
-    select: { id: true, name: true, avatarUrl: true, instagramHandle: true, phoneVerified: true, emailVerified: true, role: true, locale: true, createdAt: true },
+    select: { id: true, name: true, avatarUrl: true, phoneVerified: true, emailVerified: true, role: true, locale: true, createdAt: true },
   });
   if (!user) return null;
 

@@ -31,7 +31,7 @@ export type Card = {
   favorited: boolean; // o usuário logado já favoritou
   photo: string | null;
   // vendedor (só na busca; ausente em perfil/meus anúncios). rating = média de reviews públicas.
-  seller?: { id: string; name: string; avatar: string | null; ig: string | null; rating: number | null; ratingCount: number } | null;
+  seller?: { id: string; name: string; avatar: string | null; rating: number | null; ratingCount: number } | null;
 };
 
 export type Facet = { value: string; label: string; count: number };
@@ -78,7 +78,7 @@ const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas:
 function toCard(l: any, persp: Perspective): Card {
   const showBarra = persp === 'barra' || (persp === 'all' && l.category?.slug === 'barra');
   // vendedor (quando a query incluiu l.user). rating preenchido em getBrowseData (batch).
-  const seller = l.user ? { id: l.user.id, name: l.user.name ?? '', avatar: l.user.avatarUrl ?? null, ig: l.user.instagramHandle ?? null, rating: null as number | null, ratingCount: 0 } : null;
+  const seller = l.user ? { id: l.user.id, name: l.user.name ?? '', avatar: l.user.avatarUrl ?? null, rating: null as number | null, ratingCount: 0 } : null;
 
   if (showBarra) {
     const kit = l.hasBarra === true;
@@ -420,7 +420,7 @@ export async function getBrowseData(sp: SP) {
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
   const where = buildWhere(f, persp);
-  const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } };
+  const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true } } };
 
   // Ordenação por preço NO BANCO. O "preço efetivo" por perspectiva (barra:
   // COALESCE(barraPrice,price); kite: COALESCE(kitePrice,price); all: price) está

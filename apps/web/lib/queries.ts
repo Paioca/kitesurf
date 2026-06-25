@@ -86,7 +86,6 @@ export const getListing = cache(async (id: string) => {
           id: true,
           name: true,
           avatarUrl: true,
-          instagramHandle: true,
           phoneVerified: true,
           createdAt: true,
         },
