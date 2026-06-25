@@ -16,7 +16,14 @@ export function Gallery({ photos, listingId, favorited = false }: { photos: stri
   return (
     <div>
       <div style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', background: main ? '#e7ddc9' : undefined, backgroundImage: main ? undefined : HATCH, height: 560, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {main && <button type="button" onClick={() => setZoom(true)} aria-label="Ampliar foto" style={{ position: 'absolute', inset: 0, border: 'none', padding: 0, cursor: 'zoom-in', backgroundImage: `url("${main}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
+        {main && (
+          // Foto principal = provável LCP do PDP. <img> com fetchPriority alto e
+          // sem lazy pra pintar o quanto antes (era background-image, que não
+          // prioriza nem dá pro browser pré-carregar).
+          <button type="button" onClick={() => setZoom(true)} aria-label="Ampliar foto" style={{ position: 'absolute', inset: 0, border: 'none', padding: 0, cursor: 'zoom-in', overflow: 'hidden' }}>
+            <img src={main} alt="" decoding="async" fetchPriority="high" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </button>
+        )}
         {listingId && <FavoriteButton listingId={listingId} initial={favorited} variant="overlay" />}
         {zoom && main && <Lightbox photos={photos} start={sel} onClose={() => setZoom(false)} />}
         {photos.length > 1 && (
@@ -33,8 +40,10 @@ export function Gallery({ photos, listingId, favorited = false }: { photos: stri
               onClick={() => setSel(i)}
               aria-label={`Ver foto ${i + 1}`}
               aria-current={i === sel}
-              style={{ border: 'none', cursor: 'pointer', height: 104, borderRadius: 12, backgroundImage: `url("${p}")`, backgroundSize: 'cover', backgroundPosition: 'center', outlineOffset: -2, outline: i === sel ? `3px solid ${color.primary}` : `1px solid ${color.line}`, opacity: i === sel ? 1 : 0.82 }}
-            />
+              style={{ border: 'none', cursor: 'pointer', height: 104, borderRadius: 12, overflow: 'hidden', padding: 0, outlineOffset: -2, outline: i === sel ? `3px solid ${color.primary}` : `1px solid ${color.line}`, opacity: i === sel ? 1 : 0.82 }}
+            >
+              <img src={p} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
           ))}
         </div>
       )}

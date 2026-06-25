@@ -142,8 +142,8 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
   );
 }
 
-const btnPrimary: React.CSSProperties = { display: 'block', width: '100%', background: color.primary, color: '#fff', border: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
-const btnOutline: React.CSSProperties = { display: 'block', width: '100%', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineCard}`, textAlign: 'center', padding: 15, borderRadius: 12, fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
+const btnPrimary: React.CSSProperties = { display: 'block', width: '100%', background: color.primary, color: '#fff', border: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
+const btnOutline: React.CSSProperties = { display: 'block', width: '100%', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineCard}`, textAlign: 'center', padding: 15, borderRadius: 12, fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 const disabledBtn: React.CSSProperties = { background: '#dfe3df', color: color.inkFaint2, cursor: 'not-allowed' };
 
 // Caixa de aviso (vermelho do design — anti-spam).
@@ -159,7 +159,7 @@ function WarnBox({ children }: { children: React.ReactNode }) {
 // Checkbox "estou ciente" que destrava o confirmar.
 function CienteCheck({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
   return (
-    <button onClick={onToggle} aria-pressed={on} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', width: '100%', marginTop: 16, fontFamily: "'Archivo',sans-serif" }}>
+    <button onClick={onToggle} aria-pressed={on} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', width: '100%', marginTop: 16, fontFamily: "var(--font-archivo),'Archivo',sans-serif" }}>
       <span style={{ width: 21, height: 21, borderRadius: 7, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1, background: on ? color.primary : '#fff', border: `1.5px solid ${on ? color.primary : '#cbc3b2'}` }}>{on && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}</span>
       <span style={{ fontSize: 13.5, lineHeight: 1.5, color: color.inkSoft }}>{label}</span>
     </button>

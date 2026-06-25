@@ -303,6 +303,51 @@ export function invalidateActiveRows() {
   _activeRows = null;
 }
 
+// --- Cache de reputação do vendedor -----------------------------------------
+// A nota do vendedor (média de reviews de negócios concluídos) só muda quando um
+// negócio fecha E ganha review — evento raro. Mesmo assim, ANTES, cada carregamento
+// de home/busca disparava 1 query de reviews pra todos os vendedores da página.
+// Como os MESMOS vendedores reaparecem em página após página, memoizamos por
+// vendedor com TTL: só consulta o banco pros ids ausentes/vencidos. Diferente do
+// cache de cards (que o time manteve em tempo real DE PROPÓSITO), aqui um atraso de
+// ~60s numa nota nova é invisível — não há trade-off de frescura perceptível.
+const RATINGS_TTL_MS = 60_000;
+const RATINGS_MAX = 5000; // teto defensivo de memória (limpa tudo se estourar)
+type RatingAgg = { rating: number | null; count: number };
+const _ratings = new Map<string, { at: number; v: RatingAgg }>();
+
+// Invalida a nota de um vendedor (chamar ao publicar review pra refletir na hora;
+// opcional — o TTL já cobre em ~60s).
+export function invalidateSellerRating(sellerId: string) {
+  _ratings.delete(sellerId);
+}
+
+async function getSellerRatings(ids: string[]): Promise<Map<string, RatingAgg>> {
+  const now = Date.now();
+  const result = new Map<string, RatingAgg>();
+  const missing: string[] = [];
+  for (const id of ids) {
+    const c = _ratings.get(id);
+    if (c && now - c.at < RATINGS_TTL_MS) result.set(id, c.v);
+    else missing.push(id);
+  }
+  if (missing.length) {
+    if (_ratings.size > RATINGS_MAX) _ratings.clear();
+    const revs = await db.review.findMany({ where: { reviewedId: { in: missing }, deal: { status: 'completed' } }, select: { reviewedId: true, rating: true } });
+    const agg = new Map<string, { sum: number; n: number }>();
+    for (const r of revs) { const e = agg.get(r.reviewedId) ?? { sum: 0, n: 0 }; e.sum += r.rating; e.n++; agg.set(r.reviewedId, e); }
+    // Cacheia TAMBÉM "sem review" (rating null) — senão vendedor sem nota reconsulta
+    // o banco a cada página.
+    for (const id of missing) {
+      const e = agg.get(id);
+      const v: RatingAgg = e ? { rating: e.sum / e.n, count: e.n } : { rating: null, count: 0 };
+      _ratings.set(id, { at: now, v });
+      result.set(id, v);
+    }
+  }
+  return result;
+}
+
 const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 500000 ? 'p3' : 'p4');
 const sizeBucket = (s: number) => (s < 7 ? 's1' : s < 9 ? 's2' : s < 11 ? 's3' : s < 13 ? 's4' : 's5');
 
@@ -403,13 +448,12 @@ export async function getBrowseData(sp: SP) {
   const fac = computeFacets(rows, f, persp);
 
   const items = raw.map((l) => toCard(l, persp));
-  // reputação do vendedor (média de reviews de negócios concluídos) — 1 query batch
+  // reputação do vendedor (média de reviews de negócios concluídos) — memoizada por
+  // vendedor com TTL (getSellerRatings): só bate no banco pros ids ausentes/vencidos.
   const sellerIds = [...new Set(items.map((i) => i.seller?.id).filter(Boolean))] as string[];
   if (sellerIds.length) {
-    const revs = await db.review.findMany({ where: { reviewedId: { in: sellerIds }, deal: { status: 'completed' } }, select: { reviewedId: true, rating: true } });
-    const agg = new Map<string, { sum: number; n: number }>();
-    for (const r of revs) { const e = agg.get(r.reviewedId) ?? { sum: 0, n: 0 }; e.sum += r.rating; e.n++; agg.set(r.reviewedId, e); }
-    for (const it of items) { const e = it.seller && agg.get(it.seller.id); if (it.seller && e) { it.seller.rating = e.sum / e.n; it.seller.ratingCount = e.n; } }
+    const ratings = await getSellerRatings(sellerIds);
+    for (const it of items) { const r = it.seller && ratings.get(it.seller.id); if (it.seller && r) { it.seller.rating = r.rating; it.seller.ratingCount = r.count; } }
   }
   // marca quais o usuário logado já favoritou (1 query)
   const me = await getCurrentUser();

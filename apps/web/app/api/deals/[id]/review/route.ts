@@ -3,6 +3,7 @@ import { errorResponse } from '../../../../../lib/http';
 import { z } from 'zod';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 import { createReview, DealError } from '../../../../../lib/deals';
+import { invalidateSellerRating } from '../../../../../lib/browse';
 
 export const runtime = 'nodejs';
 
@@ -14,7 +15,8 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const user = await requireUser();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
-    await createReview(user.id, params.id, parsed.data.rating, parsed.data.comment, parsed.data.tags);
+    const reviewedId = await createReview(user.id, params.id, parsed.data.rating, parsed.data.comment, parsed.data.tags);
+    invalidateSellerRating(reviewedId); // nota nova reflete na home/busca sem esperar o TTL
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

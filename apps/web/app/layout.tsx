@@ -1,8 +1,27 @@
 import type { Metadata } from 'next';
+import { Archivo, Spectral } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ToastProvider } from '../components/Toast';
 import './globals.css';
+
+// Fontes self-hosted via next/font: elimina o request render-blocking ao
+// fonts.googleapis.com, gera preload automático e aplica size-adjust (corta CLS
+// de fonte). `display: 'swap'` mantém o texto visível durante o load. As CSS
+// variables são consumidas em globals.css (font.sans / font.serif).
+const archivo = Archivo({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-archivo',
+  display: 'swap',
+});
+const spectral = Spectral({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-spectral',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'),
@@ -19,15 +38,7 @@ export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="pt-BR" className={`${archivo.variable} ${spectral.variable}`}>
       <body>
         <ToastProvider>{children}</ToastProvider>
         <Analytics />

@@ -109,7 +109,7 @@ export function ComoFunciona() {
   const scene = SCENES[ci];
 
   return (
-    <div ref={boxRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: 'radial-gradient(120% 120% at 28% 16%, #1c443a 0%, #11302a 46%, #09201b 100%)', fontFamily: "'Archivo', system-ui, sans-serif" }}>
+    <div ref={boxRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: 'radial-gradient(120% 120% at 28% 16%, #1c443a 0%, #11302a 46%, #09201b 100%)', fontFamily: "var(--font-archivo),'Archivo', system-ui, sans-serif" }}>
       <div style={{ width: 1280, height: 720, position: 'absolute', left: '50%', top: '50%', transform: `translate(-50%,-50%) scale(${scale.toFixed(4)})`, transformOrigin: 'center center' }}>
 
         {/* ===== PHONE ===== */}
@@ -126,7 +126,7 @@ export function ComoFunciona() {
                   <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.5px', textTransform: 'uppercase', color: '#fff' }}>Kite Life</span>
                 </div>
                 <div style={{ position: 'absolute', left: 22, right: 22, top: 150 }}>
-                  <div style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 13, color: '#e7c79a', marginBottom: 7 }}>Cumbuco · Ceará</div>
+                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 13, color: '#e7c79a', marginBottom: 7 }}>Cumbuco · Ceará</div>
                   <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1.04, textTransform: 'uppercase', letterSpacing: '-0.6px', color: '#fff' }}>Equipamento<br />de kite com<br />confiança</div>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export function ComoFunciona() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
                   <span style={{ fontSize: 11.5, fontWeight: 700, color: '#1f6b5c', background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}>Título automático</span>
                 </div>
-                <div style={{ fontFamily: "'Spectral',serif", fontSize: 15, fontWeight: 600, color: '#23332e', background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '13px 14px' }}>Duotone Evo D/LAB · 10 m² · 2026</div>
+                <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 15, fontWeight: 600, color: '#23332e', background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '13px 14px' }}>Duotone Evo D/LAB · 10 m² · 2026</div>
                 <div style={{ ...cta, position: 'absolute', left: 20, right: 20, bottom: 24, borderRadius: 12 }}>Publicar anúncio</div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(2) }}>
@@ -212,14 +212,14 @@ export function ComoFunciona() {
                 <div style={{ padding: '6px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ background: '#fff', border: '1px solid #ece6d8', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ position: 'relative', height: 120, backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}><div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(20,72,62,0.92)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999 }}>10 m²</div></div>
-                    <div style={{ padding: '11px 13px' }}><div style={{ fontSize: 11.5, fontWeight: 600, color: '#9aa49d', marginBottom: 3 }}>Duotone · 2026</div><div style={{ fontFamily: "'Spectral',serif", fontSize: 16, fontWeight: 600, marginBottom: 7 }}>Evo D/LAB</div><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.5px' }}>R$ 21.459</div><div style={{ fontSize: 11, color: '#8a948d' }}><span style={{ color: '#d9a86b' }}>★</span> 4.9 · Cumbuco</div></div></div>
+                    <div style={{ padding: '11px 13px' }}><div style={{ fontSize: 11.5, fontWeight: 600, color: '#9aa49d', marginBottom: 3 }}>Duotone · 2026</div><div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 16, fontWeight: 600, marginBottom: 7 }}>Evo D/LAB</div><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.5px' }}>R$ 21.459</div><div style={{ fontSize: 11, color: '#8a948d' }}><span style={{ color: '#d9a86b' }}>★</span> 4.9 · Cumbuco</div></div></div>
                   </div>
                 </div>
               </div>
               <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: `rgba(12,37,32,${(sheetE * 0.42).toFixed(3)})`, pointerEvents: 'none' }} />
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 3, background: '#f6f3ec', borderRadius: '22px 22px 0 0', padding: '12px 18px 22px', boxShadow: '0 -14px 34px rgba(0,0,0,0.2)', transform: `translateY(${((1 - sheetE) * 100).toFixed(1)}%)` }}>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 12px' }}><div style={{ width: 40, height: 5, borderRadius: 999, background: '#d8d0bd' }} /></div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><h2 style={{ fontFamily: "'Spectral',serif", fontSize: 21, fontWeight: 600, margin: 0 }}>Filtros</h2><span style={{ fontSize: 12.5, fontWeight: 700, color: '#1f6b5c' }}>Limpar tudo</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 21, fontWeight: 600, margin: 0 }}>Filtros</h2><span style={{ fontSize: 12.5, fontWeight: 700, color: '#1f6b5c' }}>Limpar tudo</span></div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', color: '#5a6b65', marginBottom: 11 }}><span style={{ width: 7, height: 7, background: '#1f6b5c', transform: 'rotate(45deg)', borderRadius: 1 }} />Tamanho do kite</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   <span style={sizeChip}>8</span><span style={sizeChip}>9</span>
@@ -239,7 +239,7 @@ export function ComoFunciona() {
                   <div style={{ position: 'absolute', bottom: 12, left: 14, background: 'rgba(20,48,42,0.85)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999 }}>10 m²</div>
                 </div>
                 <div style={{ padding: '16px 20px 0' }}>
-                  <div style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#1f6b5c', marginBottom: 5 }}>Duotone · 2026</div>
+                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#1f6b5c', marginBottom: 5 }}>Duotone · 2026</div>
                   <h1 style={{ ...h1, fontSize: 25, marginBottom: 8 }}>Evo D/LAB 10 m²</h1>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Cumbuco · Cauípe — retirada no spot</div>
                   <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px' }}>R$ 21.459</div>
@@ -316,7 +316,7 @@ export function ComoFunciona() {
                     <div style={{ width: 58, height: 58, borderRadius: 11, flex: 'none', backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}><span style={tagSoft}>Oferta</span><span style={tagSoft}>Aceito</span></div>
-                      <div style={{ fontFamily: "'Spectral',serif", fontSize: 16, fontWeight: 600, lineHeight: 1.1 }}>Evo D/LAB 10 m²</div>
+                      <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 16, fontWeight: 600, lineHeight: 1.1 }}>Evo D/LAB 10 m²</div>
                       <div style={{ fontSize: 11.5, color: '#8a948d', marginTop: 2 }}>Para <strong style={{ color: '#23332e' }}>Lucas M.</strong> · @lucaskite</div>
                     </div>
                     <div style={{ textAlign: 'right', flex: 'none' }}><div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#9aa49d' }}>Oferta</div><div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>R$ 21.459</div></div>
@@ -367,10 +367,10 @@ export function ComoFunciona() {
             <div style={{ width: 15, height: 15, background: '#d9a86b', transform: 'rotate(45deg)', borderRadius: 3 }} />
             <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.5px', textTransform: 'uppercase', color: '#fef9ef' }}>Kite Life</span>
             <span style={{ width: 5, height: 5, borderRadius: 999, background: 'rgba(231,225,212,0.35)' }} />
-            <span style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 16, color: '#e7c79a' }}>Como funciona</span>
+            <span style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 16, color: '#e7c79a' }}>Como funciona</span>
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '2.5px', color: '#d9a86b', marginBottom: 14 }}>ETAPA {scene.no} / 08</div>
-          <div style={{ fontFamily: "'Spectral',serif", fontSize: 46, fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.6px', color: '#fef9ef', marginBottom: 14, maxWidth: 540 }}>{scene.label}</div>
+          <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 46, fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.6px', color: '#fef9ef', marginBottom: 14, maxWidth: 540 }}>{scene.label}</div>
           <div style={{ fontSize: 17, color: 'rgba(231,225,212,0.6)', lineHeight: 1.45, marginBottom: 36, maxWidth: 440 }}>{scene.sub}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 440 }}>
             {SCENES.map((s, i) => {
@@ -401,12 +401,12 @@ function Check() {
 }
 
 const cta: CSSProperties = { background: '#1f6b5c', color: '#fff', borderRadius: 13, padding: 15, textAlign: 'center', fontSize: 16, fontWeight: 700 };
-const h1: CSSProperties = { fontFamily: "'Spectral',serif", fontSize: 26, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
+const h1: CSSProperties = { fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 26, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
 const pSub: CSSProperties = { fontSize: 13.5, color: '#6b7a73', margin: '0 0 26px', lineHeight: 1.5 };
 const lbl: CSSProperties = { fontSize: 11.5, fontWeight: 600, color: '#48564f', marginBottom: 6 };
 const field: CSSProperties = { fontSize: 13.5, fontWeight: 600, border: '1.5px solid #e0d9c9', borderRadius: 10, padding: '11px 12px', background: '#fff' };
 const successWrap: CSSProperties = { position: 'absolute', inset: 0, background: '#f6f3ec', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 30px', zIndex: 2 };
-const successH1: CSSProperties = { fontFamily: "'Spectral',serif", fontSize: 25, fontWeight: 600, margin: '0 0 10px' };
+const successH1: CSSProperties = { fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 25, fontWeight: 600, margin: '0 0 10px' };
 const successP: CSSProperties = { fontSize: 14, color: '#6b7a73', lineHeight: 1.55, margin: 0 };
 const chipOff: CSSProperties = { fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1px solid #ddd5c5' };
 const sizeChip: CSSProperties = { fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1.5px solid #ddd5c5' };
