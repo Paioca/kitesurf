@@ -68,7 +68,7 @@ export default async function MeusAnuncios() {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ padding: '20px 18px 96px' }}>{body}</div>
-        <MobileTabBar active="perfil" />
+        <MobileTabBar active="anuncios" />
       </div>
       <div className="only-desktop">
         <SiteHeader />

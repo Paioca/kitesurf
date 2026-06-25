@@ -14,7 +14,7 @@ export function MobileAppBar() {
   );
 }
 
-export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'msg' | 'perfil' }) {
+export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'msg' | 'anuncios' }) {
   return (
     <nav style={tabBar}>
       <Link href="/" style={tab(active === 'home')}><Diamond size={18} c={active === 'home' ? color.primary : color.inkFaint2} r={3} /><span style={lbl(active === 'home')}>Início</span></Link>
@@ -23,7 +23,7 @@ export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'm
         <span style={fab}>+</span><span style={{ fontSize: 10.5, fontWeight: 700 }}>Anunciar</span>
       </Link>
       <Link href="/pedidos" style={tab(active === 'msg')}><span style={{ position: 'relative', fontSize: 18 }}>✉<RequestBadge /></span><span style={lbl(active === 'msg')}>Negociações</span></Link>
-      <Link href="/conta" style={tab(active === 'perfil')}><span style={{ width: 19, height: 19, borderRadius: 999, background: active === 'perfil' ? color.primary : '#cfd8d2', display: 'block' }} /><span style={lbl(active === 'perfil')}>Conta</span></Link>
+      <Link href="/conta/anuncios" style={tab(active === 'anuncios')}><span style={{ width: 19, height: 15, borderRadius: 4, border: `2px solid ${active === 'anuncios' ? color.primary : color.inkFaint2}`, display: 'block', position: 'relative' }}><span style={{ position: 'absolute', left: 3, right: 3, top: 3, height: 2, borderRadius: 2, background: active === 'anuncios' ? color.primary : color.inkFaint2 }} /></span><span style={lbl(active === 'anuncios')}>Meus anúncios</span></Link>
     </nav>
   );
 }

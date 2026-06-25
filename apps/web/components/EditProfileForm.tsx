@@ -7,6 +7,7 @@ import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
 import { COUNTRY_NAMES } from '../lib/geo';
 import { SPOTS } from '../lib/filters';
+import { useConfirm } from './ConfirmDialog';
 
 export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; spot: string; country: string; email: string; emailVerified: boolean; avatarUrl: string; locale: string } }) {
   const [name, setName] = useState(initial.name);
@@ -24,6 +25,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   const [emailMessage, setEmailMessage] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { confirm } = useConfirm();
 
   async function uploadAvatar(file?: File | null) {
     if (!file) return;
@@ -63,7 +65,8 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
   }
 
   async function remove() {
-    if (!window.confirm('Excluir sua conta? Seus anúncios saem do ar e não dá pra desfazer.')) return;
+    const ok = await confirm({ title: 'Excluir sua conta?', body: 'Seus anúncios saem do ar e não dá pra desfazer.', confirmLabel: 'Excluir conta', danger: true });
+    if (!ok) return;
     setSaving(true); setError('');
     try {
       const res = await fetch('/api/auth/me', { method: 'DELETE' });

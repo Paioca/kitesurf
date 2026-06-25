@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { color } from '../lib/tokens';
 import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
 
 const WA = '#25D366'; // verde WhatsApp (mesma linguagem dos botões de contato)
 
@@ -19,10 +20,11 @@ export function RequestActions({ id }: { id: string; type?: string }) {
   const [err, setErr] = useState('');
   const router = useRouter();
   const toast = useToast();
+  const { confirm } = useConfirm();
   const anyBusy = busy !== '';
 
   async function decline() {
-    if (!window.confirm('Recusar este pedido?')) return;
+    if (!await confirm({ title: 'Recusar este pedido?', confirmLabel: 'Recusar', danger: true })) return;
     setBusy('declined'); setErr('');
     try {
       const res = await fetch(`/api/requests/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'declined' }) });
