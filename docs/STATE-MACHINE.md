@@ -56,12 +56,24 @@ Regras:
 | `seller_confirmed` | vendedor marcou vendido; falta o comprador confirmar | `confirmSaleFromRequest` |
 | `completed` | comprador confirmou — entra no histórico/reputação | `confirmPurchase` |
 | `cancelled` | desfeito pelo vendedor (`cancelSale`) ou comprador ("não comprei") | `cancelSale` / `denyPurchase` |
-| `voided` | invalidado: peça vendida a outro / componente indisponível | `confirmPurchase` |
+| `voided` | invalidado: peça vendida a outro / componente indisponível | `confirmPurchase`/`closeUnconfirmedExpired` (via `applyPieceSale`) |
+| `closed_unconfirmed` | comprador não confirmou em 72h; encerrado como vendido | `closeUnconfirmedExpired` (cron) |
+| `reversal_requested` | correção pedida sobre venda `completed`; aguarda a outra parte | `requestReversal` |
+| `reversed` | correção aceita (bilateral ou pela moderação); peça volta a `paused` | `respondReversal` / `resolveDispute` |
+| `disputed` | correção recusada; foi pra fila da moderação | `respondReversal` |
 
-`completed` e `voided` são terminais. `seller_confirmed` concorrentes (o vendedor pode
-marcar vendido pra mais de um comprador) viram `voided` quando um deles conclui — não
-ficam órfãos esperando uma confirmação impossível. A trava de DB (índice único parcial
-`(listingId, component) WHERE status='completed'`) garante 1 venda concluída por peça.
+Terminais: `voided`, `reversed`. **`completed` NÃO é terminal** — admite correção
+(`reversal_requested → reversed/disputed`, podendo voltar a `completed` se desistir/`uphold`).
+`closed_unconfirmed` é corrigível pelo vendedor (`correctUnconfirmed → cancelled`).
+`seller_confirmed` concorrentes (o vendedor pode marcar vendido pra mais de um comprador)
+viram `voided` quando um deles conclui — não ficam órfãos esperando confirmação impossível.
+A trava de DB (índice único parcial `(listingId, component) WHERE status='completed'`)
+garante 1 venda concluída por peça.
+
+Transições de correção/disputa (`reversal`): `completed → reversal_requested`; deste,
+`→ reversed` (aceita), `→ disputed` (recusa), ou `→ completed` (quem pediu desiste —
+`cancelReversal`). De `disputed`, a moderação decide: `→ completed` (uphold) ou
+`→ reversed` (reverse).
 
 ## Venda do kit (parcial)
 
@@ -82,8 +94,17 @@ Emitidos dentro da transação da transição (`NotificationType`):
 | `sale_marked` | comprador | vendedor marca vendido (falta confirmar) |
 | `purchase_confirmed` | vendedor | comprador confirma a compra |
 | `purchase_denied` | vendedor | comprador respondeu "não comprei" |
+| `sale_cancelled` | comprador | vendedor desfez a venda marcada (`cancelSale`) |
+| `sale_closed_unconfirmed` | comprador | 72h sem confirmar → encerrado (cron) |
 | `sold_elsewhere` | compradores afetados | peça vendida a outro |
 | `listing_removed` | compradores afetados | anúncio removido |
+| `reversal_requested` | contraparte | correção de venda pedida |
+| `reversal_confirmed` | quem pediu / ambas as partes | correção aceita (parte ou moderação) |
+| `reversal_rejected` | quem pediu / ambas as partes | correção recusada (parte ou moderação) |
+
+São **13 tipos** no enum `NotificationType`. Hoje cada evento vira (a) o contador do
+badge e (b) uma linha de texto no feed "Novidades" de `/pedidos` (`lib/notification-copy.ts`).
+Só `request_new` e `request_accepted` têm também canal externo (SMS/WhatsApp via `lib/notify.ts`).
 
 ## Pendências conhecidas
 
