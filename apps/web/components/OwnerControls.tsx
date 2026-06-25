@@ -14,12 +14,12 @@ export function OwnerControls({ listingId, status, saleRecord = false, compact =
   const router = useRouter();
   const toast = useToast();
 
-  async function setStatus(next: 'active' | 'paused') {
+  async function setStatus(next: 'active' | 'paused', okMsg = next === 'paused' ? 'Anúncio pausado.' : 'Anúncio reativado.') {
     setBusy(true); setErr('');
     try {
       const res = await fetch(`/api/listings/${listingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro.');
-      toast.show(next === 'paused' ? 'Anúncio pausado.' : 'Anúncio reativado.');
+      toast.show(okMsg);
       router.refresh(); setBusy(false);
     } catch (e: any) { setErr(e.message); toast.show(e.message, 'err'); setBusy(false); }
   }
@@ -47,6 +47,7 @@ export function OwnerControls({ listingId, status, saleRecord = false, compact =
         {isEditable(status as ListingStatus) && <Link href={`/anuncio/${listingId}/editar`} style={btnPrimary}>Editar</Link>}
         {status === 'active' && <button onClick={() => setStatus('paused')} disabled={busy} style={btnOutline}>Pausar</button>}
         {status === 'paused' && <button onClick={() => setStatus('active')} disabled={busy} style={btnOutline}>Reativar</button>}
+        {status === 'archived' && <button onClick={() => setStatus('active', 'Anúncio republicado.')} disabled={busy} style={btnOutline}>Republicar</button>}
         {!locked && <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>}
       </div>
       {locked && <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 10, lineHeight: 1.45 }}>{status === 'sold' ? 'Vendido — este anúncio fica no seu histórico e não pode ser excluído.' : 'Este anúncio tem uma venda registrada e não pode ser excluído.'}</div>}

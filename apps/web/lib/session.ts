@@ -63,6 +63,20 @@ export async function clearSession() {
   (await cookies()).delete(COOKIE);
 }
 
+// Revoga TODAS as sessões emitidas para um usuário, incrementando sessionVersion.
+// getCurrentUser compara user.sessionVersion com o sv do JWT (linha do verify), então
+// qualquer cookie antigo — inclusive um token vazado — para de valer imediatamente.
+// Usar em: logout, troca de e-mail (canal de segurança) e exclusão de conta.
+// Retorna o novo sessionVersion para quem precisar reemitir o cookie da sessão atual.
+export async function revokeAllSessions(userId: string): Promise<number> {
+  const updated = await db.user.update({
+    where: { id: userId },
+    data: { sessionVersion: { increment: 1 } },
+    select: { sessionVersion: true },
+  });
+  return updated.sessionVersion;
+}
+
 async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
@@ -91,6 +105,9 @@ export async function getCurrentUser() {
   if (!session) return null;
   const user = await db.user.findUnique({ where: { id: session.sub } });
   if (!user || user.status === 'blocked') return null;
+  // Defesa em profundidade: rejeita conta soft-deletada mesmo que algum fluxo futuro
+  // reative `status` sem limpar `deletedAt`. Não depende só de status === 'blocked'.
+  if (user.deletedAt) return null;
   if (user.sessionVersion !== session.sv) return null;
   return user;
 }

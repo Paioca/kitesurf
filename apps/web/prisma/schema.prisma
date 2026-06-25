@@ -579,3 +579,28 @@ model Notification {
   @@index([userId, readAt])
   @@index([userId, createdAt])
 }
+
+// Outbox de entrega externa (Twilio SMS/WhatsApp). Estratégia inline-first: o envio
+// tenta INLINE no request; só quando FALHA (timeout/erro/Twilio fora) grava uma linha
+// `pending` aqui, e o cron drain-notifications reenvia com backoff. Mata a perda
+// silenciosa do fail-open antigo sem atrasar o caminho feliz por uma fila.
+enum DeliveryStatus {
+  pending
+  sent
+  failed
+}
+
+model NotificationDelivery {
+  id            String         @id @default(uuid())
+  channel       String // sms | whatsapp
+  kind          String // new_request | accept — métrica/debug
+  body          Json // params do POST Twilio (From/To/Body/ContentSid/...), pra reenviar idêntico
+  status        DeliveryStatus @default(pending)
+  attempts      Int            @default(0)
+  lastError     String? // status/erro do último envio (sem PII)
+  nextAttemptAt DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  sentAt        DateTime?
+
+  @@index([status, nextAttemptAt]) // o drain varre pending vencidos
+}

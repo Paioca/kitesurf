@@ -3,6 +3,7 @@
   "regions": ["gru1"],
   "crons": [
     { "path": "/api/cron/close-unconfirmed", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/cleanup", "schedule": "0 4 * * *" }
+    { "path": "/api/cron/cleanup", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/drain-notifications", "schedule": "*/5 * * * *" }
   ]
 }

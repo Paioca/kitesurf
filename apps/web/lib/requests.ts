@@ -53,8 +53,10 @@ export async function createRequest(userId: string, listingId: string, type: 'of
     await emit(tx, { userId: listing.userId, type: 'request_new', listingId, requestId: req.id, actorId: userId, data: { title, requestType: type, amount: amount ?? null } });
     return req;
   });
-  // avisa o vendedor já com o contato do comprador (pode chamar direto). no-op se Twilio off.
-  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: title, buyerName: buyer?.name ?? 'Um comprador', buyerPhone: buyer?.phone ?? '' });
+  // avisa o vendedor que há um novo pedido — SEM o contato do comprador. O telefone só
+  // é liberado quando o vendedor ACEITA (regra de negócio: solicita → aceita → libera
+  // WhatsApp). no-op se Twilio off.
+  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: title, buyerName: buyer?.name ?? 'Um comprador' });
   return r;
 }
 
@@ -154,7 +156,7 @@ export async function getRequestsForUser(userId: string) {
   };
   const shape = (r: any) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, component: r.component, componentLabel: COMPONENT_LABEL[r.component as Component], listing: listingShape(r.listing), deal: dealState(r), createdAt: r.createdAt.toISOString() });
   return {
-    incoming: incoming.map((r) => ({ ...shape(r), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: waLink(r.buyer.phone) } })),
+    incoming: incoming.map((r) => ({ ...shape(r), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: r.status === 'accepted' ? waLink(r.buyer.phone) : null } })),
     outgoing: outgoing.map((r) => ({ ...shape(r), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null })),
     moreIncoming, moreOutgoing,
   };

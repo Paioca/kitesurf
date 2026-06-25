@@ -11,6 +11,7 @@ import { listingHasSaleRecord } from '../../../lib/deals';
 import { OwnerControls } from '../../../components/OwnerControls';
 import { ContactActions, type Target } from '../../../components/ContactActions';
 import { sellables, applyReservations, COMPONENT_LABEL, type Component, type ListingLike } from '../../../lib/components';
+import { isPubliclyVisible } from '../../../lib/listing-status';
 import { formatBRL } from '../../../lib/api';
 import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
@@ -26,7 +27,8 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const params = await props.params;
   const l = await getListing(params.id);
-  if (!l) return { title: 'Anúncio não encontrado — Kitetropos' };
+  // OG/preview só pra anúncio publicado — não vaza título/preço de rascunho/pausado.
+  if (!l || !isPubliclyVisible(l.status)) return { title: 'Anúncio não encontrado — Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
   const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
   const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
@@ -61,6 +63,9 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
   const me = await getCurrentUser();
   const isOwner = !!me && me.id === l.userId;
+  // Visibilidade: draft/paused/archived são privados do dono. Terceiro que adivinhe o
+  // UUID não pode ver anúncio não publicado (vaza preço/fotos/ficha).
+  if (!isPubliclyVisible(l.status) && !isOwner) notFound();
   // §10 — o dono não pode excluir um anúncio que já registra venda (sold/histórico).
   const saleRecord = isOwner && (l.status === 'sold' || (await listingHasSaleRecord(l.id)));
   // §7 — peça com venda aguardando confirmação (seller_confirmed) está reservada e não

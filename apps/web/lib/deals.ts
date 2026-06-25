@@ -5,10 +5,20 @@ import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
 import { emit, emitMany, affectedBuyerIds } from './notifications';
 import { recordAudit } from './audit';
+import { childLogger } from './logger';
+
+const log = childLogger('deals');
 
 export class DealError extends PublicError {}
 
 const RESERVE_HOURS = 72; // prazo do comprador confirmar antes do vendedor poder encerrar
+
+// Cron das 72h: teto de deals por página e orçamento de tempo por execução. Sem isso o
+// findMany varria TODOS os vencidos e o loop sequencial podia estourar o timeout da
+// função num pico (backlog acumulado). O orçamento fica abaixo do maxDuration=60s da
+// rota; o que sobra é varrido no próximo run (a paginação por cursor garante progresso).
+const CLOSE_BATCH = 200;
+const CLOSE_TIME_BUDGET_MS = 50_000;
 
 const sellableSel = { status: true, hasBarra: true, price: true, kitePrice: true, barraPrice: true, kiteSoldAt: true, barraSoldAt: true } as const;
 
@@ -22,7 +32,9 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
 
   const listing = await db.listing.findFirst({ where: { id: r.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
   if (!listing) throw new DealError('Anúncio não encontrado.', 404);
-  if (listing.status !== 'active' && listing.status !== 'paused') throw new DealError('Anúncio não está disponível.', 400);
+  // Decisão de produto: anúncio PAUSADO fecha tudo — não recebe oferta/visita (já barrado
+  // em createRequest) nem registro de venda novo. O vendedor reativa antes de marcar vendido.
+  if (listing.status !== 'active') throw new DealError('Anúncio não está disponível. Reative-o para registrar a venda.', 400);
   const sell = sellables(listing as ListingLike).find((s) => s.component === r.component);
   if (!sell?.available) throw new DealError('Esta peça já foi vendida.', 409);
 
@@ -146,8 +158,10 @@ async function unmarkPieceSale(tx: any, listingId: string, comp: Component) {
   const data: Record<string, unknown> = {};
   if (comp === 'kite') { data.kiteSoldAt = null; data.kiteSoldToUserId = null; }
   else if (comp === 'barra') { data.barraSoldAt = null; data.barraSoldToUserId = null; }
-  const l = await tx.listing.findUnique({ where: { id: listingId }, select: { status: true } });
-  if (l?.status === 'sold' || l?.status === 'archived') { data.status = 'paused'; data.soldToUserId = null; }
+  const l = await tx.listing.findUnique({ where: { id: listingId }, select: { status: true, deletedAt: true } });
+  // Soft-deleted/removido por moderação (deletedAt != null) é TERMINAL: não ressuscita pra
+  // paused. Só reabre o status de um anúncio vivo que tinha virado registro de venda.
+  if (l && l.deletedAt == null && (l.status === 'sold' || l.status === 'archived')) { data.status = 'paused'; data.soldToUserId = null; }
   await tx.listing.update({ where: { id: listingId }, data });
 }
 
@@ -155,25 +169,44 @@ async function unmarkPieceSale(tx: any, listingId: string, comp: Component) {
 // prazo de 72h venceu. Idempotente (só pega seller_confirmed vencidos). Retorna a
 // contagem. Protegido por CRON_SECRET no route que chama.
 export async function closeUnconfirmedExpired(now = new Date()): Promise<number> {
-  const venc = await db.deal.findMany({ where: { status: 'seller_confirmed', confirmationDeadlineAt: { lte: now } }, select: { id: true } });
+  const startedAt = Date.now();
+  let cursor: string | null = null;
   let n = 0;
-  for (const { id } of venc) {
-    try {
-      // o retorno do tx diz se ESTE deal foi de fato encerrado — assim n conta só
-      // encerramentos reais (corrida que pula, ou listing sumido, não inflam a contagem).
-      const closed = await db.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT id FROM "Deal" WHERE id = ${id} FOR UPDATE`;
-        const deal = await tx.deal.findUnique({ where: { id } });
-        if (!deal || deal.status !== 'seller_confirmed') return false; // corrida: alguém já mexeu
-        const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
-        if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return false; }
-        await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
-        await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
-        return true;
-      });
-      if (closed) n++;
-    } catch { /* segue pros outros */ }
+  let drained = false;
+  for (;;) {
+    // Estourou o orçamento de tempo: para e deixa o resto pro próximo cron. A paginação
+    // por cursor de id garante progresso mesmo se um deal falhar repetidamente (não
+    // re-varre a frente da fila — um "deal veneno" é pulado neste run, retentado no próximo).
+    if (Date.now() - startedAt > CLOSE_TIME_BUDGET_MS) break;
+    const batch: { id: string }[] = await db.deal.findMany({
+      where: { status: 'seller_confirmed', confirmationDeadlineAt: { lte: now }, ...(cursor ? { id: { gt: cursor } } : {}) },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+      take: CLOSE_BATCH,
+    });
+    if (batch.length === 0) { drained = true; break; }
+    for (const { id } of batch) {
+      try {
+        // o retorno do tx diz se ESTE deal foi de fato encerrado — assim n conta só
+        // encerramentos reais (corrida que pula, ou listing sumido, não inflam a contagem).
+        const closed = await db.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT id FROM "Deal" WHERE id = ${id} FOR UPDATE`;
+          const deal = await tx.deal.findUnique({ where: { id } });
+          if (!deal || deal.status !== 'seller_confirmed') return false; // corrida: alguém já mexeu
+          const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
+          if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return false; }
+          await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
+          await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
+          return true;
+        });
+        if (closed) n++;
+      } catch { /* segue pros outros */ }
+    }
+    cursor = batch[batch.length - 1].id;
+    if (batch.length < CLOSE_BATCH) { drained = true; break; }
   }
+  // Não esvaziou: ficou backlog. Alerta (visível no log/Sentry) pra não passar batido.
+  if (!drained) log.warn({ event: 'close_unconfirmed_truncated', closed: n }, 'cron de 72h truncado pelo orçamento de tempo — resto fica pro próximo run');
   return n;
 }
 
@@ -322,18 +355,4 @@ export async function listingsWithSaleRecord(listingIds: string[]): Promise<Set<
   if (listingIds.length === 0) return new Set();
   const rows = await db.deal.findMany({ where: { listingId: { in: listingIds }, status: { in: SOLD_RECORD_DEAL_STATUSES } }, select: { listingId: true }, distinct: ['listingId'] });
   return new Set(rows.map((r) => r.listingId));
-}
-
-// Estado do deal para mostrar a ação certa no chat.
-export async function dealForConversation(userId: string, conversationId: string) {
-  const deal = await db.deal.findUnique({ where: { conversationId }, include: { reviews: true } });
-  if (!deal) return null;
-  const iAmSeller = deal.sellerId === userId;
-  return {
-    id: deal.id,
-    status: deal.status,
-    iAmSeller,
-    iAmBuyer: deal.buyerId === userId,
-    myReviewDone: deal.reviews.some((r) => r.reviewerId === userId),
-  };
 }

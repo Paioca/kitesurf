@@ -70,7 +70,7 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
 
 ## Pendências recomendadas (NÃO aplicadas — exigem rodar o app)
 
-- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — ENFORCED STRICT (validar no Preview).**
+- **[ALTA] CSP `script-src 'unsafe-inline'` → nonce — ✅ CONCLUÍDO EM PRODUÇÃO (2026-06-24).**
   O nonce por request é gerado em `proxy.ts` (ex-`middleware.ts`; Next 16 renomeou a
   convenção) e propagado pro Next via override do header de REQUEST `Content-Security-Policy`,
   que faz o App Router carimbar o atributo `nonce` em TODOS os seus `<script>` (verificado:
@@ -97,10 +97,12 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
   dinâmicas e recebem nonce. **Trade-off aceito:** perde render estático/ISR (cada página bate
   no servidor por request). Verificado: 6–13/6–13 scripts com nonce em todas as antes-estáticas.
 
-  **Estado:** `CSP_ENFORCE_STRICT = true` (`proxy.ts`); CSP removida do `next.config.mjs`;
+  **Estado (no ar):** `CSP_ENFORCE_STRICT = true` (`proxy.ts`); CSP removida do `next.config.mjs`;
   `force-dynamic` no layout raiz. CSP estrita (nonce, sem `'unsafe-inline'`) ENFORCED por
-  request em prod; dev fica loose (Turbopack não aplica nonce em dev). De-risco = validar no
-  Preview antes do merge. Notas de Preview: a home pode dar erro de Server Component se o escopo
+  request em prod; dev fica loose (Turbopack não aplica nonce em dev). **Verificado em produção
+  (`kitesurf-web.vercel.app`, 2026-06-24):** home 57/57 e `/entrar` 5/5 scripts inline com nonce;
+  header `script-src 'self' 'nonce-…' https://va.vercel-scripts.com` (sem `'unsafe-inline'`, sem
+  `report-only`). Notas de Preview (não-prod): a home dá erro de Server Component se o escopo
   Preview não tiver `DATABASE_URL`/`SUPABASE_*` (não é CSP); e `https://vercel.live/.../feedback.js`
   (toolbar de Preview) é bloqueado pela CSP estrita — irrelevante pra prod (não injetado lá).
 - **[BAIXA] CSP reporting — CÓDIGO APLICADO, falta ligar o env.** O `proxy.ts` já emite
@@ -115,6 +117,26 @@ independente** (re-lendo o código real) pra descartar falso-positivo antes de v
   modelo `Conversation` legado).
 
 **Verificação (2026-06-24):** `tsc --noEmit` limpo, ESLint limpo, **141/141 testes** passando.
+
+## Dependências vulneráveis (npm audit — 2026-06-24)
+
+`npm audit` aponta 4 advisories em PROD-view e mais no full (dev). Triagem:
+- **`vitest`/`vite`/`esbuild`/`@vitest/mocker`/`vite-node` (até CRITICAL)** — são o **test runner**
+  (devDependencies). NÃO vão pro bundle de produção; o "critical" é o dev-server do esbuild,
+  sem superfície pra usuário real. **Não force-upgrade** (vitest 2→4 quebra a config de teste);
+  tratar num passo dedicado de dev quando der.
+- **`postcss <8.5.10` (moderate, XSS no stringify)** — usado em **build-time sobre o NOSSO CSS**
+  (Tailwind), nunca sobre CSS de usuário → não explorável. Aplicado `overrides.postcss ^8.5.10`
+  no `package.json` raiz (hoisted → 8.5.15). A cópia **vendada dentro do Next (8.4.31)** é
+  bundlada no pacote publicado e o npm não consegue substituir — **só sai com Next 16.3 estável**
+  (hoje só há previews). Remover o override quando subir o Next.
+
+**Conclusão:** exposição de dependência em produção é praticamente nula (build-time, CSS próprio).
+**Verificado:** `next build` completa OK (com `JWT_SECRET` ≥32), CSS compila, **141/141 testes**.
+
+> Nota lateral: o `.env` LOCAL tem `JWT_SECRET` de 27 chars (< 32). Em dev tudo bem (fallback),
+> mas o `next build` roda em modo prod e TRAVA com segredo fraco. Garantir que o `JWT_SECRET`
+> de produção na Vercel tenha ≥32 chars (se o app está no ar, já tem).
 
 ## Falsos-positivos descartados na verificação (não são bugs)
 - Upload "DoS por buffer de 200 MB": a Vercel limita o body antes; não amplifica.

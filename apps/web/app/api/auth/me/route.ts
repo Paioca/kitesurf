@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { errorResponse } from '../../../../lib/http';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
-import { getCurrentUser, requireUser, clearSession, UnauthorizedError } from '../../../../lib/session';
+import { getCurrentUser, requireUser, clearSession, setSession, UnauthorizedError } from '../../../../lib/session';
 import { isOfficialImageUrl } from '../../../../lib/storage';
 import { deleteAccount, LifecycleError } from '../../../../lib/lifecycle';
 import { SPOTS } from '../../../../lib/filters';
@@ -59,8 +59,14 @@ export async function PATCH(req: Request) {
     const spot = dto.spot === undefined ? undefined : dto.spot && SPOTS.includes(dto.spot) ? dto.spot : null;
     const updated = await db.user.update({
       where: { id: user.id },
-      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
+      // Trocar o e-mail muda o canal de recuperação de conta: bump sessionVersion
+      // derruba sessões concorrentes (inclusive uma sessão sequestrada). Reemitimos o
+      // cookie da sessão atual logo abaixo para o próprio usuário não se deslogar.
+      data: { name: dto.name, lastName: norm(dto.lastName), spot, country: norm(dto.country), email, emailVerified: emailChanged ? false : undefined, sessionVersion: emailChanged ? { increment: 1 } : undefined, instagramHandle: ig, avatarUrl: dto.avatarUrl, locale: dto.locale },
     });
+    if (emailChanged) {
+      await setSession(updated.id, updated.sessionVersion);
+    }
     // Audit só quando o e-mail (canal de segurança) mudou. Outros campos do perfil não
     // entram no audit no MVP — escopo deliberado: registrar só ações de segurança/PII.
     if (emailChanged) {
