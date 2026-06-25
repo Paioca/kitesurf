@@ -345,6 +345,8 @@ export async function createReview(userId: string, dealId: string, rating: numbe
     update: { rating, comment: comment ?? null, tags: cleanTags },
     create: { dealId, reviewerId: userId, reviewedId, rating, comment: comment ?? null, tags: cleanTags },
   });
+  // Devolve quem foi avaliado pra o chamador invalidar o cache de nota (browse).
+  return reviewedId;
 }
 
 // Há negociação ABERTA pra um componente? (pedido aceito OU venda aguardando
