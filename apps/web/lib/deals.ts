@@ -40,9 +40,17 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
 
   // 1 negócio por listing+comprador+COMPONENTE (kite e barra do mesmo kit são deals distintos).
   const existing = await db.deal.findFirst({ where: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId, component: r.component } });
-  // Notifica o comprador (sale_marked) só quando o deal PASSA a aguardar confirmação.
-  const becomesPending = !existing || (existing.status !== 'completed' && !existing.sellerConfirmedAt);
-  if (existing && !becomesPending) return existing.id;
+  if (existing) {
+    // Já aguardando confirmação: idempotente (o comprador já recebeu sale_marked).
+    if (existing.status === 'seller_confirmed') return existing.id;
+    // Reativável SÓ a partir de 'cancelled' (vendedor desfez; sellerConfirmedAt foi zerado).
+    // Qualquer outro estado já é registro de venda/encerramento (completed, closed_unconfirmed,
+    // voided, reversed, disputed, reversal_requested): "remarcar" por cima virava no-op
+    // SILENCIOSO (E2 — UI dizia ok e nada acontecia). Agora erro claro instruindo o caminho.
+    if (existing.status !== 'cancelled') {
+      throw new DealError('Esta venda já foi registrada ou encerrada para este comprador. Corrija o negócio anterior antes de marcar de novo.', 409);
+    }
+  }
 
   return db.$transaction(async (tx) => {
     // TRAVA por unidade física (§3): lock da linha do Listing serializa marcações
@@ -110,6 +118,14 @@ export async function cancelSale(userId: string, dealId: string) {
   const lst = await db.listing.findUnique({ where: { id: deal.listingId }, select: { title: true } });
   await db.$transaction(async (tx) => {
     await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled', sellerConfirmedAt: null, buyerConfirmedAt: null, confirmationDeadlineAt: null } });
+    // E3 — reconcilia o Request: a venda foi desfeita, então o pedido ACEITO volta a
+    // 'pending' (aguardando decisão do vendedor). Sem isso ficava 'accepted' e
+    // openNegotiationExists travava a edição/remoção da peça por um pedido órfão. Re-marcar
+    // segue possível (vendedor re-aceita → marca).
+    await tx.request.updateMany({
+      where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: 'accepted' },
+      data: { status: 'pending' },
+    });
     await emit(tx, { userId: deal.buyerId, type: 'sale_cancelled', listingId: deal.listingId, dealId, actorId: deal.sellerId, data: { title: lst?.title ?? '' } });
   });
 }
@@ -220,6 +236,12 @@ export async function correctUnconfirmed(userId: string, dealId: string) {
   await db.$transaction(async (tx) => {
     await unmarkPieceSale(tx, deal.listingId, deal.component);
     await tx.deal.update({ where: { id: dealId }, data: { status: 'cancelled' } });
+    // E3 — mesmo motivo do cancelSale: o pedido aceito do comprador volta a 'pending'
+    // pra não travar a edição da peça (openNegotiationExists só conta 'accepted').
+    await tx.request.updateMany({
+      where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: 'accepted' },
+      data: { status: 'pending' },
+    });
   });
 }
 
