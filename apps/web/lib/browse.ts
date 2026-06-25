@@ -159,8 +159,21 @@ const noReservation = (...comps: Component[]): Prisma.ListingWhereInput =>
 // WHERE por perspectiva. Barra: barras compráveis (avulsa OU kit com barra avulsa),
 // filtro só por cidade (preço/marca/tamanho da barra ficam pra depois). Kite/all:
 // faceta completa (tamanho m², marca, cidade, preço, reparo, kit).
+// Busca textual livre: casa em título, marca ou modelo (case-insensitive). Marca/
+// modelo são listas controladas, então digitar "duotone" ou "rebel" já resolve.
+function textWhere(q: string): Prisma.ListingWhereInput | null {
+  if (!q) return null;
+  return { OR: [
+    { title: { contains: q, mode: 'insensitive' } },
+    { brand: { is: { name: { contains: q, mode: 'insensitive' } } } },
+    { model: { is: { name: { contains: q, mode: 'insensitive' } } } },
+  ] };
+}
+
 function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   const and: Prisma.ListingWhereInput[] = [];
+  const qw = textWhere(f.q);
+  if (qw) and.push(qw);
   if (persp === 'barra') {
     and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
     and.push({ barraSoldAt: null }); // esconde a barra do kit já vendida (anúncio fica na busca de kite)
@@ -234,12 +247,9 @@ type ActiveRow = {
   bladder: string | null; mang: string | null; repair: boolean;
   kiteSold: boolean; barraSold: boolean; // peça avulsa do kit já vendida
 };
-// Sem cache: as facetas são calculadas por request. O app é force-dynamic e a
-// escala atual (centenas de anúncios) torna o custo desprezível — e o Next 16
-// trocou o modelo de cache (unstable_cache/revalidateTag legacy saiu). Quando a
-// escala exigir, a faceta deve virar query agregada no banco (auditoria), não
-// cache de processo.
-async function loadActiveRows(): Promise<ActiveRow[]> {
+// Consulta crua do dataset de facetas (TODOS os ativos). NÃO chamar direto —
+// use loadActiveRows(), que adiciona o cache TTL na frente.
+async function fetchActiveRows(): Promise<ActiveRow[]> {
   const rows = await db.listing.findMany({
     where: BASE,
     select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
@@ -254,6 +264,43 @@ async function loadActiveRows(): Promise<ActiveRow[]> {
       kiteSold: r.kiteSoldAt != null, barraSold: r.barraSoldAt != null,
     };
   });
+}
+
+// Cache de processo (TTL) do dataset de facetas. ANTES: cada busca baixava o
+// catálogo inteiro do banco (O(N) por request, cross-region) — gargalo de escala
+// apontado na auditoria de banco. AGORA: o catálogo é lido no máximo 1x por janela
+// de TTL e compartilhado entre todos os requests da mesma instância (warm).
+//
+// Trade-off: as contagens das facetas podem ficar até ACTIVE_ROWS_TTL_MS
+// desatualizadas (ex.: anúncio novo demora ~30s pra somar +1 numa faceta). Os
+// CARDS e a paginação NÃO usam este cache — saem direto do banco com o WHERE
+// completo, então o resultado da busca em si continua exato e em tempo real.
+const ACTIVE_ROWS_TTL_MS = 30_000;
+let _activeRows: { at: number; rows: ActiveRow[] } | null = null;
+let _activeRowsInflight: Promise<ActiveRow[]> | null = null;
+
+async function loadActiveRows(): Promise<ActiveRow[]> {
+  const fresh = _activeRows && Date.now() - _activeRows.at < ACTIVE_ROWS_TTL_MS;
+  if (fresh) return _activeRows!.rows;
+  // Coalescência: no pico, dezenas de buscas concorrentes batem no cache vencido
+  // ao mesmo tempo. Sem isto, cada uma dispararia a query pesada — exatamente o
+  // colapso que queremos evitar. Com isto, todas aguardam a MESMA consulta.
+  if (_activeRowsInflight) return _activeRowsInflight;
+  _activeRowsInflight = fetchActiveRows()
+    .then((rows) => {
+      _activeRows = { at: Date.now(), rows };
+      return rows;
+    })
+    .finally(() => {
+      _activeRowsInflight = null;
+    });
+  return _activeRowsInflight;
+}
+
+// Invalida o cache na hora (chamar após criar/editar/remover/vender anúncio se
+// quiser facetas instantâneas; opcional — o TTL já cobre em ~30s).
+export function invalidateActiveRows() {
+  _activeRows = null;
 }
 
 const priceBucket = (p: number) => (p < 50000 ? 'p1' : p < 200000 ? 'p2' : p < 500000 ? 'p3' : 'p4');
@@ -330,37 +377,29 @@ export async function getBrowseData(sp: SP) {
   const where = buildWhere(f, persp);
   const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true, instagramHandle: true } } };
 
-  // Preço efetivo POR PERSPECTIVA (barra: barraPrice; kite: kitePrice; senão price)
-  // — o mesmo que o card mostra. Ordenar por ele exige COALESCE, que o orderBy do
-  // Prisma não expressa, então a ordenação por preço é feita em memória sobre um
-  // select leve (paginação preservada). Sem isso, a barra ordenava pelo preço do kit.
+  // Ordenação por preço NO BANCO. O "preço efetivo" por perspectiva (barra:
+  // COALESCE(barraPrice,price); kite: COALESCE(kitePrice,price); all: price) está
+  // materializado nas colunas geradas kiteEffPrice/barraEffPrice — então orderBy +
+  // skip/take rodam no Postgres (índice parcial), sem carregar tudo em memória.
   const priceSort = f.sort === 'price_asc' || f.sort === 'price_desc';
+  const orderBy: Prisma.ListingOrderByWithRelationInput[] = priceSort
+    ? [
+        (() => {
+          const dir = f.sort === 'price_asc' ? 'asc' : 'desc';
+          return persp === 'barra' ? { barraEffPrice: dir } : persp === 'kite' ? { kiteEffPrice: dir } : { price: dir };
+        })(),
+        { createdAt: 'desc' }, // desempate estável (mesmo critério da ordenação antiga)
+      ]
+    : [{ createdAt: 'desc' }];
 
   let raw: any[];
   let total: number;
   let rows: ActiveRow[];
-  if (priceSort) {
-    const [lite, activeRows] = await Promise.all([
-      db.listing.findMany({ where, select: { id: true, price: true, kitePrice: true, barraPrice: true, createdAt: true } }),
-      loadActiveRows(),
-    ]);
-    rows = activeRows;
-    total = lite.length;
-    const eff = (r: { price: number; kitePrice: number | null; barraPrice: number | null }) =>
-      persp === 'barra' ? r.barraPrice ?? r.price : persp === 'kite' ? r.kitePrice ?? r.price : r.price;
-    const dir = f.sort === 'price_asc' ? 1 : -1;
-    lite.sort((a, b) => (eff(a) - eff(b)) * dir || b.createdAt.getTime() - a.createdAt.getTime());
-    const pageIds = lite.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((r) => r.id);
-    const recs = await db.listing.findMany({ where: { id: { in: pageIds } }, relationLoadStrategy: 'join', include });
-    const pos = new Map(pageIds.map((id, i) => [id, i]));
-    raw = recs.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
-  } else {
-    [raw, total, rows] = await Promise.all([
-      db.listing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, relationLoadStrategy: 'join', include }),
-      db.listing.count({ where }),
-      loadActiveRows(),
-    ]);
-  }
+  [raw, total, rows] = await Promise.all([
+    db.listing.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, relationLoadStrategy: 'join', include }),
+    db.listing.count({ where }),
+    loadActiveRows(),
+  ]);
   const fac = computeFacets(rows, f, persp);
 
   const items = raw.map((l) => toCard(l, persp));

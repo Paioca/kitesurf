@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, SIZE_RANGES, SIZE_LABELS, SPOTS, type SP } from '../lib/filters';
+import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, currentHref, SIZE_RANGES, SIZE_LABELS, SPOTS, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -14,6 +14,7 @@ import { HowItWorks } from '../components/HowItWorks';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
 import { ActiveChips } from '../components/browse/ActiveChips';
+import { SearchBox } from '../components/browse/SearchBox';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
   const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
+  const sheetOpen = (Array.isArray(sp.fs) ? sp.fs[0] : sp.fs) === '1'; // bottom sheet persistido
   const landing = !hasAnyFilter(sp) && !browseFlag;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
@@ -69,9 +71,13 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             </div>
           </div>
 
-          <div style={{ padding: '16px 18px 8px', display: 'flex', gap: 9 }}>
-            <FilterSheet activeCount={activeCount}>
-              <FilterContent sp={sp} facets={facets} filters={filters} />
+          <div style={{ padding: '16px 18px 4px' }}>
+            <SearchBox />
+          </div>
+
+          <div style={{ padding: '8px 18px 8px', display: 'flex', gap: 9 }}>
+            <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen}>
+              <FilterContent sp={sp} facets={facets} filters={filters} inSheet />
             </FilterSheet>
           </div>
 
@@ -163,6 +169,9 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
               <FilterContent sp={sp} facets={facets} filters={filters} />
             </aside>
             <div>
+              <div style={{ marginBottom: 18 }}>
+                <SearchBox />
+              </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
                 <div>
                   <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Kites e barras disponíveis</h1>
@@ -212,6 +221,10 @@ function Hero() {
           <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Encontre, anuncie e negocie kite e barra. Perfis com telefone verificado, informações estruturadas e contato pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
+            <div style={{ flex: 1.4, minWidth: 0, padding: '8px 14px', borderRight: '1px solid #efeadd' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#9aa49d', marginBottom: 3 }}>Busca</div>
+              <input name="q" type="search" placeholder="Marca ou modelo" style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: font.sans, fontSize: 15, fontWeight: 600, color: color.ink, outline: 'none' }} />
+            </div>
             <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
             <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
             <HeroSelect name="city" label="Cidade" placeholder="Todos" options={SPOT_OPTS} last />

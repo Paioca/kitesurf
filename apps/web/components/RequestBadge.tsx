@@ -7,7 +7,23 @@ import { useEffect, useState } from 'react';
 export function RequestBadge() {
   const [n, setN] = useState(0);
   useEffect(() => {
-    fetch('/api/requests/count').then((r) => r.json()).then((d) => setN(d.unread ?? 0)).catch(() => {});
+    let alive = true;
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return; // não buscar em aba oculta
+      fetch('/api/requests/count').then((r) => r.json()).then((d) => { if (alive) setN(d.unread ?? 0); }).catch(() => {});
+    };
+    refresh();
+    // Polling leve + refetch ao voltar pra aba: o badge passa a atualizar sozinho,
+    // sem o vendedor precisar recarregar a página pra descobrir um pedido novo.
+    const id = setInterval(refresh, 45_000);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
   }, []);
   if (!n) return null;
   return (
