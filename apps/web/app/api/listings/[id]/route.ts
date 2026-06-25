@@ -97,7 +97,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (dto.spot !== undefined) data.spot = dto.spot;
     if (dto.shippable !== undefined) data.shippable = dto.shippable;
     if (dto.attributes !== undefined) {
-      data.attributes = validateAttributes(listing!.category.attributeSchema as any, dto.attributes) as Prisma.InputJsonValue;
+      // requireAll: mesma regra do cadastro — não deixa um PATCH esvaziar a ficha
+      // (campo essencial faltando faz o anúncio sumir dos filtros de busca).
+      data.attributes = validateAttributes(listing!.category.attributeSchema as any, dto.attributes, { requireAll: true }) as Prisma.InputJsonValue;
     }
     if (listing!.hasBarra) {
       // Proteção de disponibilidade por peça: não dá pra mexer numa peça já vendida,
@@ -118,7 +120,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       if (dto.barraPrice !== undefined) data.barraPrice = dto.barraPrice;
       if (dto.barraAttributes !== undefined) {
         const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
-        data.barraAttributes = validateAttributes(barraCat!.attributeSchema as any, dto.barraAttributes) as Prisma.InputJsonValue;
+        data.barraAttributes = validateAttributes(barraCat!.attributeSchema as any, dto.barraAttributes, { requireAll: true }) as Prisma.InputJsonValue;
       }
     }
     if (dto.images !== undefined) {
