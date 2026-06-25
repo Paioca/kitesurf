@@ -117,6 +117,15 @@ describe('cancelSale', () => {
     await cancelSale('S', 'D');
     expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ userId: 'B', type: 'sale_cancelled' }) }));
   });
+  // E3 — reconcilia o Request: pedido aceito volta a 'pending' (destrava edição da peça).
+  it('E3 — reverte o pedido aceito para pending', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock());
+    await cancelSale('S', 'D');
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ listingId: 'L', buyerId: 'B', sellerId: 'S', status: 'accepted' }),
+      data: { status: 'pending' },
+    }));
+  });
 });
 
 describe('createReview', () => {
@@ -153,6 +162,34 @@ describe('confirmSaleFromRequest', () => {
     mockDb.request.findUnique.mockResolvedValue({ id: 'R', sellerId: 'S', status: 'pending', listingId: 'L', buyerId: 'B', component: 'conjunto' });
     await expect(confirmSaleFromRequest('S', 'R')).rejects.toThrow(/[Aa]ceite o pedido/);
   });
+});
+
+// E2 — deal já existente pro mesmo (listing, comprador, peça): não pode virar no-op silencioso.
+describe('confirmSaleFromRequest — deal existente (E2)', () => {
+  beforeEach(() => {
+    mockDb.request.findUnique.mockResolvedValue({ id: 'R', sellerId: 'S', buyerId: 'B', status: 'accepted', listingId: 'L', component: 'conjunto' });
+    mockDb.listing.findFirst.mockResolvedValue(listingMock()); // active
+  });
+  it('seller_confirmed existente → idempotente (retorna o id, sem criar/atualizar)', async () => {
+    mockDb.deal.findFirst.mockResolvedValue(dealMock({ id: 'D', status: 'seller_confirmed' }));
+    await expect(confirmSaleFromRequest('S', 'R')).resolves.toBe('D');
+    expect(mockDb.deal.create).not.toHaveBeenCalled();
+    expect(mockDb.deal.update).not.toHaveBeenCalled();
+  });
+  it('cancelled existente → reativa pra seller_confirmed', async () => {
+    mockDb.deal.findFirst.mockResolvedValue(dealMock({ id: 'D', status: 'cancelled' }));
+    mockDb.deal.update.mockResolvedValue({ id: 'D' });
+    await expect(confirmSaleFromRequest('S', 'R')).resolves.toBe('D');
+    expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'seller_confirmed' }) }));
+  });
+  it.each(['closed_unconfirmed', 'voided', 'completed', 'reversed', 'disputed', 'reversal_requested'])(
+    'NÃO é no-op silencioso em %s — erro claro, sem criar deal',
+    async (status) => {
+      mockDb.deal.findFirst.mockResolvedValue(dealMock({ id: 'D', status }));
+      await expect(confirmSaleFromRequest('S', 'R')).rejects.toThrow(/já foi registrada ou encerrada/i);
+      expect(mockDb.deal.create).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('denyPurchase', () => {
@@ -297,6 +334,12 @@ describe('correctUnconfirmed (§9)', () => {
     await correctUnconfirmed('S', 'D');
     expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'paused' }) }));
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }));
+  });
+  // E3 — pedido aceito volta a 'pending' (mesma reconciliação do cancelSale).
+  it('E3 — reverte o pedido aceito para pending', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(dealMock({ status: 'closed_unconfirmed' }));
+    await correctUnconfirmed('S', 'D');
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'pending' } }));
   });
 });
 
