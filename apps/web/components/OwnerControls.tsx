@@ -7,12 +7,14 @@ import Link from 'next/link';
 import { color } from '../lib/tokens';
 import { isEditable, type ListingStatus } from '../lib/listing-status';
 import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
 
 export function OwnerControls({ listingId, status, saleRecord = false, compact = false }: { listingId: string; status: string; saleRecord?: boolean; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const router = useRouter();
   const toast = useToast();
+  const { confirm } = useConfirm();
 
   async function setStatus(next: 'active' | 'paused', okMsg = next === 'paused' ? 'Anúncio pausado.' : 'Anúncio reativado.') {
     setBusy(true); setErr('');
@@ -25,7 +27,8 @@ export function OwnerControls({ listingId, status, saleRecord = false, compact =
   }
 
   async function remove() {
-    if (!window.confirm('Excluir este anúncio? Essa ação não pode ser desfeita.')) return;
+    const ok = await confirm({ title: 'Excluir este anúncio?', body: 'Essa ação não pode ser desfeita.', confirmLabel: 'Excluir', danger: true });
+    if (!ok) return;
     setBusy(true); setErr('');
     try {
       const res = await fetch(`/api/listings/${listingId}`, { method: 'DELETE' });

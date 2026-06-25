@@ -3,6 +3,7 @@ import { Archivo, Spectral } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ToastProvider } from '../components/Toast';
+import { ConfirmProvider } from '../components/ConfirmDialog';
 import './globals.css';
 
 // Fontes self-hosted via next/font: elimina o request render-blocking ao
@@ -40,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${archivo.variable} ${spectral.variable}`}>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
         <Analytics />
         <SpeedInsights />
       </body>
