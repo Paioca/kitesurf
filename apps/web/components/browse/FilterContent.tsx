@@ -8,19 +8,22 @@ import { SectionLabel } from '../ui';
 
 type Filters = { cat: string; size: string[]; brand: string[]; city: string[]; price: string[]; repair: string[]; withbar: string[]; cond: string[]; bladder: string[]; mang: string[]; delivery: string[] };
 
-export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets; filters: Filters }) {
+export function FilterContent({ sp, facets, filters, inSheet = false }: { sp: SP; facets: Facets; filters: Filters; inSheet?: boolean }) {
+  // No bottom sheet mobile, todo link carrega fs=1 pra que o sheet reabra após a
+  // navegação (selecionar vários filtros sem o sheet fechar a cada toque).
+  const h = (href: string) => (inSheet ? href + (href.includes('?') ? '&' : '?') + 'fs=1' : href);
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h2 style={{ fontFamily: font.serif, fontSize: 22, fontWeight: 600, margin: 0 }}>Filtros</h2>
-        <a href={clearFiltersHref(sp)} style={{ fontSize: 13, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Limpar</a>
+        <a href={h(clearFiltersHref(sp))} style={{ fontSize: 13, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Limpar</a>
       </div>
 
       {facets.category.length > 0 && (
         <Block title="Categoria">
           <Chips>
             {facets.category.map((o) => (
-              <ChipLink key={o.value} href={setHref(sp, 'cat', o.value, true)} on={filters.cat === o.value} label={o.label} />
+              <ChipLink key={o.value} href={h(setHref(sp, 'cat', o.value, true))} on={filters.cat === o.value} label={o.label} />
             ))}
           </Chips>
         </Block>
@@ -30,7 +33,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
         <Block title="Tamanho do kite">
           <Chips>
             {facets.size.map((o) => (
-              <ChipLink key={o.value} href={toggleHref(sp, 'size', o.value)} on={filters.size.includes(o.value)} label={o.label} />
+              <ChipLink key={o.value} href={h(toggleHref(sp, 'size', o.value))} on={filters.size.includes(o.value)} label={o.label} />
             ))}
           </Chips>
         </Block>
@@ -39,7 +42,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.cond.length > 0 && (
         <Block title="Condição">
           {facets.cond.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'cond', o.value)} on={filters.cond.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'cond', o.value))} on={filters.cond.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -47,7 +50,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.bladder.length > 0 && (
         <Block title="Bladder">
           {facets.bladder.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'bladder', o.value)} on={filters.bladder.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'bladder', o.value))} on={filters.bladder.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -55,7 +58,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.mang.length > 0 && (
         <Block title="Mangueiras">
           {facets.mang.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'mang', o.value)} on={filters.mang.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'mang', o.value))} on={filters.mang.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -63,7 +66,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.brand.length > 0 && (
         <Block title="Marca">
           {facets.brand.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'brand', o.value)} on={filters.brand.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'brand', o.value))} on={filters.brand.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -71,7 +74,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.city.length > 0 && (
         <Block title="Cidade">
           {facets.city.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'city', o.value)} on={filters.city.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'city', o.value))} on={filters.city.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -79,7 +82,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.price.length > 0 && (
         <Block title="Preço">
           {facets.price.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'price', o.value)} on={filters.price.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'price', o.value))} on={filters.price.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -87,7 +90,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.withbar.length > 0 && (
         <Block title="Kite + barra">
           {facets.withbar.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'withbar', o.value)} on={filters.withbar.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'withbar', o.value))} on={filters.withbar.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -95,7 +98,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.repair.length > 0 && (
         <Block title="Reparo">
           {facets.repair.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'repair', o.value)} on={filters.repair.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'repair', o.value))} on={filters.repair.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}
@@ -103,7 +106,7 @@ export function FilterContent({ sp, facets, filters }: { sp: SP; facets: Facets;
       {facets.delivery.length > 0 && (
         <Block title="Entrega">
           {facets.delivery.map((o) => (
-            <RowLink key={o.value} href={toggleHref(sp, 'delivery', o.value)} on={filters.delivery.includes(o.value)} label={o.label} count={o.count} />
+            <RowLink key={o.value} href={h(toggleHref(sp, 'delivery', o.value))} on={filters.delivery.includes(o.value)} label={o.label} count={o.count} />
           ))}
         </Block>
       )}

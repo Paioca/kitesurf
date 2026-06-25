@@ -37,6 +37,10 @@ export default function Entrar() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Cooldown do reenvio de código. O backend limita 5 envios/hora por destino; sem
+  // este contador o usuário ansioso clica "Reenviar" várias vezes, queima a cota e
+  // toma 429 sem nunca ter recebido o SMS (que às vezes só estava atrasado).
+  const [cooldown, setCooldown] = useState(0);
   // E-mail é canal de EXCEÇÃO — só aparece como opção quando o SMS realmente falhou
   // (502 do provider). Senão fica completamente invisível pro fluxo normal de cadastro/login.
   const [smsFailed, setSmsFailed] = useState(false);
@@ -51,6 +55,13 @@ export default function Entrar() {
       verify(false);
     }
   }, [step, code, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tique do cooldown de reenvio (1s).
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   // Monta E.164: se começar com +, usa direto; senão assume +55.
   const phone = rawPhone.trim().startsWith('+')
@@ -77,6 +88,7 @@ export default function Entrar() {
       // No modo mock o código volta aqui e preenche silenciosamente (sem afordância visível).
       if (data.devCode) setCode(String(data.devCode));
       setStep('otp');
+      setCooldown(30); // trava o reenvio por 30s (evita lockout autoinfligido)
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -160,8 +172,8 @@ export default function Entrar() {
         <div style={imageryInner}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></Link>
           <div>
-            <div style={{ fontFamily: "'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre na comunidade</div>
-            <h2 style={{ fontFamily: "'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
+            <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre na comunidade</div>
+            <h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
               Um número, uma conta. É assim que a confiança começa.
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13, maxWidth: 380 }}>
@@ -222,7 +234,7 @@ export default function Entrar() {
                 }
                 style={primaryBtn}
               >
-                {loading ? '...' : 'Enviar código'}
+                {loading ? 'Enviando…' : 'Enviar código'}
               </button>
 
               {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
@@ -254,10 +266,17 @@ export default function Entrar() {
               <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{channel === 'sms' ? phone : email}</strong>.</p>
               <OtpCells value={code} onChange={setCode} />
               <div style={{ fontSize: 13, color: '#8a948d', margin: '6px 0 26px' }}>
-                Não recebeu? <button onClick={requestOtp} style={linkInline}>Reenviar</button>
+                Não recebeu?{' '}
+                <button
+                  onClick={requestOtp}
+                  disabled={loading || cooldown > 0}
+                  style={{ ...linkInline, ...(cooldown > 0 ? { color: '#a8b1aa', cursor: 'default' } : {}) }}
+                >
+                  {cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar'}
+                </button>
               </div>
-              <button onClick={() => verify(false)} disabled={loading || code.length < 4} style={primaryBtn}>
-                {loading ? '...' : 'Verificar'}
+              <button onClick={() => verify(false)} disabled={loading || code.length !== 6} style={primaryBtn}>
+                {loading ? 'Verificando…' : 'Verificar'}
               </button>
             </>
           )}
@@ -319,7 +338,7 @@ export default function Entrar() {
               </div>
 
               <button onClick={() => verify(true)} disabled={!canFinish || loading} style={canFinish ? primaryBtn : disabledBtn}>
-                {loading ? '...' : canFinish ? 'Criar conta' : 'Complete seu perfil'}
+                {loading ? 'Criando…' : canFinish ? 'Criar conta' : 'Complete seu perfil'}
               </button>
             </>
           )}
@@ -327,7 +346,7 @@ export default function Entrar() {
           {step === 'done' && (
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
-              <h1 style={{ fontFamily: "'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
+              <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta. Anunciar e negociar é gratuito na Fase 0.</p>
               <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</Link>
               <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</Link>
@@ -379,11 +398,11 @@ const imagery: React.CSSProperties = { position: 'relative', overflow: 'hidden',
 const imageryOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'linear-gradient(160deg,rgba(12,37,32,0.78) 0%,rgba(12,37,32,0.45) 55%,rgba(12,37,32,0.62) 100%)' };
 const imageryInner: React.CSSProperties = { position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 44, minHeight: '100vh', boxSizing: 'border-box' };
 const formWrap: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, minHeight: '100vh', boxSizing: 'border-box' };
-const h1: React.CSSProperties = { fontFamily: "'Spectral',serif", fontSize: 31, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
+const h1: React.CSSProperties = { fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 31, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
 const sub: React.CSSProperties = { fontSize: 15, color: '#6b7a73', margin: '0 0 26px' };
 const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#48564f', display: 'block', marginBottom: 8 };
 const input: React.CSSProperties = { fontSize: 15, fontWeight: 500, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 15px', background: '#fff' };
-const ddi: React.CSSProperties = { border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 8px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none', cursor: 'pointer', fontFamily: "'Archivo',sans-serif" };
+const ddi: React.CSSProperties = { border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 8px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 
 // DDI por país — Brasil default no topo; o resto cobre os gringos mais comuns em Cumbuco.
 const COUNTRIES = [
@@ -396,15 +415,15 @@ const COUNTRIES = [
   { flag: '🇩🇰', dial: '+45' }, { flag: '🇨🇿', dial: '+420' }, { flag: '🇮🇱', dial: '+972' },
   { flag: '🇦🇺', dial: '+61' },
 ];
-const primaryBtn: React.CSSProperties = { width: '100%', background: '#1f6b5c', color: '#fff', border: 'none', borderRadius: 12, padding: 16, fontFamily: "'Archivo',sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer' };
+const primaryBtn: React.CSSProperties = { width: '100%', background: '#1f6b5c', color: '#fff', border: 'none', borderRadius: 12, padding: 16, fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer' };
 const disabledBtn: React.CSSProperties = { ...primaryBtn, background: '#dfe3df', color: '#9aa49d', cursor: 'not-allowed' };
 const terms: React.CSSProperties = { fontSize: 12, lineHeight: 1.5, color: '#9aa49d', textAlign: 'center', margin: '18px 0 0' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', fontSize: 13.5, color: '#6b7a73', cursor: 'pointer', padding: 0, marginBottom: 20, fontFamily: "'Archivo',sans-serif" };
-const linkInline: React.CSSProperties = { background: 'none', border: 'none', color: '#1f6b5c', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: "'Archivo',sans-serif" };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', fontSize: 13.5, color: '#6b7a73', cursor: 'pointer', padding: 0, marginBottom: 20, fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
+const linkInline: React.CSSProperties = { background: 'none', border: 'none', color: '#1f6b5c', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 const errorBox: React.CSSProperties = { background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 };
 const avatarBtn: React.CSSProperties = { width: 74, height: 74, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '2px dashed #cbc3b2' };
-const segOn: React.CSSProperties = { background: '#1f6b5c', color: '#fff', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 12.5, fontWeight: 700 };
-const segOff: React.CSSProperties = { background: 'transparent', color: '#6b7a73', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Archivo',sans-serif", fontSize: 12.5, fontWeight: 600 };
+const segOn: React.CSSProperties = { background: '#1f6b5c', color: '#fff', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 12.5, fontWeight: 700 };
+const segOff: React.CSSProperties = { background: 'transparent', color: '#6b7a73', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 12.5, fontWeight: 600 };
 
 function doneAvatar(url: string): React.CSSProperties {
   return { width: 72, height: 72, borderRadius: 999, background: url ? `center/cover url("${url}")` : '#1f6b5c', color: '#fff', fontSize: 24, fontWeight: 800, margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' };

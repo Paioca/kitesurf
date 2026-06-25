@@ -64,7 +64,12 @@ async function sendOrEnqueue(channel: 'sms' | 'whatsapp', kind: string, sid: str
 export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string; buyerName?: string }) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token || !opts.sellerPhone) return; // não configurado → silencioso
+  if (!sid || !token || !opts.sellerPhone) {
+    // Antes era no-op 100% silencioso: em prod mal-configurado o vendedor nunca era
+    // avisado e ninguém percebia. Agora deixa rastro (sem PII — não loga o telefone).
+    log.warn({ event: 'notify_skipped', kind: 'new_request', reason: !sid || !token ? 'twilio_unconfigured' : 'missing_seller_phone' }, 'aviso de pedido novo não enviado');
+    return;
+  }
 
   const waFrom = process.env.TWILIO_WHATSAPP_FROM; // ex: whatsapp:+5585...
   const contentSid = process.env.TWILIO_CONTENT_SID; // template aprovado (HX...)
@@ -97,7 +102,8 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
       Body: `Kitetropos: ${who} ${what} no anúncio "${opts.listingTitle}". Aceite em ${url} para liberar o contato.`,
     });
   } else {
-    return; // nenhum canal configurado
+    log.warn({ event: 'notify_skipped', kind: 'new_request', reason: 'no_channel' }, 'Twilio sem canal (WhatsApp/SMS) configurado — aviso de pedido novo não enviado');
+    return;
   }
 
   await sendOrEnqueue(waFrom && contentSid ? 'whatsapp' : 'sms', 'new_request', sid, token, body);
@@ -109,7 +115,10 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
 export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPhone: string; listingTitle: string }) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token || !opts.buyerPhone) return; // não configurado → silencioso
+  if (!sid || !token || !opts.buyerPhone) {
+    log.warn({ event: 'notify_skipped', kind: 'accept', reason: !sid || !token ? 'twilio_unconfigured' : 'missing_buyer_phone' }, 'aviso de aceite não enviado');
+    return;
+  }
 
   const waFrom = process.env.TWILIO_WHATSAPP_FROM;
   const acceptContentSid = process.env.TWILIO_CONTENT_SID_ACCEPT; // template buyer-centric (opcional)
@@ -135,7 +144,8 @@ export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPh
       Body: `Kitetropos: o vendedor liberou o contato no anúncio "${opts.listingTitle}".${contato} Bons ventos!`,
     });
   } else {
-    return; // nenhum canal configurado
+    log.warn({ event: 'notify_skipped', kind: 'accept', reason: 'no_channel' }, 'Twilio sem canal configurado — aviso de aceite não enviado');
+    return;
   }
 
   await sendOrEnqueue(waFrom && acceptContentSid ? 'whatsapp' : 'sms', 'accept', sid, token, body);

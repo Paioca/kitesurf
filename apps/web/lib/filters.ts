@@ -53,6 +53,7 @@ export function list(sp: SP, key: string): string[] {
 
 export function parseFilters(sp: SP) {
   return {
+    q: one(sp, 'q').trim(),
     cat: one(sp, 'cat'),
     size: list(sp, 'size'),
     brand: list(sp, 'brand'),
@@ -77,7 +78,7 @@ function toQuery(sp: Record<string, string>): string {
 
 function current(sp: SP): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const k of ['cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort', 'b']) {
+  for (const k of ['q', 'cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort', 'b']) {
     const v = one(sp, k);
     if (v) out[k] = v;
   }
@@ -123,7 +124,13 @@ export function clearFiltersHref(sp: SP): string {
   return toQuery({ b: '1', ...(sort ? { sort } : {}) });
 }
 
+// URL atual SEM o flag de sheet aberto (fs) — usada pra "fechar/aplicar" o bottom
+// sheet mobile. current() já não inclui 'fs', então isto preserva filtros e descarta fs.
+export function currentHref(sp: SP): string {
+  return toQuery(current(sp));
+}
+
 export function hasAnyFilter(sp: SP): boolean {
   const f = parseFilters(sp);
-  return !!(f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length || f.cond.length || f.bladder.length || f.mang.length || f.delivery.length);
+  return !!(f.q || f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length || f.cond.length || f.bladder.length || f.mang.length || f.delivery.length);
 }
