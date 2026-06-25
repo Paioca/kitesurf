@@ -73,9 +73,9 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
         <button onClick={() => { setErr(''); setReversing(true); }} disabled={busy} style={linkBtn}>Solicitar correção da venda</button>
       </div>
     );
-  } else if (deal!.status === 'voided') {
-    // peça vendida a OUTRO comprador → esta negociação morreu; sem confirmar nem avaliar.
-    confirm = <div style={muted}>Este item foi vendido a outro comprador. Esta negociação foi encerrada.</div>;
+  // Sem ramo para 'voided': quando a peça é vendida a outro, o Request do comprador
+  // vira 'sold_elsewhere' no mesmo passo, e o DealBox só renderiza para Request
+  // 'accepted'. O caso é mostrado pelo badge "Vendido a outro" na linha do pedido.
   } else if (deal!.status === 'seller_confirmed') {
     confirm = role === 'seller'
       ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

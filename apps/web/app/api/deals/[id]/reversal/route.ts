@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { errorResponse } from '../../../../../lib/http';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 import { requestReversal, respondReversal, cancelReversal, DealError } from '../../../../../lib/deals';
+import { rateLimit, tooMany } from '../../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const params = await props.params;
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`deal-mut:${user.id}`, 60, 3600))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     const dto = parsed.data;

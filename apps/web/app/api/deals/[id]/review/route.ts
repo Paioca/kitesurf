@@ -3,6 +3,7 @@ import { errorResponse } from '../../../../../lib/http';
 import { z } from 'zod';
 import { requireUser, UnauthorizedError } from '../../../../../lib/session';
 import { createReview, DealError } from '../../../../../lib/deals';
+import { rateLimit, tooMany } from '../../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -12,6 +13,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const params = await props.params;
   try {
     const user = await requireUser();
+    // Defesa anti-abuso (review tem texto livre). O domínio já guarda por estado/dono;
+    // isto é só um teto de ruído, por simetria com a rota de criar pedido.
+    if (!(await rateLimit(`deal-mut:${user.id}`, 60, 3600))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     await createReview(user.id, params.id, parsed.data.rating, parsed.data.comment, parsed.data.tags);
