@@ -230,7 +230,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           {isOwner ? (
             <OwnerControls listingId={l.id} status={l.status} saleRecord={saleRecord} />
           ) : l.status === 'active' && targets.length > 0 ? (
-            <>
+            <div id="contato" style={{ scrollMarginTop: 80 }}>
               <ContactActions listingId={l.id} targets={targets} stateByComponent={reqState} />
               {/* §7 — kit com uma peça reservada: a outra segue disponível acima; aqui o estado da reservada. */}
               {reservedLabels.length > 0 && (
@@ -238,7 +238,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
                   <strong>{reservedLabels.join(' e ')}:</strong> venda em andamento. Disponível de novo se não se concretizar.
                 </div>
               )}
-            </>
+            </div>
           ) : l.status === 'active' && reservedLabels.length > 0 ? (
             // §7 — todas as peças reservadas (venda aguardando confirmação): sem CTA, com estado.
             (<div style={{ background: '#f3e7d3', border: '1px solid #e6d3ad', borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: '#8a6a3a' }}>
@@ -303,7 +303,22 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
       </section>
       <div className="only-mobile" style={{ height: 84 }} />
       <div className="only-desktop"><Footer /></div>
-      <div className="only-mobile"><MobileTabBar /></div>
+      {/* Mobile: barra de ação fixa (preço + CTA) substitui a tab bar quando há o que
+          contratar — padrão Stitch mobile. CTA só ancora no ContactActions (#contato),
+          sem lógica nova. Demais casos (dono, vendido, reservado) caem na tab bar. */}
+      <div className="only-mobile">
+        {l.status === 'active' && !isOwner && targets.length > 0 ? (
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderTop: `1px solid ${color.lineCard}`, padding: '12px 18px calc(12px + env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, boxShadow: '0 -4px 18px rgba(20,72,62,0.10)' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkFaint2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.user?.name ? `Vendido por ${l.user.name}` : 'Preço'}</div>
+              <div style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary, lineHeight: 1.15 }}>{formatBRL(l.price)}</div>
+            </div>
+            <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Fazer oferta</a>
+          </div>
+        ) : (
+          <MobileTabBar />
+        )}
+      </div>
     </>
   );
 }
