@@ -383,9 +383,9 @@ export default function Criar() {
               <StepHead n={1} title="O que você está vendendo?" lead="Tipo e ficha padronizada. Tudo sai de listas controladas — sem texto solto, sem descrição livre." />
               <UpLabel>Tipo</UpLabel>
               <div className="criar-tipos" style={{ marginBottom: 28 }}>
-                <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" />
-                <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" />
-                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Conjunto" />
+                <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" icon={IconKite} />
+                <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" icon={IconBarra} />
+                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Conjunto" icon={IconKit} />
               </div>
 
               <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
@@ -711,12 +711,29 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
     </div>
   );
 }
-function KindBtn({ on, onClick, title, desc }: { on: boolean; onClick: () => void; title: string; desc: string }) {
-  // Card de categoria (Lifestyle): vertical, losango como ícone, hover sobe (.kl-lift),
+// Ícones temáticos dos cards de categoria (refresh). Stroke = currentColor (herda do card).
+const IconKite = (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3C6 6.5 5 9.8 5 11.8c3-1 5-1 7 .2 2-1.2 4-1.2 7-.2 0-2-1-5.3-7-8.8Z" /><path d="M12 12v8" />
+  </svg>
+);
+const IconBarra = (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="3" y1="8" x2="21" y2="8" /><path d="M4 8V5.5M20 8V5.5" /><path d="M12 8v10" /><circle cx="12" cy="19.5" r="1.7" />
+  </svg>
+);
+const IconKit = (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2.5C8 4.8 7.2 6.8 7.2 8.1c2-.7 3.3-.7 4.8.1 1.5-.8 2.8-.8 4.8-.1 0-1.3-.8-3.3-4.8-5.6Z" /><line x1="5" y1="15.5" x2="19" y2="15.5" /><path d="M12 8.2v7.3" />
+  </svg>
+);
+
+function KindBtn({ on, onClick, title, desc, icon }: { on: boolean; onClick: () => void; title: string; desc: string; icon?: React.ReactNode }) {
+  // Card de categoria (refresh): vertical, ícone temático, hover sobe (.kl-lift),
   // ativo = borda primary + sombra tintada de verde-floresta (= .active-category do Stitch).
   return (
-    <button onClick={onClick} className="kl-lift" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: font.sans, padding: '22px 16px', borderRadius: radius.card, cursor: 'pointer', textAlign: 'center', background: '#fff', border: `1.5px solid ${on ? color.primary : color.lineCard}`, color: on ? color.primary : color.ink, boxShadow: on ? '0 10px 25px -5px rgba(20,72,62,0.18)' : undefined }}>
-      <span style={{ width: 26, height: 26, background: on ? color.primary : '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 5, flex: 'none' }} />
+    <button onClick={onClick} className="kl-lift" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: font.sans, padding: '22px 16px', borderRadius: radius.card, cursor: 'pointer', textAlign: 'center', background: '#fff', border: `1.5px solid ${on ? color.primary : color.lineCard}`, color: on ? color.primary : color.ink, boxShadow: on ? '0 10px 25px -5px rgba(20,72,62,0.18)' : undefined }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: on ? color.primary : '#9aa9a1', flex: 'none' }}>{icon ?? <span style={{ width: 26, height: 26, background: on ? color.primary : '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 5, display: 'block' }} />}</span>
       <span>
         <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.02em' }}>{title}</div>
         <div style={{ fontSize: 12, fontWeight: 500, color: on ? color.primary : color.inkFaint, marginTop: 2 }}>{desc}</div>
