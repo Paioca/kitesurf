@@ -23,7 +23,11 @@ export function FilterSheet({ activeCount, total, applyHref, initialOpen, childr
   return (
     <>
       <button onClick={() => setOpen(true)} style={trigger}>
-        <span style={{ fontSize: 14 }}>⚙</span> Filtros
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
+          <circle cx="9" cy="8" r="2.6" fill="#fff" /><circle cx="15" cy="16" r="2.6" fill="#fff" />
+        </svg>
+        Filtros
         {activeCount > 0 && <span style={badge}>{activeCount}</span>}
       </button>
 
@@ -45,8 +49,8 @@ export function FilterSheet({ activeCount, total, applyHref, initialOpen, childr
   );
 }
 
-const trigger: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: color.primary, color: '#fff', border: 'none', borderRadius: radius.btn, padding: 13, fontFamily: font.sans, fontSize: 14, fontWeight: 700, cursor: 'pointer' };
-const badge: React.CSSProperties = { background: color.primary, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 19, height: 19, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
+const trigger: React.CSSProperties = { flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', color: color.ink, border: `1.5px solid ${color.lineChip}`, borderRadius: radius.pill, padding: '9px 15px', fontFamily: font.sans, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' };
+const badge: React.CSSProperties = { background: color.primary, color: '#fff', fontSize: 10.5, fontWeight: 800, minWidth: 17, height: 17, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' };
 const sheet: React.CSSProperties = { position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, bottom: 0, zIndex: 41, background: color.bg, borderRadius: '22px 22px 0 0', maxHeight: '86%', display: 'flex', flexDirection: 'column' };
 const footer: React.CSSProperties = { padding: '12px 20px', borderTop: `1px solid ${color.line}`, background: color.bg, borderRadius: '0 0 22px 22px' };
 const applyBtn: React.CSSProperties = { width: '100%', background: color.primary, color: '#fff', border: 'none', borderRadius: radius.btn, padding: 14, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer' };

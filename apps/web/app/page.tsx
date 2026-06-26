@@ -84,20 +84,14 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
 
           {/* Busca flutuando sobre a borda do hero (mantém SearchBox e sua lógica). */}
           <div style={{ padding: '0 18px', marginTop: -30, position: 'relative', zIndex: 3 }}>
-            <div style={{ borderRadius: 12, boxShadow: '0 18px 40px rgba(12,37,32,0.28)' }}>
+            <div style={{ borderRadius: 14, boxShadow: '0 10px 28px rgba(12,37,32,0.16)' }}>
               <SearchBox />
             </div>
           </div>
 
-          <div style={{ padding: '8px 18px 8px', display: 'flex', gap: 9 }}>
-            <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen}>
-              <FilterContent sp={sp} facets={facets} filters={filters} inSheet />
-            </FilterSheet>
-          </div>
-
-          {/* chips de categoria (scroll) */}
+          {/* chips de categoria — linha única limpa (minimalista, igual ao mock) */}
           {typeChips.length > 0 && (
-            <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 18px 6px' }}>
+            <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 18px 8px' }}>
               <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</Link>
               {typeChips.map((t) => (
                 <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
@@ -105,18 +99,14 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             </div>
           )}
 
-          {/* chips de tamanho on-page (o filtro-assinatura, antes só no sheet) */}
-          {facets.size.length > 0 && (
-            <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '4px 18px 2px' }}>
-              {facets.size.map((o) => (
-                <Link key={o.value} href={toggleHref(sp, 'size', o.value)} style={catChip(filters.size.includes(o.value))}>{o.label}</Link>
-              ))}
+          {/* Filtros (pill discreto) + contagem · ordenação — uma barra leve. Tamanho mora no sheet. */}
+          <div style={{ padding: '4px 18px 6px', display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 'none' }}>
+              <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen}>
+                <FilterContent sp={sp} facets={facets} filters={filters} inSheet />
+              </FilterSheet>
+              <span style={{ fontSize: 12.5, color: color.inkFaint, whiteSpace: 'nowrap' }}>{total} {total === 1 ? 'anúncio' : 'anúncios'}</span>
             </div>
-          )}
-
-          {/* contagem + ordenação (antes só no desktop) */}
-          <div style={{ padding: '10px 18px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <span style={{ fontSize: 13, color: color.inkFaint, flex: 'none' }}>{total} {total === 1 ? 'anúncio' : 'anúncios'}</span>
             <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
               {sorts.map(([key, label]) => (
                 <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
