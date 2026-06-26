@@ -94,7 +94,7 @@ export default async function Conta() {
   // Card editorial escuro "Próximo Vento" (palco teatral). Decorativo — usa o hero.
   const promoCard = (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 16, height: 200, background: color.dark }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/hero-beach.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.55 }} />
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/conta-temporada.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.6 }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,37,32,0.95), rgba(12,37,32,0.1))' }} />
       <span aria-hidden="true" style={{ position: 'absolute', top: 16, right: 16, width: 16, height: 16, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
       <div style={{ position: 'absolute', inset: 0, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>

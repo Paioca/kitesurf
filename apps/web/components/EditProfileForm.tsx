@@ -93,15 +93,19 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
       {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{error}</div>}
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { uploadAvatar(e.target.files?.[0]); e.target.value = ''; }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
+      <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
         <button onClick={() => fileRef.current?.click()} style={{ width: 72, height: 72, borderRadius: 999, flex: 'none', cursor: 'pointer', border: avatarUrl ? 'none' : `1.5px dashed #bcccc4`, background: avatarUrl ? `center/cover url("${avatarUrl}")` : '#fbfaf6', color: '#a8b1aa', fontSize: 24 }}>
           {!avatarUrl && (uploading ? '…' : '+')}
         </button>
         <button onClick={() => fileRef.current?.click()} style={{ background: 'none', border: 'none', color: color.primary, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{uploading ? 'Enviando…' : 'Trocar foto'}</button>
       </div>
 
-      <Field label="Nome"><input className="kl-input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
-      <Field label="Sobrenome"><input className="kl-input" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Seu sobrenome" /></Field>
+      {/* Form em card (refresh): Nome/Sobrenome 2-col + demais campos. */}
+      <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: '20px 18px 18px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <Field label="Nome"><input className="kl-input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
+        <Field label="Sobrenome"><input className="kl-input" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Seu sobrenome" /></Field>
+      </div>
       <Field label="Spot de interesse">
         <select className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)}>
           <option value="">Selecione um spot</option>
@@ -136,12 +140,13 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
         </div>
       </Field>
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
         <Link href="/conta" style={{ ...btn, background: '#fff', border: `1.5px solid ${color.lineCard}`, color: color.ink }}>Cancelar</Link>
         <button onClick={save} disabled={!canSave} style={{ ...btn, flex: 1, background: canSave ? color.primary : '#dfe3df', color: canSave ? '#fff' : color.inkFaint2, border: 'none', cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
+      </div>
 
-      <div style={{ marginTop: 40, paddingTop: 20, borderTop: `1px solid ${color.line}` }}>
+      <div style={{ marginTop: 32, paddingTop: 20, borderTop: `1px solid ${color.line}` }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#b3261e', marginBottom: 6 }}>Zona de risco</div>
         <p style={{ fontSize: 13, color: color.inkFaint2, margin: '0 0 12px' }}>Excluir a conta tira seus anúncios do ar e remove ou substitui seus dados pessoais. O histórico necessário para preservar negócios e avaliações pode ser mantido associado a uma conta removida. Não dá pra desfazer.</p>
         <button onClick={remove} disabled={saving} style={{ background: '#fff', border: '1.5px solid #f0d4d0', color: '#b3261e', fontSize: 14, fontWeight: 700, padding: '12px 18px', borderRadius: 11, cursor: 'pointer' }}>Excluir minha conta</button>

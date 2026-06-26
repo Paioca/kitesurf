@@ -167,7 +167,7 @@ export default function Entrar() {
     <div style={shell}>
       {/* LEFT imagery (desktop) */}
       <div className="only-desktop" style={imagery}>
-        <img src="/hero-beach.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src="/entrar-kite.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={imageryOverlay} />
         <div style={imageryInner}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></Link>
@@ -347,7 +347,7 @@ export default function Entrar() {
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
               <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta. Anunciar e negociar é gratuito na Fase 0.</p>
+              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta.</p>
               <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</Link>
               <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</Link>
             </div>

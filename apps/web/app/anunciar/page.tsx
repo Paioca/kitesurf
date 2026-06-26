@@ -350,7 +350,7 @@ export default function Criar() {
           })}
           {/* Card editorial (Lifestyle): foto + kicker gold + headline; a dica vira o corpo. */}
           <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 16, marginTop: 18, minHeight: 230 }}>
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/hero-beach.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/anunciar-comunidade.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,37,32,0.35) 0%, rgba(12,37,32,0.92) 100%)' }} />
             <span aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, width: 14, height: 14, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
             <div style={{ position: 'absolute', inset: 0, padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>

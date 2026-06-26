@@ -47,72 +47,109 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
     : searchParams?.tab === 'received' ? 'received'
     : incoming.length === 0 && outgoing.length > 0 ? 'sent' : 'received';
 
+  const heading = (
+    <>
+      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '6px 0 0', color: color.primary }}>Minhas negociações</h1>
+    </>
+  );
+
+  const novidades = notifs.length > 0 ? (
+    <div style={{ marginBottom: 22 }}>
+      <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Novidades</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {notifs.map((n) => (
+          <Link key={n.id} href={notificationHref(n)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: n.readAt ? '#fff' : '#eef5f1', border: `1px solid ${n.readAt ? color.lineCard : '#cfe3d9'}`, borderRadius: 12, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, marginTop: 6, flex: 'none', background: n.readAt ? 'transparent' : color.primary, border: n.readAt ? `1.5px solid ${color.lineCard}` : 'none' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, color: color.ink, lineHeight: 1.4 }}>{notificationText(n)}</div>
+              <div style={{ fontSize: 11.5, color: color.inkFaint2, marginTop: 2 }}>{timeAgo(n.createdAt)}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
+  const cardsList = tab === 'received' ? (
+    incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : <>{incoming.map((r) => (
+      <Row key={r.id}>
+        <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} received /></div>
+            <div style={titleTxt}>{r.listing.title}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
+            <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
+          </div>
+        </a>
+        {/* §8 — antes do aceite o vendedor só tem Recusar/Conversar (RequestActions); o
+            contato do comprador só aparece depois do aceite. */}
+        {r.status === 'accepted' && r.buyer.whatsapp && <ContactLiberado name={r.buyer.name} whatsapp={r.buyer.whatsapp} />}
+        {r.status === 'pending' && r.listing.status === 'paused' && <PausedHint />}
+        {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
+        {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
+      </Row>
+    ))}{moreIncoming && <MoreNote />}</>
+  ) : (
+    outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : <>{outgoing.map((r) => (
+      <Row key={r.id}>
+        <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} /></div>
+            <div style={titleTxt}>{r.listing.title}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
+            <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
+          </div>
+        </a>
+        {r.whatsapp && <ContactLiberado name={r.seller.name} whatsapp={r.whatsapp} />}
+        {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
+        {/* retirar: pendente, ou aceito sem venda marcada (com venda marcada, o caminho é "não comprei" no DealBox) */}
+        {(r.status === 'pending' || (r.status === 'accepted' && (!r.deal || r.deal.status === 'cancelled'))) && <CancelRequestButton requestId={r.id} type={r.type} accepted={r.status === 'accepted'} />}
+      </Row>
+    ))}{moreOutgoing && <MoreNote />}</>
+  );
+
+  // Item do rail de filtro (desktop, refresh editorial): ativo preenchido, contagem ao lado.
+  const railItem = (on: boolean): React.CSSProperties => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 14px', borderRadius: 11, textDecoration: 'none', fontFamily: font.sans, fontSize: 14, fontWeight: 700, background: on ? color.primary : 'transparent', color: on ? '#fff' : color.ink });
+
+  // MOBILE — coluna única (já boa): headline + novidades + abas + cards.
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <MarkNotificationsRead />
-      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
-      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '6px 0 22px', color: color.primary }}>Minhas negociações</h1>
-
-      {notifs.length > 0 && (
-        <div style={{ marginBottom: 26 }}>
-          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Novidades</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {notifs.map((n) => (
-              <Link key={n.id} href={notificationHref(n)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: n.readAt ? '#fff' : '#eef5f1', border: `1px solid ${n.readAt ? color.lineCard : '#cfe3d9'}`, borderRadius: 12, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, marginTop: 6, flex: 'none', background: n.readAt ? 'transparent' : color.primary, border: n.readAt ? `1.5px solid ${color.lineCard}` : 'none' }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, color: color.ink, lineHeight: 1.4 }}>{notificationText(n)}</div>
-                  <div style={{ fontSize: 11.5, color: color.inkFaint2, marginTop: 2 }}>{timeAgo(n.createdAt)}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* abas */}
+      <div style={{ marginBottom: 22 }}>{heading}</div>
+      {novidades}
       <div style={{ display: 'flex', gap: 6, background: '#ece3d2', borderRadius: 13, padding: 5, marginBottom: 24, maxWidth: 380 }}>
         <Link href="/pedidos?tab=received" style={tab === 'received' ? segOn : segOff}>Recebidos{novos > 0 ? <span style={tabBadge}>{novos}</span> : incoming.length > 0 ? <span style={tabCount}>{incoming.length}</span> : null}</Link>
         <Link href="/pedidos?tab=sent" style={tab === 'sent' ? segOn : segOff}>Enviados{outgoing.length > 0 && <span style={tabCount}>{outgoing.length}</span>}</Link>
       </div>
+      {cardsList}
+    </div>
+  );
 
-      {tab === 'received' ? (
-        incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : <>{incoming.map((r) => (
-          <Row key={r.id}>
-            <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} received /></div>
-                <div style={titleTxt}>{r.listing.title}</div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.primary, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
-                <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>de {r.buyer.name}</div>
-              </div>
-            </a>
-            {/* §8 — antes do aceite o vendedor só tem Recusar/Conversar (RequestActions); o
-                contato do comprador só aparece depois do aceite. */}
-            {r.status === 'accepted' && r.buyer.whatsapp && <a href={r.buyer.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, marginRight: 10, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
-            {r.status === 'pending' && r.listing.status === 'paused' && <PausedHint />}
-            {r.status === 'pending' && <RequestActions id={r.id} type={r.type} />}
-            {r.status === 'accepted' && <DealBox requestId={r.id} role="seller" deal={r.deal} />}
-          </Row>
-        ))}{moreIncoming && <MoreNote />}</>
-      ) : (
-        outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : <>{outgoing.map((r) => (
-          <Row key={r.id}>
-            <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}><TypeTag type={r.type} /><StatusBadge status={r.status} dealStatus={r.deal?.status} /></div>
-                <div style={titleTxt}>{r.listing.title}</div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: color.ink, marginTop: 2 }}>{typeLabel(r.type, r.amount)}{r.component !== 'conjunto' ? ` · ${r.componentLabel}` : ''}</div>
-                <div style={{ fontSize: 12.5, color: color.inkFaint2 }}>pra {r.seller.name}</div>
-              </div>
-            </a>
-            {r.whatsapp && <a href={r.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, background: '#25D366', color: '#fff', padding: '11px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
-            {r.status === 'accepted' && <DealBox requestId={r.id} role="buyer" deal={r.deal} />}
-            {/* retirar: pendente, ou aceito sem venda marcada (com venda marcada, o caminho é "não comprei" no DealBox) */}
-            {(r.status === 'pending' || (r.status === 'accepted' && (!r.deal || r.deal.status === 'cancelled'))) && <CancelRequestButton requestId={r.id} type={r.type} accepted={r.status === 'accepted'} />}
-          </Row>
-        ))}{moreOutgoing && <MoreNote />}</>
-      )}
+  // DESKTOP — 2-col editorial (refresh): rail de filtro à esquerda + cards à direita.
+  const desktopBody = (
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <MarkNotificationsRead />
+      <div style={{ marginBottom: 28 }}>{heading}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,250px) minmax(0,1fr)', gap: 32, alignItems: 'start' }}>
+        <aside style={{ position: 'sticky', top: 96 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint2, margin: '4px 4px 8px' }}>Filtrar</div>
+          <nav style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 8, boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
+            <Link href="/pedidos?tab=received" style={railItem(tab === 'received')}>
+              <span>Recebidos</span>
+              {novos > 0 ? <span style={tabBadge}>{novos}</span> : incoming.length > 0 ? <span style={{ ...tabCount, ...(tab === 'received' ? { background: 'rgba(255,255,255,0.22)', color: '#fff' } : {}) }}>{incoming.length}</span> : null}
+            </Link>
+            <Link href="/pedidos?tab=sent" style={railItem(tab === 'sent')}>
+              <span>Enviados</span>
+              {outgoing.length > 0 && <span style={{ ...tabCount, ...(tab === 'sent' ? { background: 'rgba(255,255,255,0.22)', color: '#fff' } : {}) }}>{outgoing.length}</span>}
+            </Link>
+          </nav>
+        </aside>
+        <div>
+          {novidades}
+          {cardsList}
+        </div>
+      </div>
     </div>
   );
 
@@ -125,7 +162,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
       </div>
       <div className="only-desktop">
         <SiteHeader />
-        <main style={{ padding: '36px 32px 80px' }}>{body}</main>
+        <main style={{ padding: '36px 32px 80px' }}>{desktopBody}</main>
         <Footer />
       </div>
     </>
@@ -136,6 +173,44 @@ const rowLink: React.CSSProperties = { display: 'flex', gap: 12, alignItems: 'ce
 const titleTxt: React.CSSProperties = { fontFamily: font.serif, fontSize: 19, fontWeight: 600, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 const okTag: React.CSSProperties = { marginTop: 12, fontSize: 13, fontWeight: 600, color: color.primary };
 function Row({ children }: { children: React.ReactNode }) { return <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 14, marginBottom: 12 }}>{children}</div>; }
+
+// Mini-jornada Interesse → Contato → Negócio (refresh tela negociação). Puramente visual.
+function MiniStepper() {
+  const steps: { l: string; done?: boolean; active?: boolean }[] = [{ l: 'Interesse', done: true }, { l: 'Contato', active: true }, { l: 'Negócio' }];
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '0 10px', margin: '4px 0 16px' }}>
+      <div style={{ position: 'absolute', top: 11, left: 28, right: 28, height: 1, background: color.line }} />
+      {steps.map((s) => {
+        const on = s.done || s.active;
+        return (
+          <div key={s.l} style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+            <span style={{ width: s.active ? 24 : 20, height: s.active ? 24 : 20, transform: 'rotate(45deg)', borderRadius: 3, background: on ? color.primary : '#fff', border: on ? 'none' : `1px solid ${color.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: s.active ? '0 3px 10px rgba(20,72,62,0.25)' : 'none' }}>
+              {s.done && <span style={{ transform: 'rotate(-45deg)', color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
+            </span>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: on ? color.primary : color.inkFaint2 }}>{s.l}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Card "Contato Liberado" (refresh): editorializa o estado aceito — contato liberado +
+// WhatsApp + lead-in pro DealBox. Mesma lógica/visibilidade do botão que substitui.
+function ContactLiberado({ name, whatsapp }: { name?: string; whatsapp?: string | null }) {
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 14, padding: '16px 16px 14px', marginTop: 12, boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
+      <MiniStepper />
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 15, color: '#8a6a3a' }}>Contato liberado</div>
+        {name && <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', color: color.primary, marginTop: 2 }}>{name} está aguardando</div>}
+      </div>
+      {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#25D366', color: '#fff', padding: '13px 18px', borderRadius: 11, fontSize: 14.5, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
+      <p style={{ fontSize: 12.5, color: color.inkMute, textAlign: 'center', lineHeight: 1.45, margin: '12px 0 0' }}>O contato foi liberado pra vocês combinarem entrega e pagamento direto.</p>
+      <p style={{ fontSize: 11, color: color.inkFaint2, textAlign: 'center', margin: '6px 0 0' }}>Depois de combinar, confirme o negócio abaixo.</p>
+    </div>
+  );
+}
 function TypeTag({ type }: { type: string }) {
   const offer = type === 'offer';
   return <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, background: offer ? '#e8f1ec' : '#f3e7d3', color: offer ? color.primary : '#8a6a3a' }}>{offer ? 'Oferta' : 'Visita'}</span>;

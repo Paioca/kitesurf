@@ -52,7 +52,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
       <div className="only-mobile"><MobileAppBar /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: '#0c2520' }}>
-        <img src="/wind-texture.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+        <img src="/perfil-cover.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.2),rgba(12,37,32,0.55))' }} />
       </div>
 
