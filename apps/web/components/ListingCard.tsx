@@ -99,7 +99,7 @@ export function ListingCard({ item, imgHeight = 180 }: { item: Card; imgHeight?:
   );
 }
 
-const card: React.CSSProperties = { background: color.surface, border: `1px solid ${color.lineCard}`, borderRadius: radius.card, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 2px rgba(35,51,46,0.04)' };
+const card: React.CSSProperties = { background: color.surface, border: `1px solid ${color.lineCard}`, borderRadius: radius.card, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 16px rgba(20,72,62,0.07)' };
 const cardLink: React.CSSProperties = { textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flex: 1 };
 const img: React.CSSProperties = { position: 'relative', overflow: 'hidden', backgroundImage: HATCH, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const body: React.CSSProperties = { padding: '15px 16px 14px', display: 'flex', flexDirection: 'column', flex: 1 };

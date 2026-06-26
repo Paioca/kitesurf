@@ -30,9 +30,10 @@ export default async function MeusAnuncios() {
   const saleRecords = await listingsWithSaleRecord(items.map((it) => it.id));
 
   const body = (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 6px', color: color.primary }}>Meus anúncios</h1>
-      <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 20 }}>{items.length} no total</div>
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
+      <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Painel do vendedor</div>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 6px', color: color.primary }}>Meus anúncios</h1>
+      <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 24 }}>{items.length} {items.length === 1 ? 'anúncio' : 'anúncios'} no total</div>
 
       {items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '50px 20px', border: '1px dashed #d3ccbd', borderRadius: 16 }}>
@@ -40,21 +41,27 @@ export default async function MeusAnuncios() {
           <Link href="/anunciar" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700 }}>Anunciar o primeiro</Link>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {items.map((it) => {
             const st = STATUS[it.status] ?? STATUS.archived;
+            const hasSale = saleRecords.has(it.id);
             return (
-              <div key={it.id} style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 14 }}>
-                <a href={`/anuncio/${it.id}`} style={{ display: 'flex', gap: 13, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
-                  <div style={{ width: 64, height: 64, borderRadius: 11, flex: 'none', backgroundImage: it.photo ? `url("${it.photo}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', border: `1px solid ${color.line}` }} />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: color.inkFaint2 }}>{it.brand}{it.includesBar ? ' · kit' : ''}</div>
-                    <div style={{ fontFamily: font.serif, fontSize: 17, fontWeight: 600, lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.model}</div>
-                    <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>{it.priceLabel}</div>
-                  </div>
-                  <span style={{ flex: 'none', alignSelf: 'flex-start', fontSize: 11.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.fg }}>{st.label}</span>
+              // Card painel (refresh): foto grande do equipamento + ficha + ações.
+              <div key={it.id} style={{ display: 'flex', background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
+                <a href={`/anuncio/${it.id}`} className="anuncio-photo" style={{ position: 'relative', display: 'block', backgroundImage: it.photo ? `url("${it.photo}")` : HATCH, backgroundSize: 'cover', backgroundPosition: 'center', textDecoration: 'none' }}>
+                  <span style={{ position: 'absolute', top: 12, left: 12, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.fg }}>{st.label}</span>
                 </a>
-                <OwnerControls listingId={it.id} status={it.status} saleRecord={saleRecords.has(it.id)} compact />
+                <div style={{ flex: 1, minWidth: 0, padding: '16px 18px', display: 'flex', flexDirection: 'column' }}>
+                  <a href={`/anuncio/${it.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: color.inkFaint2 }}>{it.brand}{it.includesBar ? ' · kit' : ''}</div>
+                    <div style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, lineHeight: 1.1, margin: '3px 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.model}</div>
+                    <div style={{ fontFamily: font.sans, fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary }}>{it.priceLabel}</div>
+                  </a>
+                  {hasSale && <div style={{ fontSize: 12, color: '#8a6a3a', marginTop: 8, fontStyle: 'italic' }}>Tem venda registrada — fica no histórico e não pode ser excluído.</div>}
+                  <div style={{ marginTop: 'auto', paddingTop: 14 }}>
+                    <OwnerControls listingId={it.id} status={it.status} saleRecord={hasSale} compact />
+                  </div>
+                </div>
               </div>
             );
           })}
