@@ -10,7 +10,11 @@ export function MarkNotificationsRead() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: '{}', // sem ids = marca todas as não-lidas do usuário
-    }).catch(() => {});
+    })
+      // Avisa o badge pra zerar na hora — sem esperar o polling de 45s (queixa do audit:
+      // "o número não some ao abrir as negociações").
+      .then(() => window.dispatchEvent(new Event('notifications-read')))
+      .catch(() => {});
   }, []);
   return null;
 }

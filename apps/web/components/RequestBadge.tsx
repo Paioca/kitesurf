@@ -13,16 +13,21 @@ export function RequestBadge() {
       fetch('/api/requests/count').then((r) => r.json()).then((d) => { if (alive) setN(d.unread ?? 0); }).catch(() => {});
     };
     refresh();
+    // Zera na hora quando /pedidos marca tudo lido (evento de MarkNotificationsRead),
+    // sem esperar o próximo ciclo de polling.
+    const clear = () => { if (alive) setN(0); };
     // Polling leve + refetch ao voltar pra aba: o badge passa a atualizar sozinho,
     // sem o vendedor precisar recarregar a página pra descobrir um pedido novo.
     const id = setInterval(refresh, 45_000);
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('focus', refresh);
+    window.addEventListener('notifications-read', clear);
     return () => {
       alive = false;
       clearInterval(id);
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
+      window.removeEventListener('notifications-read', clear);
     };
   }, []);
   if (!n) return null;

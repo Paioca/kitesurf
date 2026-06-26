@@ -169,16 +169,29 @@ async function applyPieceSale(tx: any, deal: { id: string; listingId: string; bu
   await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'sold_elsewhere' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
 }
 
-// Reabre a peça vendida (reversão/correção): peça volta a paused, NUNCA active sozinha.
+// Reabre a peça vendida (reversão/correção): o anúncio volta a ANUNCIADO (active),
+// porque a venda foi desfeita e o item está de novo à venda. Decisão de produto (jun/2026):
+// voltar a paused deixava o anúncio invisível ao público e a copy prometia "volta para
+// venda" — o vendedor não reativava porque nem sabia. Agora volta visível de fato.
 async function unmarkPieceSale(tx: any, listingId: string, comp: Component) {
   const data: Record<string, unknown> = {};
   if (comp === 'kite') { data.kiteSoldAt = null; data.kiteSoldToUserId = null; }
   else if (comp === 'barra') { data.barraSoldAt = null; data.barraSoldToUserId = null; }
   const l = await tx.listing.findUnique({ where: { id: listingId }, select: { status: true, deletedAt: true } });
-  // Soft-deleted/removido por moderação (deletedAt != null) é TERMINAL: não ressuscita pra
-  // paused. Só reabre o status de um anúncio vivo que tinha virado registro de venda.
-  if (l && l.deletedAt == null && (l.status === 'sold' || l.status === 'archived')) { data.status = 'paused'; data.soldToUserId = null; }
+  // Soft-deleted/removido por moderação (deletedAt != null) é TERMINAL: não ressuscita.
+  // Só reabre o status de um anúncio vivo que tinha virado registro de venda.
+  if (l && l.deletedAt == null && (l.status === 'sold' || l.status === 'archived')) { data.status = 'active'; data.soldToUserId = null; }
   await tx.listing.update({ where: { id: listingId }, data });
+}
+
+// Reverter uma venda CONCLUÍDA desfaz o vínculo com o comprador: o pedido aceito dele
+// vira 'withdrawn' pra o contato (WhatsApp) deixar de aparecer. Sem isto, quem desfez a
+// compra reencontrava o anúncio reativado já com o WhatsApp liberado (contato órfão).
+async function withdrawBuyerRequest(tx: any, deal: { listingId: string; buyerId: string; sellerId: string; component: Component }) {
+  await tx.request.updateMany({
+    where: { listingId: deal.listingId, buyerId: deal.buyerId, sellerId: deal.sellerId, component: deal.component, status: { in: ['pending', 'accepted'] } },
+    data: { status: 'withdrawn' },
+  });
 }
 
 // CRON (diário): encerra como vendido-sem-confirmação os deals seller_confirmed cujo
@@ -274,6 +287,7 @@ export async function respondReversal(userId: string, dealId: string, accept: bo
   await db.$transaction(async (tx) => {
     if (accept) {
       await unmarkPieceSale(tx, deal.listingId, deal.component);
+      await withdrawBuyerRequest(tx, deal);
       await tx.deal.update({ where: { id: dealId }, data: { status: 'reversed', reversedAt: new Date() } });
       await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_reversed', resolvedAt: new Date() } });
       await emit(tx, { userId: dispute.openedByUserId, type: 'reversal_confirmed', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
@@ -315,6 +329,7 @@ export async function resolveDispute(adminId: string, disputeId: string, action:
   await db.$transaction(async (tx) => {
     if (action === 'reverse') {
       await unmarkPieceSale(tx, deal.listingId, deal.component);
+      await withdrawBuyerRequest(tx, deal);
       await tx.deal.update({ where: { id: deal.id }, data: { status: 'reversed', reversedAt: new Date() } });
       await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_reversed', resolvedByAdminId: adminId, resolvedAt: new Date(), resolution: resolution ?? null } });
       await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_confirmed' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '' } })));

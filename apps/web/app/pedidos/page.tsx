@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '../../lib/session';
 import { getRequestsForUser } from '../../lib/requests';
 import { listNotifications } from '../../lib/notifications';
-import { notificationText, timeAgo } from '../../lib/notification-copy';
+import { notificationText, notificationHref, timeAgo } from '../../lib/notification-copy';
 import { color, font } from '../../lib/tokens';
 import { SiteHeader } from '../../components/SiteHeader';
 import { Footer } from '../../components/Footer';
@@ -58,13 +58,13 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
           <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Novidades</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {notifs.map((n) => (
-              <div key={n.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: n.readAt ? '#fff' : '#eef5f1', border: `1px solid ${n.readAt ? color.lineCard : '#cfe3d9'}`, borderRadius: 12, padding: '10px 12px' }}>
+              <Link key={n.id} href={notificationHref(n)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: n.readAt ? '#fff' : '#eef5f1', border: `1px solid ${n.readAt ? color.lineCard : '#cfe3d9'}`, borderRadius: 12, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, marginTop: 6, flex: 'none', background: n.readAt ? 'transparent' : color.primary, border: n.readAt ? `1.5px solid ${color.lineCard}` : 'none' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, color: color.ink, lineHeight: 1.4 }}>{notificationText(n)}</div>
                   <div style={{ fontSize: 11.5, color: color.inkFaint2, marginTop: 2 }}>{timeAgo(n.createdAt)}</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -95,7 +95,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     confirm = role === 'seller'
       ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={muted}>Encerrado como vendido — o comprador não confirmou a tempo. Não conta como venda nem libera avaliação.</div>
-          <button onClick={() => ask('Corrigir e voltar a anunciar? A peça volta a ficar disponível (pausada) e este negócio é encerrado.', () => call(`/api/deals/${deal!.id}/correct`))} disabled={busy} style={btnGhost}>Corrigir e voltar a anunciar</button>
+          <button onClick={() => ask('Corrigir e voltar a anunciar? O anúncio volta a ficar à venda e este negócio é encerrado.', () => call(`/api/deals/${deal!.id}/correct`))} disabled={busy} style={btnGhost}>Corrigir e voltar a anunciar</button>
         </div>
       : <div style={muted}>O vendedor encerrou esta venda como concluída. Você não confirmou a compra.</div>;
   } else if (deal!.status === 'reversal_requested') {
@@ -156,7 +156,10 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     review = deal.myReviewDone
       ? <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ · já está pública</div>
       : reviewSkipped
-      ? <div style={muted}>Avaliação é opcional — você pode avaliar quando quiser.</div>
+      ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+          <div style={muted}>Avaliação é opcional — você pode avaliar quando quiser.</div>
+          <button onClick={() => setReviewSkipped(false)} disabled={busy} style={btnGhost}>Avaliar agora</button>
+        </div>
       : (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa — é o que constrói a reputação da comunidade.</div>

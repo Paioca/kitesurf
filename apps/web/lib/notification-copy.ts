@@ -27,6 +27,39 @@ export function notificationText(n: NotificationLike): string {
   }
 }
 
+// Destino do clique numa notificação (antes não levavam a lugar nenhum). A maioria
+// resolve dentro de "Minhas negociações" (onde mora o DealBox/ações), na aba certa pelo
+// lado do destinatário. Anúncio ainda público (vendido a outro) abre o próprio anúncio;
+// o que foi removido/encerrado fica em /pedidos (o anúncio sumiu → 404).
+export type NotificationTarget = { type: string; listingId?: string | null };
+
+export function notificationHref(n: NotificationTarget): string {
+  switch (n.type) {
+    // chega pro VENDEDOR → aba Recebidos
+    case 'request_new':
+    case 'purchase_confirmed':
+    case 'purchase_denied':
+      return '/pedidos?tab=received';
+    // chega pro COMPRADOR → aba Enviados
+    case 'request_accepted':
+    case 'request_declined':
+    case 'sale_marked':
+    case 'sale_cancelled':
+    case 'sale_closed_unconfirmed':
+      return '/pedidos?tab=sent';
+    // anúncio ainda visível (vendido) → abre o anúncio
+    case 'sold_elsewhere':
+      return n.listingId ? `/anuncio/${n.listingId}` : '/pedidos';
+    // correção/reversão e removido: deixa a página escolher a aba
+    case 'reversal_requested':
+    case 'reversal_confirmed':
+    case 'reversal_rejected':
+    case 'listing_removed':
+    default:
+      return '/pedidos';
+  }
+}
+
 // Tempo relativo curto em pt-BR ("agora", "há 5 min", "há 2 h", "há 3 d", "há 1 sem").
 export function timeAgo(date: Date | string, now: Date = new Date()): string {
   const s = Math.max(0, Math.floor((now.getTime() - new Date(date).getTime()) / 1000));

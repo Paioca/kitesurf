@@ -274,11 +274,12 @@ describe('respondReversal (§15 #11/#12)', () => {
     mockDb.deal.findUnique.mockResolvedValue(reqReversal());
     await expect(respondReversal('B', 'D', true)).rejects.toThrow(/outra parte/i);
   });
-  it('aceitar → reversed + peça volta a paused + dispute resolved_reversed', async () => {
+  it('aceitar → reversed + anúncio volta a active + pedido do comprador withdrawn + dispute resolved_reversed', async () => {
     mockDb.deal.findUnique.mockResolvedValue(reqReversal());
     await respondReversal('S', 'D', true);
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'reversed' }) }));
-    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'paused' }) }));
+    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'active' }) }));
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'withdrawn' } }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_reversed' }) }));
   });
   it('recusar → disputed + dispute under_review (vai pra moderação)', async () => {
@@ -315,11 +316,12 @@ describe('resolveDispute — admin (§11)', () => {
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_upheld', resolvedByAdminId: 'ADM' }) }));
   });
-  it('reverse → Deal reversed + peça paused; dispute resolved_reversed', async () => {
+  it('reverse → Deal reversed + anúncio active + pedido withdrawn; dispute resolved_reversed', async () => {
     mockDb.dealDispute.findUnique.mockResolvedValue(disp());
     await resolveDispute('ADM', 'DISP', 'reverse');
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'reversed' }) }));
-    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'paused' }) }));
+    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'active' }) }));
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'withdrawn' } }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_reversed' }) }));
   });
 });
@@ -329,10 +331,10 @@ describe('correctUnconfirmed (§9)', () => {
     mockDb.deal.findUnique.mockResolvedValue(dealMock({ status: 'completed' }));
     await expect(correctUnconfirmed('S', 'D')).rejects.toThrow(/não está encerrado/i);
   });
-  it('vendedor corrige → peça volta a paused + deal cancelled', async () => {
+  it('vendedor corrige → anúncio volta a active + deal cancelled', async () => {
     mockDb.deal.findUnique.mockResolvedValue(dealMock({ status: 'closed_unconfirmed' }));
     await correctUnconfirmed('S', 'D');
-    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'paused' }) }));
+    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'active' }) }));
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }));
   });
   // E3 — pedido aceito volta a 'pending' (mesma reconciliação do cancelSale).

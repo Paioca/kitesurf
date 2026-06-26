@@ -87,7 +87,10 @@ function toCard(l: any, persp: Perspective): Card {
     const price = kit ? l.barraPrice ?? l.price : l.price;
     return {
       id: l.id,
-      brand: (ba.compatible_brand as string) || l.brand?.name || '',
+      // Num kit, l.brand é a marca do KITE — não pode vazar pra barra (mistura relatada
+      // no audit). Barra do kit só usa a marca compatível informada; sem ela, fica sem marca.
+      // Barra avulsa segue com a marca própria do anúncio (l.brand).
+      brand: kit ? ((ba.compatible_brand as string) || '') : ((ba.compatible_brand as string) || l.brand?.name || ''),
       model: kit ? 'Barra do kit' : l.model?.name ?? l.title,
       year: null,
       priceCents: price,
