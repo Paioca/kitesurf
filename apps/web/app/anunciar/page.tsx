@@ -5,7 +5,7 @@
 // (conjunto / kite avulso / barra avulsa). Cookie auth. Fase 0 sem escrow.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { color, font } from '../../lib/tokens';
+import { color, font, radius } from '../../lib/tokens';
 import { downscaleImage } from '../../lib/resizeImage';
 import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
@@ -348,9 +348,16 @@ export default function Criar() {
               </div>
             );
           })}
-          <div style={{ marginTop: 18, padding: '14px 16px', background: '#ece3d2', borderRadius: 13 }}>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 14, color: color.primary, marginBottom: 5 }}>Dica</div>
-            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: '#6b6353', margin: 0 }}>{TIPS[step]}</p>
+          {/* Card editorial (Lifestyle): foto + kicker gold + headline; a dica vira o corpo. */}
+          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 16, marginTop: 18, minHeight: 230 }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/hero-beach.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,37,32,0.35) 0%, rgba(12,37,32,0.92) 100%)' }} />
+            <span aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, width: 14, height: 14, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
+            <div style={{ position: 'absolute', inset: 0, padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 15, color: color.gold, marginBottom: 8 }}>Compartilhe o vento</div>
+              <div style={{ fontFamily: font.sans, fontSize: 19, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: '#fff', marginBottom: 10 }}>Mantenha a comunidade voando</div>
+              <p style={{ fontSize: 12.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.82)', margin: 0 }}>{TIPS[step]}</p>
+            </div>
           </div>
         </div>
 
@@ -542,7 +549,7 @@ function StepHead({ n, title, lead }: { n: number; title: string; lead: string }
   return (
     <>
       <div className="only-desktop" style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Passo {n} de 4</div>
-      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px,5vw,34px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 8px' }}>{title}</h1>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,5vw,38px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 10px' }}>{title}</h1>
       <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 0 28px' }}>{lead}</p>
     </>
   );
@@ -651,7 +658,7 @@ function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRem
         {slots.map((label, i) => {
           const img = photos[i];
           return (
-            <button key={label} onClick={onPick} style={{ position: 'relative', height: 150, borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 10, overflow: 'hidden', cursor: 'pointer', border: img ? `1.5px solid ${color.primary}` : '1.5px dashed #cbc3b2', background: img ? undefined : '#fbfaf6' }}>
+            <button key={label} onClick={onPick} className={img ? undefined : 'kl-lift'} style={{ position: 'relative', height: 150, borderRadius: radius.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 10, overflow: 'hidden', cursor: 'pointer', border: img ? `1.5px solid ${color.primary}` : `2px dashed ${color.lineInput}`, background: img ? undefined : '#fbfaf6' }}>
               {img && <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${img.thumbUrl ?? img.url}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
               {img && <span role="button" aria-label="Remover foto" onClick={(e) => { e.stopPropagation(); onRemove(img); }} style={{ position: 'absolute', top: 9, left: 9, width: 26, height: 26, borderRadius: 999, background: 'rgba(20,20,20,0.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 2 }}>✕</span>}
               {img && <div style={{ position: 'absolute', top: 9, right: 9, width: 24, height: 24, borderRadius: 999, background: color.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✓</div>}
@@ -699,12 +706,14 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 function KindBtn({ on, onClick, title, desc }: { on: boolean; onClick: () => void; title: string; desc: string }) {
+  // Card de categoria (Lifestyle): vertical, losango como ícone, hover sobe (.kl-lift),
+  // ativo = borda primary + sombra tintada de verde-floresta (= .active-category do Stitch).
   return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 11, fontFamily: font.sans, padding: '14px 16px', borderRadius: 12, cursor: 'pointer', textAlign: 'left', background: on ? '#e8f1ec' : '#fff', border: `1.5px solid ${on ? color.primary : color.lineInput}`, color: on ? color.primary : color.ink }}>
-      <span style={{ width: 14, height: 14, background: on ? color.primary : '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none' }} />
-      <span style={{ textAlign: 'left' }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{title}</div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: on ? color.primary : color.inkFaint, marginTop: 1 }}>{desc}</div>
+    <button onClick={onClick} className="kl-lift" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: font.sans, padding: '22px 16px', borderRadius: radius.card, cursor: 'pointer', textAlign: 'center', background: '#fff', border: `1.5px solid ${on ? color.primary : color.lineCard}`, color: on ? color.primary : color.ink, boxShadow: on ? '0 10px 25px -5px rgba(20,72,62,0.18)' : undefined }}>
+      <span style={{ width: 26, height: 26, background: on ? color.primary : '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 5, flex: 'none' }} />
+      <span>
+        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.02em' }}>{title}</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: on ? color.primary : color.inkFaint, marginTop: 2 }}>{desc}</div>
       </span>
     </button>
   );

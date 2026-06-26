@@ -31,7 +31,7 @@ export default async function MeusAnuncios() {
 
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Meus anúncios</h1>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 6px', color: color.primary }}>Meus anúncios</h1>
       <div style={{ fontSize: 14, color: color.inkMute, marginBottom: 20 }}>{items.length} no total</div>
 
       {items.length === 0 ? (

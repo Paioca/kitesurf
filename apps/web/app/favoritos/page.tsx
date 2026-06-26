@@ -30,7 +30,7 @@ export default async function Favoritos() {
   const head = (
     <>
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Seu radar de vento</div>
-      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(30px, 5vw, 42px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 6px' }}>Favoritos</h1>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(30px, 5vw, 42px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '6px 0 6px', color: color.primary }}>Favoritos</h1>
       <div style={{ fontSize: 15.5, color: color.inkMute, marginBottom: 28 }}>{countLabel}</div>
     </>
   );

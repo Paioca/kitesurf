@@ -50,3 +50,12 @@ export const radius = {
 
 // Gradiente do hero (substitui a foto enquanto não há asset definitivo).
 export const heroGradient = `linear-gradient(120deg, ${color.primary}, ${color.darkBlue})`;
+
+// Sombras tintadas de verde-floresta (Design Book / Lifestyle). Nunca cinza neutro —
+// a sombra herda o verde da marca pra manter o toque orgânico. `hover` é o estado
+// elevado (par com o lift -3px da classe .kl-lift em globals.css).
+export const shadow = {
+  card: '0 6px 24px rgba(20,72,62,0.10)',
+  hover: '0 14px 32px rgba(20,72,62,0.16)',
+  btn: '0 4px 14px rgba(20,72,62,0.16)',
+} as const;

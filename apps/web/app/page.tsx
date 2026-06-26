@@ -68,18 +68,25 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
-          <div style={{ position: 'relative', height: 188, overflow: 'hidden' }}>
-            <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.25),rgba(12,37,32,0.78))' }} />
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18 }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 13, color: color.aqua, marginBottom: 4 }}>Nascido em Cumbuco · Feito para o mundo</div>
-              <h1 style={{ fontSize: 23, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: '#fff', lineHeight: 1.05, margin: 0 }}>Equipamentos de kitesurf<br />com mais confiança</h1>
-              <p style={{ fontSize: 12.5, lineHeight: 1.35, color: '#dce8e1', margin: '8px 0 0', maxWidth: 330 }}>Grátis para anunciar e negociar. Pagamento e entrega são combinados diretamente entre as partes.</p>
+          {/* Hero imersivo (Lifestyle mobile): foto full-bleed, headline gigante, selo gold. */}
+          <div style={{ position: 'relative', height: 'min(76vh, 520px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
+            <div style={{ position: 'relative', padding: '0 20px 60px', animation: 'kl-up 0.7s ease both' }}>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Nascido em Cumbuco · Feito para o mundo</div>
+              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>Equipamentos de kitesurf com mais confiança</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
+                <span style={{ width: 26, height: 3, background: color.accent, borderRadius: 2, flex: 'none' }} />
+                <span style={{ fontFamily: font.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: color.gold }}>Premium Marketplace</span>
+              </div>
             </div>
           </div>
 
-          <div style={{ padding: '16px 18px 4px' }}>
-            <SearchBox />
+          {/* Busca flutuando sobre a borda do hero (mantém SearchBox e sua lógica). */}
+          <div style={{ padding: '0 18px', marginTop: -30, position: 'relative', zIndex: 3 }}>
+            <div style={{ borderRadius: 12, boxShadow: '0 18px 40px rgba(12,37,32,0.28)' }}>
+              <SearchBox />
+            </div>
           </div>
 
           <div style={{ padding: '8px 18px 8px', display: 'flex', gap: 9 }}>
@@ -136,6 +143,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
         {landing ? (
           <>
             <Hero priority={!isMobileUA} />
+            <Community />
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
@@ -220,7 +228,9 @@ function Hero({ priority = true }: { priority?: boolean }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
       <Image src="/hero-beach.jpg" alt="" fill priority={priority} sizes="100vw" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(95deg,rgba(12,37,32,0.92) 0%,rgba(12,37,32,0.66) 42%,rgba(12,37,32,0.12) 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(12,37,32,0.95) 0%,rgba(12,37,32,0.84) 46%,rgba(12,37,32,0.45) 100%)' }} />
+      {/* vinheta inferior: garante leitura do form de busca sobre a foto */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,rgba(12,37,32,0.45) 0%,rgba(12,37,32,0) 40%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco · Feito para o mundo</div>
@@ -258,6 +268,42 @@ function HeroSelect({ name, label, placeholder, options, accent, last }: { name:
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
+  );
+}
+
+// ---------- COMUNIDADE (editorial: foto + manifesto) ----------
+function Community() {
+  return (
+    <section style={{ background: '#fff', overflow: 'hidden' }}>
+      <div style={{ maxWidth: 1320, margin: '0 auto', padding: 'clamp(56px,8vw,96px) 32px' }}>
+        <div className="community-grid" style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 'clamp(40px,6vw,84px)', alignItems: 'center' }}>
+          {/* foto + selo dourado flutuante */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ height: 'clamp(300px,38vw,450px)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 24px 60px rgba(20,72,62,0.20)' }}>
+              <div style={{ width: '100%', height: '100%', backgroundImage: 'url("/hero-beach.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            </div>
+            <div className="only-desktop" style={{ position: 'absolute', bottom: -24, right: -24, background: color.gold, padding: 'clamp(20px,2.4vw,36px)', borderRadius: 16, boxShadow: '0 16px 36px rgba(20,72,62,0.22)' }}>
+              <span aria-hidden="true" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', marginBottom: 12 }}>
+                <Diamond size={6} c={color.dark} r={1} />
+                <Diamond size={8} c={color.dark} r={1} />
+                <Diamond size={10} c={color.dark} r={1} />
+              </span>
+              <div style={{ fontFamily: font.sans, fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark }}>Comunidade<br />Elevada.</div>
+            </div>
+          </div>
+          {/* manifesto */}
+          <div>
+            <div style={{ width: 48, height: 3, background: color.accent, borderRadius: 2, marginBottom: 24 }} />
+            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,3.4vw,40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark, margin: '0 0 22px' }}>O destino final dos kitesurfistas</h2>
+            <p style={{ fontSize: 17, lineHeight: 1.7, color: color.inkSoft, margin: '0 0 24px' }}>A Kitetropos nasceu nas areias de Cumbuco para redefinir o mercado de equipamentos de kitesurf. Unimos a paixão pelo esporte com a curadoria de quem entende cada rajada de vento. Mais que um marketplace, somos o elo de confiança entre quem vive o mar.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: color.primary, fontWeight: 800 }}>
+              <Diamond size={11} c={color.primary} r={2} />
+              <span style={{ fontSize: 13, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Cuidado em cada detalhe</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -310,7 +356,7 @@ function Flow() {
           <div style={{ marginBottom: 20 }}><DiamondTrail /></div>
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como funciona</div>
           <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio ao contato</h2>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>Anunciar e negociar é gratuito. A Kitetropos não processa pagamentos nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>A Kitetropos não processa pagamentos nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
           {steps.map((f) => (

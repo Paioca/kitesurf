@@ -25,6 +25,8 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
   const target = targets[sel];
   const component = target.component;
   const state = stateMap[component];
+  // Passo da jornada (visual, derivado do estado): 0 interesse · 1 contato · 2 negócio.
+  const journeyStep = state.whatsapp ? 2 : (state.offer || state.visit) ? 1 : 0;
   const { visitSummary, itemNoun } = { visitSummary: target.summary, itemNoun: target.itemNoun };
 
   const switchTarget = (i: number) => { setSel(i); setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount(''); setErr(''); };
@@ -84,6 +86,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     return (
       <div style={{ marginBottom: 24 }}>
         {selector}
+        <JourneyStepper step={journeyStep} />
         <div style={{ fontSize: 13, color: color.primary, fontWeight: 600, marginBottom: 8 }}>✓ O vendedor liberou o contato{targets.length > 1 ? ` (${target.label.toLowerCase()})` : ''}.</div>
         <a href={state.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', textAlign: 'center', background: '#25D366', color: '#fff', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>
         <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>Combinem preço, visita e o resto por lá.</div>
@@ -94,6 +97,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
   return (
     <div style={{ marginBottom: 24 }}>
       {selector}
+      <JourneyStepper step={journeyStep} />
       {!showOffer ? (
         <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
       ) : (
@@ -145,6 +149,30 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
 const btnPrimary: React.CSSProperties = { display: 'block', width: '100%', background: color.primary, color: '#fff', border: 'none', textAlign: 'center', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 const btnOutline: React.CSSProperties = { display: 'block', width: '100%', background: '#fff', color: color.ink, border: `1.5px solid ${color.lineCard}`, textAlign: 'center', padding: 15, borderRadius: 12, fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 const disabledBtn: React.CSSProperties = { background: '#dfe3df', color: color.inkFaint2, cursor: 'not-allowed' };
+
+// Stepper da jornada (Lifestyle): Interesse → Contato → Negócio em losangos,
+// o passo atual destacado. Visual no lugar de só texto (ajuda a ler onde se está).
+function JourneyStepper({ step }: { step: number }) {
+  const steps = ['Interesse', 'Contato', 'Negócio'];
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 18 }}>
+      {steps.map((label, i) => {
+        const done = i < step;
+        const active = i === step;
+        const on = done || active;
+        return (
+          <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            {i < steps.length - 1 && <div style={{ position: 'absolute', top: 13, left: '50%', width: '100%', height: 2, background: i < step ? color.primary : '#e6dfd0', zIndex: 0 }} />}
+            <div style={{ position: 'relative', zIndex: 1, width: active ? 28 : 26, height: active ? 28 : 26, transform: 'rotate(45deg)', borderRadius: 6, background: on ? color.primary : '#fff', border: on ? 'none' : `1.5px solid ${color.lineInput}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: active ? '0 4px 12px rgba(20,72,62,0.22)' : 'none' }}>
+              <span style={{ transform: 'rotate(-45deg)', color: on ? '#fff' : color.inkFaint2, fontSize: 12, fontWeight: 800, lineHeight: 1 }}>{done ? '✓' : i + 1}</span>
+            </div>
+            <span style={{ marginTop: 9, fontSize: 11, fontWeight: on ? 800 : 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: on ? color.primary : color.inkFaint2 }}>{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // Caixa de aviso (vermelho do design — anti-spam).
 function WarnBox({ children }: { children: React.ReactNode }) {

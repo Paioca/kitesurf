@@ -164,7 +164,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
       <main className="detail-grid" style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <Gallery photos={photos} listingId={l.id} favorited={favorited} />
 
-        <div>
+        <div className="detail-rail">
           <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 8 }}>
             {l.brand?.name}{l.year ? ` · ${l.year}` : ''}
           </div>
@@ -179,22 +179,27 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             </div>
           )}
 
-          {isKit ? (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px' }}>{formatBRL(l.price)}</div>
-              <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 2 }}>Conjunto · kite + barra</div>
-              {(kitePrice || barraPrice) ? (
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {kitePrice ? <span style={l.kiteSoldAt ? soldPill : pricePill}>Só o kite: {formatBRL(kitePrice)}{l.kiteSoldAt ? ' · vendido' : ''}</span> : null}
-                  {barraPrice ? <span style={l.barraSoldAt ? soldPill : pricePill}>Só a barra: {formatBRL(barraPrice)}{l.barraSoldAt ? ' · vendida' : ''}</span> : null}
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 6 }}>Vendido só em conjunto.</div>
-              )}
-            </div>
-          ) : (
-            <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', marginBottom: 24 }}>{formatBRL(l.price)}</div>
-          )}
+          {/* Buy box (Lifestyle): preço num card rotulado, como o rail de preço do Stitch. */}
+          <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 20, marginBottom: 24, boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 10 }}>Preço do equipamento</div>
+            {isKit ? (
+              <div>
+                <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(l.price)}</div>
+                <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 4 }}>Conjunto · kite + barra</div>
+                {(kitePrice || barraPrice) ? (
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {kitePrice ? <span style={l.kiteSoldAt ? soldPill : pricePill}>Só o kite: {formatBRL(kitePrice)}{l.kiteSoldAt ? ' · vendido' : ''}</span> : null}
+                    {barraPrice ? <span style={l.barraSoldAt ? soldPill : pricePill}>Só a barra: {formatBRL(barraPrice)}{l.barraSoldAt ? ' · vendida' : ''}</span> : null}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: color.inkFaint, marginTop: 6 }}>Vendido só em conjunto.</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(l.price)}</div>
+            )}
+            <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 12, lineHeight: 1.4 }}>Pagamento e entrega combinados diretamente entre as partes.</div>
+          </div>
 
           {attrs.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: color.line, border: `1px solid ${color.line}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
@@ -247,27 +252,30 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             </div>)
           )}
 
-          {/* SELLER */}
-          <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18 }}>
+          {/* SELLER — card escuro "Vendedor Verificado" (contraste teatral Lifestyle).
+              Só apresentação: mesmos dados (nome, membro desde, telefone verificado, link). */}
+          <div style={{ position: 'relative', overflow: 'hidden', background: color.dark, color: '#fff', borderRadius: 16, padding: 20 }}>
+            <span aria-hidden="true" style={{ position: 'absolute', top: 16, right: 16, width: 16, height: 16, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.5, boxShadow: '0 0 22px rgba(217,168,107,0.45)' }} />
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 14, color: color.aqua, marginBottom: 12 }}>Vendedor verificado</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: l.user?.avatarUrl ? `center/cover url("${l.user.avatarUrl}")` : color.primary, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: l.user?.avatarUrl ? `center/cover url("${l.user.avatarUrl}")` : color.primary, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', border: '2px solid rgba(255,255,255,0.18)' }}>
                 {!l.user?.avatarUrl && initials}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.15 }}>{l.user?.name}</div>
-                <div style={{ fontSize: 13, color: color.inkFaint2 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.15, color: '#fff' }}>{l.user?.name}</div>
+                <div style={{ fontSize: 13, color: '#9fb6ab' }}>
                   membro desde {memberSince}
                 </div>
               </div>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 14 }}>
               {l.user?.phoneVerified && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: color.primary, background: '#e8f1ec', padding: '6px 11px', borderRadius: 999 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: color.primary }} />Telefone verificado
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: color.aqua, background: 'rgba(127,188,174,0.14)', border: '1px solid rgba(127,188,174,0.25)', padding: '6px 11px', borderRadius: 999 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: color.aqua }} />Telefone verificado
                 </span>
               )}
             </div>
-            <a href={`/perfil/${l.user?.id}`} style={{ display: 'inline-block', marginTop: 15, fontSize: 13.5, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>Ver perfil do vendedor ›</a>
+            <a href={`/perfil/${l.user?.id}`} style={{ display: 'inline-block', marginTop: 15, fontSize: 13.5, fontWeight: 600, color: color.aqua, textDecoration: 'none' }}>Ver perfil do vendedor ›</a>
           </div>
           <div style={{ marginTop: 14, textAlign: 'center' }}>
             <ReportButton targetType="listing" targetId={l.id} label="Denunciar anúncio" />

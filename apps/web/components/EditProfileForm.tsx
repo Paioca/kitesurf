@@ -89,7 +89,7 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
-      <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 20px' }}>Editar perfil</h1>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 20px', color: color.primary }}>Editar perfil</h1>
       {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{error}</div>}
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { uploadAvatar(e.target.files?.[0]); e.target.value = ''; }} />
 

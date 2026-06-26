@@ -51,7 +51,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <MarkNotificationsRead />
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Ofertas, visitas e negócios</div>
-      <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(28px, 5vw, 38px)', fontWeight: 600, letterSpacing: '-0.5px', margin: '0 0 22px' }}>Minhas negociações</h1>
+      <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '6px 0 22px', color: color.primary }}>Minhas negociações</h1>
 
       {notifs.length > 0 && (
         <div style={{ marginBottom: 26 }}>

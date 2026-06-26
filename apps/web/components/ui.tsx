@@ -2,7 +2,7 @@
 
 // Primitivos do design system Kitetropos. Telas compõem a partir daqui —
 // nada de reescrever estilo inline solto. Tokens em lib/tokens.ts.
-import { color, font, radius } from '../lib/tokens';
+import { color, font, radius, shadow } from '../lib/tokens';
 
 /* ---------- Logo ---------- */
 // Marca Kitetropos (Design Book): losango (único ícone) + wordmark numa palavra, dois tons.
@@ -46,6 +46,7 @@ type BtnVariant = 'primary' | 'accent' | 'outline' | 'ghost';
 export function Button({
   variant = 'primary',
   full,
+  pill,
   disabled,
   onClick,
   href,
@@ -54,17 +55,20 @@ export function Button({
 }: {
   variant?: BtnVariant;
   full?: boolean;
+  pill?: boolean; // raio total — CTA "Próximo Passo →" e afins (Lifestyle)
   disabled?: boolean;
   onClick?: () => void;
   href?: string;
   children: React.ReactNode;
   style?: React.CSSProperties;
 }) {
+  // ghost não recebe sombra (é um link disfarçado); os sólidos elevam no hover via .kl-lift.
+  const elevated = !disabled && variant !== 'ghost';
   const base: React.CSSProperties = {
     fontFamily: font.sans,
     fontSize: 16,
     fontWeight: 700,
-    borderRadius: radius.btn,
+    borderRadius: pill ? radius.pill : radius.btn,
     padding: 16,
     border: 'none',
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -73,11 +77,13 @@ export function Button({
     display: 'inline-block',
     width: full ? '100%' : undefined,
     boxSizing: 'border-box',
+    boxShadow: elevated ? shadow.btn : undefined,
     ...variantStyle(variant, disabled),
     ...style,
   };
-  if (href && !disabled) return <a href={href} style={base}>{children}</a>;
-  return <button onClick={onClick} disabled={disabled} style={base}>{children}</button>;
+  const cls = elevated ? 'kl-lift' : undefined;
+  if (href && !disabled) return <a className={cls} href={href} style={base}>{children}</a>;
+  return <button className={cls} onClick={onClick} disabled={disabled} style={base}>{children}</button>;
 }
 
 function variantStyle(v: BtnVariant, disabled?: boolean): React.CSSProperties {
@@ -156,5 +162,55 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
     <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', color: '#5a6b65', marginBottom: 12 }}>
       {children}
     </div>
+  );
+}
+
+/* ---------- Kicker (Spectral itálico — "abre-seção" editorial) ---------- */
+// A "voz narrativa" da marca. Toda seção do Lifestyle abre com este kicker antes do
+// headline Archivo 900. Nunca compete por hierarquia estrutural — é o eyebrow.
+export function Kicker({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
+  return (
+    <span style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 21, fontWeight: 400, lineHeight: 1.3, color: onDark ? color.aqua : color.inkMute }}>
+      {children}
+    </span>
+  );
+}
+
+/* ---------- SectionHead (kicker + headline Archivo 900 UPPERCASE) ---------- */
+// O par canônico do Lifestyle: kicker Spectral itálico → título atlético. Centralizado
+// por padrão (landing); `align="left"` pros cabeçalhos de coluna/seção interna.
+export function SectionHead({
+  kicker,
+  title,
+  align = 'center',
+  onDark = false,
+  style,
+}: {
+  kicker?: React.ReactNode;
+  title: React.ReactNode;
+  align?: 'center' | 'left';
+  onDark?: boolean;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: align === 'center' ? 'center' : 'flex-start', textAlign: align, ...style }}>
+      {kicker && <Kicker onDark={onDark}>{kicker}</Kicker>}
+      <h2 style={{ margin: 0, fontFamily: font.sans, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, fontSize: 'clamp(28px, 4.5vw, 40px)', color: onDark ? '#fff' : color.ink }}>
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+/* ---------- DarkStage (palco escuro — contraste teatral) ---------- */
+// Seção fundo verde-profundo com texto claro. Cria os "palcos" recessados do Lifestyle
+// (Como Funciona / faixa de confiança) que alternam com as áreas sand. Losango decorativo
+// no canto pra assinar a marca sem poluir.
+export function DarkStage({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <section style={{ position: 'relative', background: color.dark, color: '#fff', overflow: 'hidden', borderRadius: radius.sheet, ...style }}>
+      <span aria-hidden="true" style={{ position: 'absolute', top: 28, right: 28, width: 22, height: 22, background: color.accent, transform: 'rotate(45deg)', borderRadius: 4, opacity: 0.5, boxShadow: '0 0 28px rgba(217,168,107,0.45)' }} />
+      {children}
+    </section>
   );
 }

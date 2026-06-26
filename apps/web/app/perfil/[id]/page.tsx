@@ -63,7 +63,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
             {!user.avatarUrl && initials}
           </div>
           <div style={{ flex: 1, minWidth: 240, paddingBottom: 4 }}>
-            <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>{user.name}</h1>
+            <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 8px', color: color.primary }}>{user.name}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 14, color: color.inkMute }}>
               {/* Instagram oculto na Fase 0 (coluna preservada pra reativar) */}
               {sellerCity && <><span>{sellerCity}</span><span style={{ color: '#cbd3cc' }}>·</span></>}
