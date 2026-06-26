@@ -24,7 +24,7 @@ export default function Termos() {
       sections={sections}
       crossLabel="Política de privacidade"
       crossHref="/privacidade"
-      contact={<>Estes termos descrevem o funcionamento atual da Fase 0 e podem ser atualizados conforme a plataforma evolui. Veja também a <Link href="/privacidade" style={{ color: '#1f6b5c', fontWeight: 700 }}>Política de privacidade</Link>.</>}
+      contact={<>Estes termos descrevem o funcionamento atual da Fase 0 e podem ser atualizados conforme a plataforma evolui. Veja também a <Link href="/privacidade" style={{ color: '#00392f', fontWeight: 700 }}>Política de privacidade</Link>.</>}
     />
   );
 }

@@ -84,7 +84,7 @@ export async function sendSecurityEmail(opts: { to: string; name: string; purpos
       to: [opts.to],
       subject,
       text: `${opts.name || 'Olá'},\n\n${explanation}\n\n${link}\n\nO link expira em ${TOKEN_TTL_MIN} minutos. Se você não pediu isso, ignore este e-mail.`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#23332e"><p>${safeName},</p><h1 style="font-size:26px">${heading}</h1><p style="line-height:1.6">${explanation}</p><p style="margin:28px 0"><a href="${safeLink}" style="background:#1f6b5c;color:#fff;padding:13px 20px;border-radius:10px;text-decoration:none;font-weight:700">${action}</a></p><p style="font-size:13px;color:#6b7a73">O link expira em ${TOKEN_TTL_MIN} minutos. Se você não pediu isso, ignore este e-mail.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#06201b"><p>${safeName},</p><h1 style="font-size:26px">${heading}</h1><p style="line-height:1.6">${explanation}</p><p style="margin:28px 0"><a href="${safeLink}" style="background:#00392f;color:#fff;padding:13px 20px;border-radius:10px;text-decoration:none;font-weight:700">${action}</a></p><p style="font-size:13px;color:#6b7a73">O link expira em ${TOKEN_TTL_MIN} minutos. Se você não pediu isso, ignore este e-mail.</p></div>`,
     }),
     signal: AbortSignal.timeout(8000),
   });

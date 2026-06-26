@@ -24,7 +24,7 @@ export default function Privacidade() {
       sections={sections}
       crossLabel="Termos de uso"
       crossHref="/termos"
-      contact={<><strong>Kitetropos</strong> — CNPJ 52.362.273/0001-80 — é a controladora dos dados pessoais tratados nesta plataforma. Este texto descreve o funcionamento atual da Fase 0. Veja também os <Link href="/termos" style={{ color: '#1f6b5c', fontWeight: 700 }}>Termos de uso</Link>.</>}
+      contact={<><strong>Kitetropos</strong> — CNPJ 52.362.273/0001-80 — é a controladora dos dados pessoais tratados nesta plataforma. Este texto descreve o funcionamento atual da Fase 0. Veja também os <Link href="/termos" style={{ color: '#00392f', fontWeight: 700 }}>Termos de uso</Link>.</>}
     />
   );
 }

@@ -15,7 +15,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-archivo), 'Archivo', system-ui, -apple-system, sans-serif;
-  color: #23332e;
+  color: #06201b;
   background: #f6f3ec;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -23,12 +23,12 @@ body {
 
 ::selection {
   background: #d9a86b;
-  color: #23332e;
+  color: #06201b;
 }
 
 /* Acessibilidade & micro-interações globais */
 :focus-visible {
-  outline: 2px solid #1f6b5c;
+  outline: 2px solid #00392f;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -85,7 +85,7 @@ a {
 .kl-textarea {
   font-family: var(--font-archivo), 'Archivo', sans-serif;
   font-size: 16px; /* 16px evita o auto-zoom do iOS ao focar o campo */
-  color: #23332e;
+  color: #06201b;
   background: #fff;
   border: 1.5px solid #e0d9c9;
   border-radius: 11px;
@@ -159,8 +159,8 @@ a {
 .kl-input:focus,
 .kl-textarea:focus {
   outline: none;
-  border-color: #1f6b5c;
-  box-shadow: 0 0 0 3px rgba(31, 107, 92, 0.1);
+  border-color: #00392f;
+  box-shadow: 0 0 0 3px rgba(0, 57, 47, 0.12);
 }
 
 /* Seção de confiança (home) — assimétrica: manchete editorial à esquerda, pilares
@@ -294,8 +294,8 @@ a {
   transition: color 0.15s, border-color 0.15s;
 }
 .legal-toc-link:hover {
-  border-left-color: #1f6b5c;
-  color: #1f6b5c;
+  border-left-color: #00392f;
+  color: #00392f;
 }
 @media (min-width: 900px) {
   .legal-grid {

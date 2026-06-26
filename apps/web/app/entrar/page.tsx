@@ -252,10 +252,10 @@ export default function Entrar() {
                     Voltar pra entrar por SMS
                   </button>
                 )}
-                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</Link>
+                <Link href="/recuperar" style={{ color: '#00392f', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</Link>
               </div>
 
-              <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
+              <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#00392f', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#00392f', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
             </>
           )}
 
@@ -263,7 +263,7 @@ export default function Entrar() {
             <>
               <button onClick={() => setStep('phone')} style={backBtn}>‹ Voltar</button>
               <h1 style={h1}>Digite o código</h1>
-              <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{channel === 'sms' ? phone : email}</strong>.</p>
+              <p style={sub}>Enviamos para <strong style={{ color: '#06201b' }}>{channel === 'sms' ? phone : email}</strong>.</p>
               <OtpCells value={code} onChange={setCode} />
               <div style={{ fontSize: 13, color: '#8a948d', margin: '6px 0 26px' }}>
                 Não recebeu?{' '}
@@ -283,8 +283,8 @@ export default function Entrar() {
 
           {step === 'profile' && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: '#1f6b5c', marginBottom: 14 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />Telefone verificado
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: '#00392f', marginBottom: 14 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#00392f' }} />Telefone verificado
               </div>
               <h1 style={h1}>Complete seu perfil</h1>
               <p style={sub}>Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.</p>
@@ -385,7 +385,7 @@ function OtpCells({ value, onChange }: { value: string; onChange: (v: string) =>
             const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
             if (t) { e.preventDefault(); onChange(t); }
           }}
-          style={{ flex: 1, minWidth: 0, width: 0, height: 58, borderRadius: 12, textAlign: 'center', fontSize: 23, fontWeight: 700, background: '#fff', border: d ? '2px solid #1f6b5c' : '1.5px solid #e0d9c9', boxSizing: 'border-box', padding: 0 }}
+          style={{ flex: 1, minWidth: 0, width: 0, height: 58, borderRadius: 12, textAlign: 'center', fontSize: 23, fontWeight: 700, background: '#fff', border: d ? '2px solid #00392f' : '1.5px solid #e0d9c9', boxSizing: 'border-box', padding: 0 }}
         />
       ))}
     </div>
@@ -394,7 +394,7 @@ function OtpCells({ value, onChange }: { value: string; onChange: (v: string) =>
 
 /* styles */
 const shell: React.CSSProperties = { minHeight: '100vh', display: 'flex', background: '#f6f3ec' };
-const imagery: React.CSSProperties = { position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg,#0c2520,#1f6b5c)', flex: 1.05 };
+const imagery: React.CSSProperties = { position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg,#0c2520,#00392f)', flex: 1.05 };
 const imageryOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'linear-gradient(160deg,rgba(12,37,32,0.78) 0%,rgba(12,37,32,0.45) 55%,rgba(12,37,32,0.62) 100%)' };
 const imageryInner: React.CSSProperties = { position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 44, minHeight: '100vh', boxSizing: 'border-box' };
 const formWrap: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, minHeight: '100vh', boxSizing: 'border-box' };
@@ -415,16 +415,16 @@ const COUNTRIES = [
   { flag: '🇩🇰', dial: '+45' }, { flag: '🇨🇿', dial: '+420' }, { flag: '🇮🇱', dial: '+972' },
   { flag: '🇦🇺', dial: '+61' },
 ];
-const primaryBtn: React.CSSProperties = { width: '100%', background: '#1f6b5c', color: '#fff', border: 'none', borderRadius: 12, padding: 16, fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer' };
+const primaryBtn: React.CSSProperties = { width: '100%', background: '#00392f', color: '#fff', border: 'none', borderRadius: 12, padding: 16, fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer' };
 const disabledBtn: React.CSSProperties = { ...primaryBtn, background: '#dfe3df', color: '#9aa49d', cursor: 'not-allowed' };
 const terms: React.CSSProperties = { fontSize: 12, lineHeight: 1.5, color: '#9aa49d', textAlign: 'center', margin: '18px 0 0' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', fontSize: 13.5, color: '#6b7a73', cursor: 'pointer', padding: 0, marginBottom: 20, fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
-const linkInline: React.CSSProperties = { background: 'none', border: 'none', color: '#1f6b5c', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
+const linkInline: React.CSSProperties = { background: 'none', border: 'none', color: '#00392f', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 const errorBox: React.CSSProperties = { background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 16 };
 const avatarBtn: React.CSSProperties = { width: 74, height: 74, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '2px dashed #cbc3b2' };
-const segOn: React.CSSProperties = { background: '#1f6b5c', color: '#fff', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 12.5, fontWeight: 700 };
+const segOn: React.CSSProperties = { background: '#00392f', color: '#fff', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 12.5, fontWeight: 700 };
 const segOff: React.CSSProperties = { background: 'transparent', color: '#6b7a73', border: 'none', padding: '8px 14px', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif", fontSize: 12.5, fontWeight: 600 };
 
 function doneAvatar(url: string): React.CSSProperties {
-  return { width: 72, height: 72, borderRadius: 999, background: url ? `center/cover url("${url}")` : '#1f6b5c', color: '#fff', fontSize: 24, fontWeight: 800, margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  return { width: 72, height: 72, borderRadius: 999, background: url ? `center/cover url("${url}")` : '#00392f', color: '#fff', fontSize: 24, fontWeight: 800, margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 }

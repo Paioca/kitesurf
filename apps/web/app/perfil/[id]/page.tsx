@@ -29,7 +29,7 @@ function stars(n: number) {
 }
 
 // Cor estável por avaliador (paleta do handoff) — dá vida ao bloco de avaliações.
-const AV_COLORS = ['#c08f4f', '#5a7d72', '#1f6b5c', '#a06a4a'];
+const AV_COLORS = ['#c08f4f', '#5a7d72', '#00392f', '#a06a4a'];
 function avColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 const HATCH = 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)';
 const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  active: { label: 'Ativo', bg: '#e8f1ec', fg: '#1f6b5c' },
+  active: { label: 'Ativo', bg: '#e8f1ec', fg: '#00392f' },
   paused: { label: 'Pausado', bg: '#fbf0d8', fg: '#7a5e1f' },
   sold: { label: 'Vendido', bg: '#eee', fg: '#555' },
   archived: { label: 'Arquivado', bg: '#eee', fg: '#777' },

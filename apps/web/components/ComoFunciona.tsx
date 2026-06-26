@@ -131,7 +131,7 @@ export function ComoFunciona() {
                 </div>
               </div>
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#f6f3ec', borderRadius: '26px 26px 0 0', padding: '24px 22px 30px' }}>
-                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de kite e barra com gente <strong style={{ color: '#23332e' }}>verificada</strong> — sem anúncio fake.</div>
+                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de kite e barra com gente <strong style={{ color: '#06201b' }}>verificada</strong> — sem anúncio fake.</div>
                 <div style={cta}>Entrar ou criar conta</div>
                 <div style={{ textAlign: 'center', fontSize: 12, color: '#8a948d', marginTop: 12 }}>Sem senha · código por SMS</div>
               </div>
@@ -144,21 +144,21 @@ export function ComoFunciona() {
                 <p style={pSub}>Sem senha. Te mandamos um código por SMS pra confirmar.</p>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: '#48564f', marginBottom: 8 }}>Telefone</div>
                 <div style={{ display: 'flex', gap: 9, marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#23332e', border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 12px', background: '#fff' }}>+55</div>
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 500, border: '1.5px solid #1f6b5c', borderRadius: 11, padding: '13px 14px', background: '#fff', boxShadow: '0 0 0 3px rgba(31,107,92,0.1)' }}>(85) 99988-7766</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#06201b', border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 12px', background: '#fff' }}>+55</div>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 500, border: '1.5px solid #00392f', borderRadius: 11, padding: '13px 14px', background: '#fff', boxShadow: '0 0 0 3px rgba(0,57,47,0.12)' }}>(85) 99988-7766</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11.5, color: '#8a948d', marginBottom: 26, lineHeight: 1.45 }}><span>🌎</span> Aceita número internacional — default Brasil (+55).</div>
                 <div style={{ ...cta, position: 'absolute', left: 22, right: 22, top: 402, borderRadius: 12 }}>Enviar código</div>
               </div>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '56px 22px 0', opacity: bOp(1), zIndex: 2 }}>
                 <h1 style={h1}>Digite o código</h1>
-                <p style={pSub}>Enviado por SMS para <strong style={{ color: '#23332e' }}>+55 (85) 99988-7766</strong>.</p>
+                <p style={pSub}>Enviado por SMS para <strong style={{ color: '#06201b' }}>+55 (85) 99988-7766</strong>.</p>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 26 }}>
                   {otpDigits.map((d, i) => (
-                    <div key={i} style={{ flex: 1, height: 48, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 700, color: '#23332e', background: '#fff', border: `1.5px solid ${i < otpN ? '#1f6b5c' : '#e0d9c9'}` }}>{i < otpN ? d : ''}</div>
+                    <div key={i} style={{ flex: 1, height: 48, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 700, color: '#06201b', background: '#fff', border: `1.5px solid ${i < otpN ? '#00392f' : '#e0d9c9'}` }}>{i < otpN ? d : ''}</div>
                   ))}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: '#1f6b5c', opacity: s2verOp }}><span style={{ width: 9, height: 9, borderRadius: 999, background: '#1f6b5c' }} />Telefone verificado</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: '#00392f', opacity: s2verOp }}><span style={{ width: 9, height: 9, borderRadius: 999, background: '#00392f' }} />Telefone verificado</div>
               </div>
             </div>
 
@@ -166,23 +166,23 @@ export function ComoFunciona() {
             <div style={wrap(2)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '50px 20px 0', opacity: aOp(2) }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: '#23332e', whiteSpace: 'nowrap' }}>Criar anúncio</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#1f6b5c', background: '#e8f1ec', padding: '5px 11px', borderRadius: 999, whiteSpace: 'nowrap' }}>Passo 1 de 4</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#06201b', whiteSpace: 'nowrap' }}>Criar anúncio</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#00392f', background: '#e8f1ec', padding: '5px 11px', borderRadius: 999, whiteSpace: 'nowrap' }}>Passo 1 de 4</span>
                 </div>
                 <h1 style={{ ...h1, fontSize: 22, marginBottom: 16, lineHeight: 1.1 }}>O que você está vendendo?</h1>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#e8f1ec', border: '1.5px solid #1f6b5c' }}><span style={{ width: 11, height: 11, background: '#1f6b5c', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 700, color: '#1f6b5c' }}>Kite</span></div>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#fff', border: '1.5px solid #e0d9c9' }}><span style={{ width: 11, height: 11, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 600, color: '#23332e' }}>Barra</span></div>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#fff', border: '1.5px solid #e0d9c9' }}><span style={{ width: 11, height: 11, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 600, color: '#23332e' }}>Kit</span></div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#e8f1ec', border: '1.5px solid #00392f' }}><span style={{ width: 11, height: 11, background: '#00392f', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 700, color: '#00392f' }}>Kite</span></div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#fff', border: '1.5px solid #e0d9c9' }}><span style={{ width: 11, height: 11, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 600, color: '#06201b' }}>Barra</span></div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderRadius: 11, background: '#fff', border: '1.5px solid #e0d9c9' }}><span style={{ width: 11, height: 11, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2 }} /><span style={{ fontSize: 13.5, fontWeight: 600, color: '#06201b' }}>Kit</span></div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11, marginBottom: 16 }}>
                   <div><div style={lbl}>Marca</div><div style={field}>Duotone</div></div>
                   <div><div style={lbl}>Tamanho</div><div style={field}>10 m²</div></div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: '#1f6b5c', background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}>Título automático</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: '#00392f', background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}>Título automático</span>
                 </div>
-                <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 15, fontWeight: 600, color: '#23332e', background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '13px 14px' }}>Duotone Evo D/LAB · 10 m² · 2026</div>
+                <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 15, fontWeight: 600, color: '#06201b', background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '13px 14px' }}>Duotone Evo D/LAB · 10 m² · 2026</div>
                 <div style={{ ...cta, position: 'absolute', left: 20, right: 20, bottom: 24, borderRadius: 12 }}>Publicar anúncio</div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(2) }}>
@@ -194,18 +194,18 @@ export function ComoFunciona() {
             <div style={wrap(3)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '46px 18px 12px', borderBottom: '1px solid #e6dfd0', background: '#f6f3ec' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div style={{ width: 13, height: 13, background: '#1f6b5c', transform: 'rotate(45deg)', borderRadius: 3 }} /><span style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Kite Life</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><span style={{ fontSize: 16, color: '#c0492f' }}>♡</span><div style={{ width: 28, height: 28, borderRadius: 999, background: '#1f6b5c', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>VC</div></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div style={{ width: 13, height: 13, background: '#00392f', transform: 'rotate(45deg)', borderRadius: 3 }} /><span style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Kite Life</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><span style={{ fontSize: 16, color: '#c0492f' }}>♡</span><div style={{ width: 28, height: 28, borderRadius: 999, background: '#00392f', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>VC</div></div>
                 </div>
                 <div style={{ padding: '14px 18px 8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fff', border: '1.5px solid #e6dfd0', borderRadius: 999, padding: '11px 16px', marginBottom: 11 }}><span style={{ color: '#bcccc4', fontSize: 15 }}>⌕</span><span style={{ fontSize: 13, color: '#9aa49d' }}>Buscar marca, modelo, tamanho…</span></div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: '#1f6b5c', color: '#fff', borderRadius: 11, padding: 11, fontSize: 13.5, fontWeight: 700 }}>⚙ Filtros</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f2f8f5', color: '#1f6b5c', border: '1.5px solid #cfe3d9', borderRadius: 11, padding: '11px 14px', fontSize: 13.5, fontWeight: 700 }}><span style={{ width: 7, height: 7, background: '#1f6b5c', transform: 'rotate(45deg)', borderRadius: 1 }} />Tamanho</div>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: '#00392f', color: '#fff', borderRadius: 11, padding: 11, fontSize: 13.5, fontWeight: 700 }}>⚙ Filtros</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f2f8f5', color: '#00392f', border: '1.5px solid #cfe3d9', borderRadius: 11, padding: '11px 14px', fontSize: 13.5, fontWeight: 700 }}><span style={{ width: 7, height: 7, background: '#00392f', transform: 'rotate(45deg)', borderRadius: 1 }} />Tamanho</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 7, padding: '8px 18px 4px' }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 999, background: '#1f6b5c', color: '#fff' }}>Todos</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 999, background: '#00392f', color: '#fff' }}>Todos</span>
                   <span style={chipOff}>Kite</span>
                   <span style={chipOff}>Barra</span>
                 </div>
@@ -219,11 +219,11 @@ export function ComoFunciona() {
               <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: `rgba(12,37,32,${(sheetE * 0.42).toFixed(3)})`, pointerEvents: 'none' }} />
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 3, background: '#f6f3ec', borderRadius: '22px 22px 0 0', padding: '12px 18px 22px', boxShadow: '0 -14px 34px rgba(0,0,0,0.2)', transform: `translateY(${((1 - sheetE) * 100).toFixed(1)}%)` }}>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 12px' }}><div style={{ width: 40, height: 5, borderRadius: 999, background: '#d8d0bd' }} /></div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 21, fontWeight: 600, margin: 0 }}>Filtros</h2><span style={{ fontSize: 12.5, fontWeight: 700, color: '#1f6b5c' }}>Limpar tudo</span></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', color: '#5a6b65', marginBottom: 11 }}><span style={{ width: 7, height: 7, background: '#1f6b5c', transform: 'rotate(45deg)', borderRadius: 1 }} />Tamanho do kite</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 21, fontWeight: 600, margin: 0 }}>Filtros</h2><span style={{ fontSize: 12.5, fontWeight: 700, color: '#00392f' }}>Limpar tudo</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', color: '#5a6b65', marginBottom: 11 }}><span style={{ width: 7, height: 7, background: '#00392f', transform: 'rotate(45deg)', borderRadius: 1 }} />Tamanho do kite</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   <span style={sizeChip}>8</span><span style={sizeChip}>9</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 999, background: '#1f6b5c', color: '#fff', border: '1.5px solid #1f6b5c' }}>10 ✓</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 999, background: '#00392f', color: '#fff', border: '1.5px solid #00392f' }}>10 ✓</span>
                   <span style={sizeChip}>12</span><span style={sizeChip}>14</span>
                 </div>
                 <div style={{ ...cta, borderRadius: 12, padding: 14, fontSize: 15 }}>Ver 1 anúncio</div>
@@ -234,33 +234,33 @@ export function ComoFunciona() {
             <div style={wrap(4)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', opacity: aOp(4) }}>
                 <div style={{ position: 'relative', height: 230, backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
-                  <div style={{ position: 'absolute', top: 48, left: 16, width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, color: '#23332e' }}>‹</div>
+                  <div style={{ position: 'absolute', top: 48, left: 16, width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, color: '#06201b' }}>‹</div>
                   <div style={{ position: 'absolute', top: 48, right: 16, width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#7a8780' }}>♡</div>
                   <div style={{ position: 'absolute', bottom: 12, left: 14, background: 'rgba(20,48,42,0.85)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999 }}>10 m²</div>
                 </div>
                 <div style={{ padding: '16px 20px 0' }}>
-                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#1f6b5c', marginBottom: 5 }}>Duotone · 2026</div>
+                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#00392f', marginBottom: 5 }}>Duotone · 2026</div>
                   <h1 style={{ ...h1, fontSize: 25, marginBottom: 8 }}>Evo D/LAB 10 m²</h1>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Cumbuco · Cauípe — retirada no spot</div>
                   <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px' }}>R$ 21.459</div>
                 </div>
                 <div style={{ position: 'absolute', left: 20, right: 20, bottom: 22, display: 'flex', flexDirection: 'column', gap: 9 }}>
                   <div style={{ ...cta, borderRadius: 12, padding: 14, fontSize: 15 }}>Fazer oferta</div>
-                  <div style={{ background: '#fff', border: '1.5px solid #d3ccbd', color: '#23332e', borderRadius: 12, padding: 13, textAlign: 'center', fontSize: 14.5, fontWeight: 600 }}>Agendar visita</div>
+                  <div style={{ background: '#fff', border: '1.5px solid #d3ccbd', color: '#06201b', borderRadius: 12, padding: 13, textAlign: 'center', fontSize: 14.5, fontWeight: 600 }}>Agendar visita</div>
                 </div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(4) }}>
                 <Check /><h1 style={successH1}>Visita solicitada</h1><p style={{ ...successP, marginBottom: 22 }}>O Lucas recebeu seu pedido e seu contato por SMS.</p>
-                <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 11, padding: '13px 28px', fontSize: 14.5, fontWeight: 700 }}>Falar no WhatsApp</div>
+                <div style={{ background: '#00392f', color: '#fff', borderRadius: 11, padding: '13px 28px', fontSize: 14.5, fontWeight: 700 }}>Falar no WhatsApp</div>
               </div>
             </div>
 
             {/* SCREEN 5 — WhatsApp */}
             <div style={wrap(5)}>
               <div style={{ position: 'absolute', inset: 0, background: '#e9e0d2' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 90, background: '#1f6b5c', display: 'flex', alignItems: 'flex-end', gap: 10, padding: '0 14px 12px', zIndex: 4 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 90, background: '#00392f', display: 'flex', alignItems: 'flex-end', gap: 10, padding: '0 14px 12px', zIndex: 4 }}>
                   <span style={{ color: '#fff', fontSize: 22, lineHeight: 1, marginBottom: 2 }}>‹</span>
-                  <div style={{ width: 38, height: 38, borderRadius: 999, background: '#d9a86b', color: '#23332e', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>LM</div>
+                  <div style={{ width: 38, height: 38, borderRadius: 999, background: '#d9a86b', color: '#06201b', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>LM</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, lineHeight: 1.1 }}>Lucas M.</div>
                     <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11 }}>@lucaskite · online</div>
@@ -271,13 +271,13 @@ export function ComoFunciona() {
                   <div style={{ alignSelf: 'flex-start', maxWidth: '86%', background: '#fff', borderRadius: '6px 14px 14px 14px', padding: 7, boxShadow: '0 1px 1.5px rgba(0,0,0,0.08)', display: 'flex', gap: 9, ...waBub(0.05) }}>
                     <div style={{ width: 50, height: 50, borderRadius: 8, flex: 'none', backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
                     <div style={{ minWidth: 0, paddingRight: 4 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#23332e', lineHeight: 1.15 }}>Evo D/LAB 10 m²</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#06201b', lineHeight: 1.15 }}>Evo D/LAB 10 m²</div>
                       <div style={{ fontSize: 11, color: '#8a948d', margin: '1px 0 3px' }}>Duotone · Cumbuco</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1f6b5c' }}>R$ 21.459</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#00392f' }}>R$ 21.459</div>
                     </div>
                   </div>
                   <div style={{ alignSelf: 'flex-start', maxWidth: '80%', background: '#fff', borderRadius: '4px 14px 14px 14px', padding: '8px 12px', boxShadow: '0 1px 1px rgba(0,0,0,0.06)', ...waBub(0.18) }}>
-                    <div style={{ fontSize: 13, color: '#23332e', lineHeight: 1.35 }}>Oi! Recebi seu interesse no Evo 🪁</div>
+                    <div style={{ fontSize: 13, color: '#06201b', lineHeight: 1.35 }}>Oi! Recebi seu interesse no Evo 🪁</div>
                     <div style={waTime}>12:31</div>
                   </div>
                   <div style={{ alignSelf: 'flex-end', maxWidth: '84%', background: '#dcf2d0', borderRadius: '14px 4px 14px 14px', padding: '8px 12px', ...waBub(0.5) }}>
@@ -288,7 +288,7 @@ export function ComoFunciona() {
                     <span style={dot} /><span style={dot} /><span style={dot} />
                   </div>
                   <div style={{ alignSelf: 'flex-start', maxWidth: '80%', background: '#fff', borderRadius: '4px 14px 14px 14px', padding: '8px 12px', boxShadow: '0 1px 1px rgba(0,0,0,0.06)', ...waBub(0.7) }}>
-                    <div style={{ fontSize: 13, color: '#23332e', lineHeight: 1.35 }}>Sim, combinado! 👍 Te espero lá.</div>
+                    <div style={{ fontSize: 13, color: '#06201b', lineHeight: 1.35 }}>Sim, combinado! 👍 Te espero lá.</div>
                     <div style={waTime}>12:33</div>
                   </div>
                   <div style={{ alignSelf: 'flex-end', maxWidth: '84%', background: '#dcf2d0', borderRadius: '14px 4px 14px 14px', padding: '8px 12px', ...waBub(0.86) }}>
@@ -298,7 +298,7 @@ export function ComoFunciona() {
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 60, background: '#efe7da', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', zIndex: 4 }}>
                   <div style={{ flex: 1, background: '#fff', borderRadius: 999, padding: '10px 15px', fontSize: 12.5, color: '#9aa49d' }}>Mensagem</div>
-                  <div style={{ width: 42, height: 42, borderRadius: 999, background: '#1f6b5c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flex: 'none' }}>➤</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 999, background: '#00392f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flex: 'none' }}>➤</div>
                 </div>
               </div>
             </div>
@@ -309,7 +309,7 @@ export function ComoFunciona() {
                 <h1 style={{ ...h1, fontSize: 24, marginBottom: 14 }}>Pedidos</h1>
                 <div style={{ display: 'flex', gap: 5, background: '#ece3d2', borderRadius: 11, padding: 4, marginBottom: 16 }}>
                   <div style={{ flex: 1, textAlign: 'center', padding: 9, borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#6b7a73' }}>Recebidos</div>
-                  <div style={{ flex: 1, textAlign: 'center', padding: 9, borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#23332e', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>Enviados</div>
+                  <div style={{ flex: 1, textAlign: 'center', padding: 9, borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#06201b', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>Enviados</div>
                 </div>
                 <div style={{ background: '#fff', border: '1px solid #ece6d8', borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', gap: 12, padding: 14 }}>
@@ -317,14 +317,14 @@ export function ComoFunciona() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}><span style={tagSoft}>Oferta</span><span style={tagSoft}>Aceito</span></div>
                       <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 16, fontWeight: 600, lineHeight: 1.1 }}>Evo D/LAB 10 m²</div>
-                      <div style={{ fontSize: 11.5, color: '#8a948d', marginTop: 2 }}>Para <strong style={{ color: '#23332e' }}>Lucas M.</strong> · @lucaskite</div>
+                      <div style={{ fontSize: 11.5, color: '#8a948d', marginTop: 2 }}>Para <strong style={{ color: '#06201b' }}>Lucas M.</strong> · @lucaskite</div>
                     </div>
                     <div style={{ textAlign: 'right', flex: 'none' }}><div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#9aa49d' }}>Oferta</div><div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>R$ 21.459</div></div>
                   </div>
                   <div style={{ borderTop: '1px solid #f0ebde', background: '#f3f6f3', padding: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#1f6b5c', marginBottom: 11 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Aceito — contato liberado</div>
-                    <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700, marginBottom: 9 }}>Falar com Lucas no WhatsApp</div>
-                    <div style={{ background: '#fff', border: '1.5px solid #1f6b5c', color: '#1f6b5c', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700 }}>Confirmar que comprei</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#00392f', marginBottom: 11 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#00392f' }} />Aceito — contato liberado</div>
+                    <div style={{ background: '#00392f', color: '#fff', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700, marginBottom: 9 }}>Falar com Lucas no WhatsApp</div>
+                    <div style={{ background: '#fff', border: '1.5px solid #00392f', color: '#00392f', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700 }}>Confirmar que comprei</div>
                   </div>
                 </div>
               </div>
@@ -336,14 +336,14 @@ export function ComoFunciona() {
             {/* SCREEN 7 — avaliar */}
             <div style={wrap(7)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '52px 22px 0', opacity: ci === 7 ? 1 - r7 : 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 12, fontWeight: 600, padding: '9px 12px', borderRadius: 10, marginBottom: 18 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Negócio concluído com Lucas M.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 12, fontWeight: 600, padding: '9px 12px', borderRadius: 10, marginBottom: 18 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#00392f' }} />Negócio concluído com Lucas M.</div>
                 <h1 style={{ ...h1, fontSize: 23, marginBottom: 16 }}>Como foi a compra?</h1>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {[1, 2, 3, 4, 5].map((n) => <span key={n} style={{ fontSize: 34, lineHeight: 1, color: n <= starN ? '#d9a86b' : '#d8cfbd' }}>★</span>)}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   <span style={tagOn}>Como descrito</span><span style={tagOn}>Honesto</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, padding: '8px 13px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1.5px solid #ddd5c5', whiteSpace: 'nowrap' }}>Resposta rápida</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, padding: '8px 13px', borderRadius: 999, background: '#fff', color: '#06201b', border: '1.5px solid #ddd5c5', whiteSpace: 'nowrap' }}>Resposta rápida</span>
                 </div>
                 <div style={{ fontSize: 13, color: '#9aa49d', border: '1.5px solid #e0d9c9', borderRadius: 12, padding: 13, background: '#fff' }}>Comentário (opcional)</div>
                 <div style={{ ...cta, position: 'absolute', left: 22, right: 22, bottom: 24, borderRadius: 12 }}>Enviar avaliação</div>
@@ -378,7 +378,7 @@ export function ComoFunciona() {
               return (
                 <div key={i} style={{ padding: '9px 14px', borderRadius: 13, background: st === 'active' ? 'rgba(255,255,255,0.06)' : 'transparent' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 999, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, ...(st === 'active' ? { background: '#d9a86b', color: '#23332e' } : st === 'done' ? { background: '#1f6b5c', color: '#fff' } : { background: 'rgba(255,255,255,0.07)', color: 'rgba(231,225,212,0.5)', border: '1px solid rgba(255,255,255,0.13)' }) }}>{st === 'done' ? '✓' : s.no}</div>
+                    <div style={{ width: 30, height: 30, borderRadius: 999, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, ...(st === 'active' ? { background: '#d9a86b', color: '#06201b' } : st === 'done' ? { background: '#00392f', color: '#fff' } : { background: 'rgba(255,255,255,0.07)', color: 'rgba(231,225,212,0.5)', border: '1px solid rgba(255,255,255,0.13)' }) }}>{st === 'done' ? '✓' : s.no}</div>
                     <div style={{ whiteSpace: 'nowrap', fontSize: 15, fontWeight: st === 'active' ? 700 : 600, color: st === 'active' ? '#fef9ef' : st === 'done' ? 'rgba(231,225,212,0.74)' : 'rgba(231,225,212,0.4)' }}>{s.label}</div>
                   </div>
                   {st === 'active' && (
@@ -397,10 +397,10 @@ export function ComoFunciona() {
 }
 
 function Check() {
-  return <div style={{ width: 62, height: 62, borderRadius: 999, background: '#e8f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}><span style={{ color: '#1f6b5c', fontSize: 30 }}>✓</span></div>;
+  return <div style={{ width: 62, height: 62, borderRadius: 999, background: '#e8f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}><span style={{ color: '#00392f', fontSize: 30 }}>✓</span></div>;
 }
 
-const cta: CSSProperties = { background: '#1f6b5c', color: '#fff', borderRadius: 13, padding: 15, textAlign: 'center', fontSize: 16, fontWeight: 700 };
+const cta: CSSProperties = { background: '#00392f', color: '#fff', borderRadius: 13, padding: 15, textAlign: 'center', fontSize: 16, fontWeight: 700 };
 const h1: CSSProperties = { fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 26, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 8px' };
 const pSub: CSSProperties = { fontSize: 13.5, color: '#6b7a73', margin: '0 0 26px', lineHeight: 1.5 };
 const lbl: CSSProperties = { fontSize: 11.5, fontWeight: 600, color: '#48564f', marginBottom: 6 };
@@ -408,9 +408,9 @@ const field: CSSProperties = { fontSize: 13.5, fontWeight: 600, border: '1.5px s
 const successWrap: CSSProperties = { position: 'absolute', inset: 0, background: '#f6f3ec', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 30px', zIndex: 2 };
 const successH1: CSSProperties = { fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 25, fontWeight: 600, margin: '0 0 10px' };
 const successP: CSSProperties = { fontSize: 14, color: '#6b7a73', lineHeight: 1.55, margin: 0 };
-const chipOff: CSSProperties = { fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1px solid #ddd5c5' };
-const sizeChip: CSSProperties = { fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1.5px solid #ddd5c5' };
-const tagSoft: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: '#1f6b5c', background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 };
-const tagOn: CSSProperties = { fontSize: 12.5, fontWeight: 600, padding: '8px 13px', borderRadius: 999, background: '#1f6b5c', color: '#fff', border: '1.5px solid #1f6b5c', whiteSpace: 'nowrap' };
+const chipOff: CSSProperties = { fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 999, background: '#fff', color: '#06201b', border: '1px solid #ddd5c5' };
+const sizeChip: CSSProperties = { fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999, background: '#fff', color: '#06201b', border: '1.5px solid #ddd5c5' };
+const tagSoft: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: '#00392f', background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 };
+const tagOn: CSSProperties = { fontSize: 12.5, fontWeight: 600, padding: '8px 13px', borderRadius: 999, background: '#00392f', color: '#fff', border: '1.5px solid #00392f', whiteSpace: 'nowrap' };
 const waTime: CSSProperties = { fontSize: 9.5, color: '#9aa49d', textAlign: 'right', marginTop: 2 };
 const dot: CSSProperties = { width: 6, height: 6, borderRadius: 999, background: '#bcc4bd' };

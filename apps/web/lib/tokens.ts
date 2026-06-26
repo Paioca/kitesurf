@@ -1,21 +1,29 @@
 // Design system Kitetropos — fonte única da verdade.
-// Conforme o Design Book v2 (handoff Claude Design). A paleta não mudou no rebrand.
+// Conforme o handoff "Kitetropos Editorial" (Modern Editorial / Coastal Minimalist).
+// Paleta ancorada na paisagem litorânea de Cumbuco: teal profundo + areia quente.
 // Não inventar valores fora daqui.
 
 export const color = {
-  bg: '#f6f3ec', // creme — fundo do app
+  bg: '#f6f3ec', // creme/areia — fundo do app (sand-bg)
   surface: '#ffffff',
-  ink: '#23332e', // texto principal (verde escuro)
-  inkSoft: '#48564f', // labels
-  inkMute: '#6b7a73', // subtítulos
+  ink: '#06201b', // texto principal — teal quase-preto (on-surface), alto impacto
+  inkSoft: '#48564f', // labels (ink-soft)
+  inkMute: '#6b7a73', // subtítulos (ink-mute)
   inkFaint: '#8a948d', // hints
   inkFaint2: '#9aa49d',
   inkFaint3: '#a8b1aa',
-  primary: '#1f6b5c', // verde-petróleo (ações)
-  primaryDeep: 'rgba(20,72,62,0.92)', // badges sobre foto
+  // Primário (Deep Teal) — ações principais, identidade e tipografia de alto contraste.
+  primary: '#00392f',
+  primaryContainer: '#005245', // teal médio — hover/estados, links
+  primaryTint: '#25695b', // teal claro — detalhes, kickers
+  primaryDeep: 'rgba(0,57,47,0.92)', // badges sobre foto
+  // Secundário (Burnt Gold) — calor e padrão "premium".
+  secondary: '#7d5722',
+  secondaryContainer: '#ffcb8c',
+  onSecondaryContainer: '#7a541f',
   accent: '#d9a86b', // areia (CTA secundário / Anunciar) · losango da marca no escuro
   accentInk: '#3a2e18',
-  aqua: '#7fbcae', // verde-água — "tropos" do logo sobre fundo escuro
+  aqua: '#91d3c2', // verde-água — "tropos" do logo sobre fundo escuro (inverse-primary)
   gold: '#e7c79a', // sobre fundo escuro
   heart: '#c0492f',
   // linhas / bordas
@@ -24,8 +32,9 @@ export const color = {
   lineInput: '#e0d9c9',
   lineChip: '#ddd5c5',
   lineDashed: '#cbc3b2',
-  // superfícies de apoio
+  // superfícies de apoio (surface containers do handoff)
   tabTrack: '#efe9dc',
+  surfaceContainer: '#d8f4eb',
   chipSoftBg: '#f2f8f5',
   chipSoftLine: '#cfe3d9',
   // fundo escuro (hero / split de cadastro)
