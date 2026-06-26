@@ -17,4 +17,4 @@ export type Category = {
   };
 };
 
-export type Brand = { id: string; name: string; models: { id: string; name: string }[] };
+export type Brand = { id: string; name: string; models: { id: string; name: string; categoryId: string | null }[] };

@@ -117,22 +117,133 @@ const CATEGORIES = [
   },
 ];
 
-// Marca -> modelos (exemplos da doc; expandir na ingestão).
+// Marca -> modelos. Catálogo de kites (marcas/modelos amarrados à categoria kite).
 const BRANDS: Record<string, string[]> = {
-  Duotone: ['Rebel', 'Evo', 'Neo', 'Dice', 'Juice'],
-  North: ['Orbit', 'Reach', 'Carve'],
-  'F-One': ['Bandit', 'Breeze'],
-  Cabrinha: ['Switchblade', 'Moto', 'Drifter'],
-  Ozone: ['Enduro', 'Edge', 'Reo'],
-  Core: [],
-  Naish: [],
-  Slingshot: [],
-  Airush: [],
-  Eleveight: [],
-  Mystic: [],
-  ION: [],
-  Reedin: [],
-  Flysurfer: [],
+  Duotone: [
+    'Evo', 'Evo SLS', 'Evo D/LAB', 'Evo D/LAB LTD', 'Evo Concept Blue',
+    'Rebel', 'Rebel SLS', 'Rebel D/LAB', 'Rebel SLS Concept Blue',
+    'Neo', 'Neo SLS', 'Neo D/LAB',
+    'Dice', 'Dice SLS',
+    'Juice', 'Juice D/LAB',
+    'Mono', 'Vegas', 'Vegas Concept Blue',
+  ],
+  'North Kiteboarding': [
+    'Orbit', 'Orbit Pro', 'Orbit Ultra', 'Reach', 'Carve', 'Pulse', 'Code Zero', 'Code Zero Pro',
+  ],
+  'North/Duotone (antigo)': [
+    'Rebel', 'Dice', 'Neo', 'Evo', 'Vegas', 'Vegas Hadlow', 'Mono', 'Juice',
+    'Dyno', 'Fuse', 'Rhino', 'Reno', 'Toro',
+  ],
+  CORE: [
+    'Pace', 'Pace Pro',
+    'XR', 'XR X', 'XR Pro', 'XR Pro 2', 'XR3', 'XR4', 'XR5', 'XR6', 'XR7', 'XR8',
+    'Nexus', 'Nexus 2', 'Nexus 3', 'Nexus 4',
+    'Section', 'Section 2', 'Section 3', 'Section 4', 'Section 5',
+    'GTS', 'GTS2', 'GTS3', 'GTS4', 'GTS5', 'GTS6',
+    'Xlite', 'Xlite 2',
+    'Impact', 'Impact 2',
+    'Air', 'Air Pro', 'Xperience',
+  ],
+  Cabrinha: [
+    'Switchblade', 'Moto', 'Moto X', 'Moto X Apex', 'Nitro', 'Drifter',
+    'Contra', 'Contra Aether', 'FX', 'FX2', 'Chaos', 'Radar', 'Vector', 'Crossbow', 'Nomad',
+  ],
+  'F-One': [
+    'Bandit', 'Bandit S', 'Bandit Brainchild', 'Trigger', 'Trigger Brainchild',
+    'Breeze', 'Breeze V4', 'Bullit', 'One', 'Halo',
+  ],
+  Naish: [
+    'Pivot', 'Pivot LE', 'Boxer', 'Triad', 'Dash', 'Torch', 'Slash',
+    'Park', 'Ride', 'Helix', 'Bolt', 'Charger', 'Cult',
+  ],
+  Ozone: [
+    'Catalyst', 'Catalyst V5', 'Enduro', 'Enduro V5', 'Enduro V5 Ultra-X',
+    'Edge', 'Edge VT', 'Edge VT Ultra-X', 'Vortex Ultra-X',
+    'Reo', 'Reo V7', 'Reo V7 Ultra-X', 'Alpha', 'Alpha V3 Ultra-X',
+    'Zephyr', 'Zephyr V8 Ultra-X', 'Hyperlink', 'Hyperlink V4',
+    'Mach1', 'Uno', 'Chrono', 'R1',
+  ],
+  Slingshot: [
+    'Code', 'Code V2', 'Code NXT', 'Code NXT V2', 'Machine', 'Machine V3',
+    'Ghost', 'Ghost V3', 'Ghost V4', 'SST', 'RPX', 'RPM', 'Rally', 'Rally GT',
+    'Turbine', 'UFO', 'Fuel', 'Octane',
+  ],
+  Airush: [
+    'Lithium', 'Lithium Team', 'Ultra', 'Ultra Team', 'Lift', 'Session',
+    'Razor', 'Union', 'One', 'Wave', 'Varial X', 'DNA',
+  ],
+  Reedin: [
+    'SuperModel', 'SuperModel HTF', 'HyperModel', 'HyperModel HTF', 'MasterModel',
+  ],
+  Eleveight: [
+    'RS', 'RS+', 'XS', 'FS', 'WS', 'OS', 'PS', 'Commander',
+  ],
+  Bullman: ['Bravo'],
+  Flysurfer: [
+    'Soul', 'Soul 2', 'Soul 3', 'Sonic', 'Sonic 2', 'Sonic 3', 'Sonic 4',
+    'Sonic Race', 'Sonic Race VMG', 'Boost', 'Boost 2', 'Boost 3',
+    'Stoke', 'Peak', 'Peak 3', 'Peak 4', 'Peak 5', 'Speed', 'Speed 5', 'Hybrid', 'Viron',
+  ],
+  RRD: [
+    'Religion', 'Obsession', 'Gold Obsession', 'Passion', 'Vision',
+    'Emotion', 'Addiction', 'Hyper Type', 'Type',
+  ],
+  CrazyFly: ['Sculp', 'Hyper', 'Tango', 'Cruze', 'Max', 'Pure'],
+  'Ocean Rodeo': [
+    'Roam', 'Roam A-Series', 'Flite', 'Flite A-Series', 'Rise', 'Rise A-Series',
+    'Crave', 'Crave HL', 'Prodigy', 'Razor', 'One',
+  ],
+  Best: [
+    'Kahoona', 'TS', 'GP', 'Waroo', 'Nemesis', 'Cabo', 'Taboo', 'Yarga', 'Bularoo', 'Roca',
+  ],
+  'Liquid Force': [
+    'NV', 'Envy', 'Solo', 'Wow', 'P1', 'Hifi', 'Hifi X', 'NRG', 'Havoc', 'Tension', 'Elite',
+  ],
+  Harlem: ['Thrive', 'Force', 'Go', 'Lead', 'Hadlow Pro', 'Peak'],
+};
+
+// Marca -> modelos de BARRA (amarrados à categoria barra). Mesmas marcas do catálogo
+// de kites; nomes de modelo não colidem com os de kite (uniqueness é por marca+nome).
+const BAR_BRANDS: Record<string, string[]> = {
+  Duotone: ['Click Bar', 'Trust Bar', 'Trust Bar Quad Control', 'Wakestyle Bar'],
+  'North Kiteboarding': ['Navigator', 'Navigator Pro'],
+  'North/Duotone (antigo)': ['Click Bar', 'Trust Bar', 'Trust Bar Quad Control', '5th Element Bar', 'Wakestyle Bar'],
+  CORE: [
+    'Sensor', 'Sensor Pro', 'Sensor 2', 'Sensor 2+', 'Sensor 2S', 'Sensor 2S Pro',
+    'Sensor 3', 'Sensor 3 Pro', 'Sensor 3S', 'Sensor 3S Pro',
+    'Sensor 4', 'Sensor 4 Pro', 'Sensor 4 Compact', 'Sensor 4S', 'Sensor 4S Pro',
+  ],
+  Cabrinha: [
+    'Cabrinha Operating System', 'COS', 'Overdrive Modular', 'Overdrive 1X',
+    'Quickloop Overdrive', 'Quickloop Trimlite', 'Trimlite', 'Recoil', 'IDS',
+  ],
+  'F-One': ['LINX Bar', 'LINX Bar SK99', 'ATOM', 'Monolith Bar'],
+  Naish: ['Torque', 'Torque 2', 'Torque ATB', 'ATB', 'Universal Control System', 'Fusion Control System'],
+  Ozone: [
+    'Contact Water Control System', 'Contact V4', 'Contact V5',
+    'Foil Contact Water Control System', 'Race Control Bar', 'Click-In Loop Control System',
+  ],
+  Slingshot: [
+    'Sentry', 'Sentry V2', 'Sentry V3', 'Sentry Pro',
+    'Compstick', 'Compstick Guardian', 'Compstick Sentinel', 'Guardian', 'Sentinel',
+  ],
+  Airush: ['Smart Bar', 'Smart Bar V3', 'Smart Bar V4', 'Core Bar', 'Access Bar', 'AP Bar', 'Cleat Bar'],
+  Reedin: ['DreamStick', 'DreamStick X', 'DreamStick V2', 'DreamStick V3'],
+  Eleveight: ['CS Bar', 'CS Vary Bar', 'CS Auto Bar', 'CS Auto Bar V2'],
+  Bullman: ['Bullman Bar'],
+  Flysurfer: [
+    'CONNECT Control Bar', 'FORCE Control Bar', 'INFINITY Control Bar',
+    'INFINITY 3.0 Control Bar', 'INFINITY XX Control Bar', 'SYNC Carbon Bar', 'SYNC Carbon Free',
+  ],
+  RRD: [
+    'Global Bar', 'Global Bar V8', 'Global Bar Y25', 'Global Bar Y26',
+    'Global Bar Y27', 'Global Bar Y28', 'Global Bar Y29',
+  ],
+  CrazyFly: ['Sick Bar', 'Sick Bar 2020', 'Sick Bar 2021', 'Sick Bar 2022', 'Sick Bar 2023', 'Sick Bar 2024'],
+  'Ocean Rodeo': ['Pilot Bar', 'Pilot Bar 2.0', 'Shift Bar', 'Freeride Bar'],
+  Best: ['RP Bar', 'Redline Performance Bar', 'GP Bar', 'TS Bar', 'Best Bar'],
+  'Liquid Force': ['Mission Control Bar', 'CPR Control Bar', 'Response Control Bar', 'Liquid Force Bar'],
+  Harlem: ['Force Control Bar', 'Lead Bar', 'Harlem Bar'],
 };
 
 async function main() {
@@ -147,23 +258,40 @@ async function main() {
   }
   console.log(`  ${CATEGORIES.length} categorias`);
 
-  let modelCount = 0;
-  for (const [brandName, models] of Object.entries(BRANDS)) {
-    const brand = await prisma.brand.upsert({
-      where: { name: brandName },
-      update: {},
-      create: { name: brandName },
-    });
-    for (const m of models) {
-      await prisma.model.upsert({
-        where: { brandId_name: { brandId: brand.id, name: m } },
+  // Marca legada "Core" (criada vazia em seeds antigos) -> "CORE" da lista oficial,
+  // evitando duplicata por diferença de caixa (Postgres é case-sensitive).
+  await prisma.brand.updateMany({ where: { name: 'Core' }, data: { name: 'CORE' } });
+
+  const kite = await prisma.category.findUnique({ where: { slug: 'kite' } });
+  if (!kite) throw new Error('Categoria "kite" não encontrada — seed de categorias falhou.');
+  const barra = await prisma.category.findUnique({ where: { slug: 'barra' } });
+  if (!barra) throw new Error('Categoria "barra" não encontrada — seed de categorias falhou.');
+
+  // Insere os modelos de uma categoria sob suas marcas; cria a marca se ainda não existir.
+  async function seedModels(map: Record<string, string[]>, categoryId: string) {
+    let count = 0;
+    for (const [brandName, models] of Object.entries(map)) {
+      const brand = await prisma.brand.upsert({
+        where: { name: brandName },
         update: {},
-        create: { name: m, brandId: brand.id },
+        create: { name: brandName },
       });
-      modelCount++;
+      for (const m of models) {
+        await prisma.model.upsert({
+          where: { brandId_name: { brandId: brand.id, name: m } },
+          update: { categoryId }, // backfill nos modelos já existentes
+          create: { name: m, brandId: brand.id, categoryId },
+        });
+        count++;
+      }
     }
+    return count;
   }
-  console.log(`  ${Object.keys(BRANDS).length} marcas, ${modelCount} modelos`);
+
+  const kiteModels = await seedModels(BRANDS, kite.id);
+  const barModels = await seedModels(BAR_BRANDS, barra.id);
+  const brandCount = await prisma.brand.count();
+  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra`);
   console.log('Seed concluído.');
 }
 

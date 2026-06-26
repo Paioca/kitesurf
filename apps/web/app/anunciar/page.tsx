@@ -123,7 +123,10 @@ export default function Criar() {
   const barraDet = pickProps(barraProps, barraReq, false);
   const hasDetail = Object.keys(mainDet).length > 0 || (kind === 'kit' && Object.keys(barraDet).length > 0);
   const brandOpts = useMemo(() => brands.map((b) => ({ value: b.id, label: b.name })), [brands]);
-  const modelOpts = useMemo(() => (brand?.models ?? []).map((m) => ({ value: m.id, label: m.name })), [brand]);
+  // Modelos da categoria atual: kite/kit usam modelos de kite, barra usa modelos de barra
+  // (mainCat já reflete isso). Sem o filtro, o dropdown listaria modelos das duas categorias.
+  const kindModels = useMemo(() => (brand?.models ?? []).filter((m) => m.categoryId === mainCat?.id), [brand, mainCat]);
+  const modelOpts = useMemo(() => kindModels.map((m) => ({ value: m.id, label: m.name })), [kindModels]);
   const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
   const showKitePhotos = kind === 'kite' || kind === 'kit';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
@@ -133,13 +136,14 @@ export default function Criar() {
   const autoTitle = useMemo(() => {
     const b = brand?.name;
     const model = brand?.models.find((m) => m.id === modelId)?.name;
-    if (kind === 'barra') return ['Barra', b, attrs.line_length_m ? `${attrs.line_length_m} m` : ''].filter(Boolean).join(' · ');
+    if (kind === 'barra') return ['Barra', b, model, attrs.line_length_m ? `${attrs.line_length_m} m` : ''].filter(Boolean).join(' · ');
     const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? CONDITION_LABEL[attrs.condition] : ''].filter(Boolean).join(' · ');
     return kind === 'kit' ? (base ? `${base} + Barra` : '') : base;
   }, [brand, modelId, attrs, year, kind]);
 
   function selectKind(k: Kind) {
     setKind(k);
+    setModelId(''); // modelo é específico da categoria (kite vs barra) — zera ao trocar de tipo
     setAttrs({});
     setBarraAttrs({});
     setImages([]);
@@ -198,7 +202,7 @@ export default function Criar() {
 
   // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
   // além de marca, ano e modelo (modelo só quando a marca tem modelos cadastrados).
-  const headOk = !!brandId && (kind === 'barra' || (!!year && ((brand?.models?.length ?? 0) === 0 || !!modelId)));
+  const headOk = !!brandId && (kindModels.length === 0 || !!modelId) && (kind === 'barra' || !!year);
   // Erro de faixa dos campos numéricos (ex.: tamanho 3–20), client-side: bloqueia o
   // avanço de passo ANTES do publish — o erro não fica só na tela final.
   const numError = (props: Record<string, any>, vals: Record<string, any>): string => {
@@ -317,7 +321,9 @@ export default function Criar() {
 
   // ---- preview da revisão (passo 4) ----
   const previewBrand = brand?.name ?? '';
-  const previewModel = kind === 'barra' ? `Barra${previewBrand ? ` ${previewBrand}` : ''}` : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || 'Seu anúncio');
+  const previewModel = kind === 'barra'
+    ? (brand?.models.find((m) => m.id === modelId)?.name || `Barra${previewBrand ? ` ${previewBrand}` : ''}`)
+    : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || 'Seu anúncio');
   const previewCond = attrs.condition ? CONDITION_LABEL[attrs.condition] : null;
   const previewSize = kind === 'barra' ? (attrs.line_length_m ? `${attrs.line_length_m} m` : '—') : (attrs.size_m2 ? `${attrs.size_m2} m²` : '—');
   const previewDelivery = pickup && shippable ? 'Retirada · Envio' : shippable ? 'Envio' : 'Retirada';
@@ -395,7 +401,7 @@ export default function Criar() {
                   {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
                     <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
-                    {kind !== 'barra' && <Cell><Label>Modelo *</Label><SearchSelect value={modelId} options={modelOpts} placeholder={brandId ? '—' : 'Escolha a marca primeiro'} onChange={setModelId} disabled={!brandId} /></Cell>}
+                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : '—'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
                     {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><ChipSelect options={yearOpts} value={year} onChange={setYear} /></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
                     <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />

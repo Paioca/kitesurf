@@ -12,7 +12,11 @@ export function getCategories() {
 export function getBrands() {
   return db.brand.findMany({
     orderBy: { name: 'asc' },
-    include: { models: { orderBy: { name: 'asc' } } },
+    select: {
+      id: true,
+      name: true,
+      models: { orderBy: { name: 'asc' }, select: { id: true, name: true, categoryId: true } },
+    },
   });
 }
 
