@@ -4,7 +4,7 @@ const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     listing: { findFirst: vi.fn(), findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
-    request: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    request: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
     deal: { count: vi.fn(), findMany: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
@@ -13,7 +13,7 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../lib/db', () => ({ db: mockDb }));
 vi.mock('../lib/notify', () => ({ notifyNewRequest: vi.fn().mockResolvedValue(undefined), notifyRequestAccepted: vi.fn().mockResolvedValue(undefined) }));
 
-import { createRequest, setRequestStatus, cancelRequest } from '../lib/requests';
+import { createRequest, setRequestStatus, cancelRequest, getListingRequestState, getRequestsForUser, waLink } from '../lib/requests';
 import { notifyNewRequest, notifyRequestAccepted } from '../lib/notify';
 
 // peça única (conjunto) por padrão; passar over pra virar kit
@@ -23,6 +23,12 @@ const listingMock = (over: Record<string, unknown> = {}) => ({
   kiteSoldAt: null, barraSoldAt: null, ...over,
 });
 const reqMock = (over: Record<string, unknown> = {}) => ({ id: 'R', sellerId: 'S', buyerId: 'B', status: 'pending', component: 'conjunto', listingId: 'L', ...over });
+const requestListMock = (over: Record<string, unknown> = {}) => ({
+  id: 'R', sellerId: 'S', buyerId: 'B', status: 'accepted', type: 'offer', amount: 150000, component: 'conjunto',
+  listingId: 'L', createdAt: new Date('2026-06-01T12:00:00Z'),
+  listing: { id: 'L', title: 'Kite X', price: 620000, status: 'active', images: [] },
+  ...over,
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -31,6 +37,15 @@ beforeEach(() => {
   mockDb.notification.create.mockResolvedValue({});
   mockDb.listing.findUnique.mockResolvedValue({ title: 't' });
   mockDb.deal.findMany.mockResolvedValue([]); // §7 reserve-block: sem reservas ativas por padrão
+});
+
+describe('waLink', () => {
+  it('gera link só para telefone real', () => {
+    expect(waLink('+55 (88) 99999-0000')).toBe('https://wa.me/5588999990000');
+    expect(waLink(null)).toBeNull();
+    expect(waLink('deleted_user_123456789')).toBeNull();
+    expect(waLink('abc')).toBeNull();
+  });
 });
 
 describe('createRequest', () => {
@@ -121,13 +136,13 @@ describe('setRequestStatus', () => {
   it('aceita pedido pendente com a peça disponível e manda SMS de interesse pro comprador', async () => {
     mockDb.request.findUnique
       .mockResolvedValueOnce(reqMock()) // r (guard inicial)
-      .mockResolvedValueOnce({ buyer: { phone: '+5588' }, seller: { phone: '+5599' } }); // parties (pós-commit)
+      .mockResolvedValueOnce({ buyer: { phone: '+5588999990000' }, seller: { phone: '+5599999990000' } }); // parties (pós-commit)
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
     mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
     mockDb.request.update.mockResolvedValue({});
     // §8/§15 #1 — aceite devolve o link do WhatsApp do COMPRADOR (front navega na mesma aba).
-    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted', whatsapp: 'https://wa.me/5588' });
-    expect(notifyRequestAccepted).toHaveBeenCalledWith(expect.objectContaining({ buyerPhone: '+5588', sellerPhone: '+5599' }));
+    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted', whatsapp: 'https://wa.me/5588999990000' });
+    expect(notifyRequestAccepted).toHaveBeenCalledWith(expect.objectContaining({ buyerPhone: '+5588999990000', sellerPhone: '+5599999990000' }));
   });
   // §15 #2 — recusar não compartilha contato (sem SMS, sem link de WhatsApp).
   it('recusar NÃO manda SMS de interesse nem devolve WhatsApp', async () => {
@@ -165,5 +180,49 @@ describe('cancelRequest', () => {
   it('rejeita retirar um pedido em estado terminal (ex: declined)', async () => {
     mockDb.request.findUnique.mockResolvedValue(reqMock({ status: 'declined' }));
     await expect(cancelRequest('B', 'R')).rejects.toThrow(/não pode mais ser retirado/);
+  });
+});
+
+describe('getRequestsForUser', () => {
+  it('oculta WhatsApp de pedido aceito quando o negócio está em disputa', async () => {
+    mockDb.request.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([requestListMock({ seller: { name: 'Sofia', avatarUrl: null, phone: '+5599999990000' } })]);
+    mockDb.deal.findMany.mockResolvedValue([{
+      id: 'D', listingId: 'L', buyerId: 'B', sellerId: 'S', component: 'conjunto', status: 'disputed',
+      reviews: [], disputes: [{ openedByUserId: 'B', reason: 'engano' }],
+    }]);
+
+    const state = await getRequestsForUser('B');
+
+    expect(state.outgoing[0].status).toBe('accepted');
+    expect(state.outgoing[0].deal?.status).toBe('disputed');
+    expect(state.outgoing[0].whatsapp).toBeNull();
+  });
+
+  it('mantém WhatsApp em pedido aceito sem disputa ativa', async () => {
+    mockDb.request.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([requestListMock({ seller: { name: 'Sofia', avatarUrl: null, phone: '+5599999990000' } })]);
+    mockDb.deal.findMany.mockResolvedValue([]);
+
+    await expect(getRequestsForUser('B')).resolves.toMatchObject({
+      outgoing: [expect.objectContaining({ whatsapp: 'https://wa.me/5599999990000' })],
+    });
+  });
+});
+
+describe('getListingRequestState', () => {
+  it('oculta WhatsApp no detalhe do anúncio quando o negócio está em disputa', async () => {
+    mockDb.request.findMany.mockResolvedValue([
+      { ...reqMock({ status: 'accepted', type: 'offer', amount: 150000 }), seller: { phone: '+5599' } },
+    ]);
+    mockDb.deal.findMany.mockResolvedValue([
+      { listingId: 'L', buyerId: 'B', sellerId: 'S', component: 'conjunto', status: 'disputed' },
+    ]);
+
+    await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
+      conjunto: { whatsapp: null, offer: { status: 'accepted', amount: 150000 } },
+    });
   });
 });

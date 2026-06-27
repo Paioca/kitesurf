@@ -10,9 +10,18 @@ export class RequestError extends PublicError {}
 // Campos que o helper de componente precisa (ListingLike) — reusado nos selects.
 const sellableSel = { status: true, hasBarra: true, price: true, kitePrice: true, barraPrice: true, kiteSoldAt: true, barraSoldAt: true } as const;
 
-// Telefone (E.164) → link de WhatsApp. Só revelado quando o vendedor aceita.
-export function waLink(phone: string) {
-  return `https://wa.me/${phone.replace(/\D/g, '')}`;
+// Telefone (E.164) → link de WhatsApp. Só revelado quando a relação ainda
+// permite contato; valores anonimizados por exclusão de conta não geram link.
+export function waLink(phone?: string | null) {
+  if (!phone || phone.startsWith('deleted_')) return null;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 8 ? `https://wa.me/${digits}` : null;
+}
+
+const CONTACT_HIDDEN_DEAL_STATUSES = new Set(['reversal_requested', 'disputed', 'reversed', 'closed_unconfirmed', 'voided']);
+
+function contactAllowed(deal: { status: string } | null) {
+  return !deal || !CONTACT_HIDDEN_DEAL_STATUSES.has(deal.status);
 }
 
 const listingSel = { id: true, title: true, price: true, status: true, images: { orderBy: { position: 'asc' as const }, take: 1, select: { url: true, thumbUrl: true } } };
@@ -162,9 +171,17 @@ export async function getRequestsForUser(userId: string) {
     };
   };
   const shape = (r: any) => ({ id: r.id, type: r.type, amount: r.amount, status: r.status, component: r.component, componentLabel: COMPONENT_LABEL[r.component as Component], listing: listingShape(r.listing), deal: dealState(r), createdAt: r.createdAt.toISOString() });
+  const incomingShape = (r: any) => {
+    const base = shape(r);
+    return { ...base, buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: r.status === 'accepted' && contactAllowed(base.deal) ? waLink(r.buyer.phone) : null } };
+  };
+  const outgoingShape = (r: any) => {
+    const base = shape(r);
+    return { ...base, seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' && contactAllowed(base.deal) ? waLink(r.seller.phone) : null };
+  };
   return {
-    incoming: incoming.map((r) => ({ ...shape(r), buyer: { name: r.buyer.name, avatarUrl: r.buyer.avatarUrl, whatsapp: r.status === 'accepted' ? waLink(r.buyer.phone) : null } })),
-    outgoing: outgoing.map((r) => ({ ...shape(r), seller: { name: r.seller.name, avatarUrl: r.seller.avatarUrl }, whatsapp: r.status === 'accepted' ? waLink(r.seller.phone) : null })),
+    incoming: incoming.map(incomingShape),
+    outgoing: outgoing.map(outgoingShape),
     moreIncoming, moreOutgoing,
   };
 }
@@ -177,16 +194,22 @@ export type RequestState = {
 
 // Estado dos pedidos do comprador num anúncio, POR COMPONENTE (pro detalhe).
 export async function getListingRequestState(userId: string, listingId: string): Promise<Record<Component, RequestState>> {
-  const reqs = await db.request.findMany({ where: { listingId, buyerId: userId }, include: { seller: { select: { phone: true } } } });
+  const [reqs, deals] = await Promise.all([
+    db.request.findMany({ where: { listingId, buyerId: userId }, include: { seller: { select: { phone: true } } } }),
+    db.deal.findMany({ where: { listingId, buyerId: userId }, select: { listingId: true, buyerId: true, sellerId: true, component: true, status: true } }),
+  ]);
+  const dkey = (l: string, b: string, s: string, c: string) => `${l}|${b}|${s}|${c}`;
+  const dmap = new Map(deals.map((d) => [dkey(d.listingId, d.buyerId, d.sellerId, d.component), d]));
   const forComp = (c: Component): RequestState => {
     const cr = reqs.filter((r) => r.component === c);
     const offer = cr.find((r) => r.type === 'offer') ?? null;
     const visit = cr.find((r) => r.type === 'visit') ?? null;
     const accepted = cr.find((r) => r.status === 'accepted');
+    const acceptedDeal = accepted ? dmap.get(dkey(accepted.listingId, accepted.buyerId, accepted.sellerId, accepted.component)) ?? null : null;
     return {
       offer: offer ? { status: offer.status, amount: offer.amount } : null,
       visit: visit ? { status: visit.status } : null,
-      whatsapp: accepted ? waLink(accepted.seller.phone) : null,
+      whatsapp: accepted && contactAllowed(acceptedDeal) ? waLink(accepted.seller.phone) : null,
     };
   };
   return { conjunto: forComp('conjunto'), kite: forComp('kite'), barra: forComp('barra') };
