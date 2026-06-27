@@ -10,7 +10,7 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../lib/db', () => ({ db: mockDb }));
 vi.mock('../lib/session', () => ({ getCurrentUser: vi.fn().mockResolvedValue(null) }));
 
-import { getFavorites } from '../lib/browse';
+import { getBrowseData, getFavorites } from '../lib/browse';
 
 const kitListing = (over: Record<string, unknown> = {}) => ({
   id: 'L',
@@ -39,6 +39,52 @@ const kitListing = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockDb.listing.findMany.mockResolvedValue([]);
+  mockDb.listing.count.mockResolvedValue(0);
+  mockDb.favorite.findMany.mockResolvedValue([]);
+});
+
+describe('getBrowseData', () => {
+  it('filtra kite com relation filter explícito para categoria', async () => {
+    await getBrowseData({ cat: 'kite' });
+
+    expect(mockDb.listing.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          { category: { is: { slug: 'kite' } } },
+        ]),
+      }),
+    }));
+  });
+
+  it('filtra barra com relation filter explícito para categoria', async () => {
+    await getBrowseData({ cat: 'barra' });
+
+    expect(mockDb.listing.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          expect.objectContaining({
+            OR: expect.arrayContaining([
+              { category: { is: { slug: 'barra' } } },
+            ]),
+          }),
+        ]),
+      }),
+    }));
+  });
+
+  it('filtra kit como categoria kite com barra', async () => {
+    await getBrowseData({ cat: 'kit' });
+
+    expect(mockDb.listing.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          { category: { is: { slug: 'kite' } } },
+          { hasBarra: true },
+        ]),
+      }),
+    }));
+  });
 });
 
 describe('getFavorites', () => {

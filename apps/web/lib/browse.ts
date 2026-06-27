@@ -181,7 +181,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   const qw = textWhere(f.q);
   if (qw) and.push(qw);
   if (persp === 'barra') {
-    and.push({ OR: [{ category: { slug: 'barra' } }, { hasBarra: true, barraPrice: { not: null } }] });
+    and.push({ OR: [{ category: { is: { slug: 'barra' } } }, { hasBarra: true, barraPrice: { not: null } }] });
     and.push({ barraSoldAt: null }); // esconde a barra do kit já vendida (anúncio fica na busca de kite)
     and.push(noReservation('barra', 'conjunto')); // barra reservada (ou conjunto) sai da busca de barra
     if (f.city.length) and.push({ city: { in: f.city } });
@@ -194,7 +194,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
     return { ...BASE, AND: and };
   }
   if (persp === 'kite') {
-    and.push({ category: { slug: 'kite' } });
+    and.push({ category: { is: { slug: 'kite' } } });
     and.push({ kiteSoldAt: null }); // esconde o kite do kit já vendido (anúncio fica na busca de barra)
     and.push(noReservation('kite', 'conjunto')); // kite reservado (ou conjunto) sai da busca de kite
   }
