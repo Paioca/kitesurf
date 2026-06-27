@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { color } from '../lib/tokens';
 import { useToast } from './Toast';
 
-export function CancelRequestButton({ requestId, type, accepted }: { requestId: string; type: 'offer' | 'visit'; accepted?: boolean }) {
+export function CancelRequestButton({ requestId, type, accepted, onCancelled }: { requestId: string; type: 'offer' | 'visit'; accepted?: boolean; onCancelled?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [err, setErr] = useState('');
@@ -24,7 +24,7 @@ export function CancelRequestButton({ requestId, type, accepted }: { requestId: 
     setBusy(true); setErr('');
     try {
       const res = await fetch(`/api/requests/${requestId}`, { method: 'DELETE' });
-      if (res.ok) { toast.show('Pedido cancelado.'); router.refresh(); setBusy(false); setConfirming(false); }
+      if (res.ok) { toast.show('Pedido cancelado.'); onCancelled?.(); router.refresh(); setBusy(false); setConfirming(false); }
       else { const m = (await res.json().catch(() => ({}))).message ?? 'Erro.'; setErr(m); toast.show(m, 'err'); setBusy(false); }
     } catch { setErr('Sem conexão.'); toast.show('Sem conexão.', 'err'); setBusy(false); }
   }

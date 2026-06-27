@@ -72,6 +72,13 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }
 
+  function clearRequest(type: 'offer' | 'visit') {
+    setStateMap((m) => ({
+      ...m,
+      [component]: { ...m[component], [type]: null },
+    }));
+  }
+
   const selector = targets.length > 1 ? (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
       {targets.map((t, i) => (
@@ -121,7 +128,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       {state.offer && (
         <>
           <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />
-          {state.offer.status === 'pending' && state.offer.id && <CancelRequestButton requestId={state.offer.id} type="offer" />}
+          {state.offer.status === 'pending' && state.offer.id && <CancelRequestButton requestId={state.offer.id} type="offer" onCancelled={() => clearRequest('offer')} />}
         </>
       )}
 
@@ -145,7 +152,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       {state.visit && (
         <>
           <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />
-          {state.visit.status === 'pending' && state.visit.id && <CancelRequestButton requestId={state.visit.id} type="visit" />}
+          {state.visit.status === 'pending' && state.visit.id && <CancelRequestButton requestId={state.visit.id} type="visit" onCancelled={() => clearRequest('visit')} />}
         </>
       )}
 
