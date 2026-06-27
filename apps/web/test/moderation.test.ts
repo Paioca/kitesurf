@@ -5,6 +5,7 @@ const { mockDb } = vi.hoisted(() => ({
     user: { findUnique: vi.fn(), update: vi.fn() },
     listing: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     request: { findMany: vi.fn(), updateMany: vi.fn() },
+    deal: { updateMany: vi.fn() },
     notification: { createMany: vi.fn() },
     moderationAction: { create: vi.fn() },
     report: { update: vi.fn() },
@@ -23,7 +24,10 @@ beforeEach(() => {
   mockDb.listing.findMany.mockResolvedValue([{ id: 'L1', title: 'Kite X' }, { id: 'L2', title: 'Barra Y' }]);
   mockDb.request.findMany.mockResolvedValue([{ buyerId: 'B1', listingId: 'L1' }, { buyerId: 'B2', listingId: 'L2' }]);
   mockDb.request.updateMany.mockResolvedValue({ count: 2 });
+  mockDb.deal.updateMany.mockResolvedValue({ count: 1 });
   mockDb.listing.updateMany.mockResolvedValue({ count: 2 });
+  mockDb.listing.update.mockResolvedValue({});
+  mockDb.listing.findFirst.mockResolvedValue({ id: 'L1', title: 'Kite X' });
   mockDb.notification.createMany.mockResolvedValue({ count: 2 });
   mockDb.moderationAction.create.mockResolvedValue({});
 });
@@ -43,6 +47,10 @@ describe('moderate', () => {
       where: { userId: 'S', deletedAt: null, status: { in: ['active', 'paused'] } },
       data: { status: 'archived' },
     });
+    expect(mockDb.deal.updateMany).toHaveBeenCalledWith({
+      where: { sellerId: 'S', status: 'seller_confirmed' },
+      data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null },
+    });
     expect(mockDb.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.arrayContaining([
         expect.objectContaining({ userId: 'B1', type: 'listing_removed', listingId: 'L1', data: { title: 'Kite X' } }),
@@ -54,5 +62,21 @@ describe('moderate', () => {
     mockDb.user.findUnique.mockResolvedValue({ id: 'ADM2', admin: true });
     await expect(moderate('ADM', { action: 'suspend_user', targetId: 'ADM2' })).rejects.toThrow(/admin/i);
     expect(mockDb.user.update).not.toHaveBeenCalled();
+  });
+
+  it('remove_listing cancela venda marcada aberta para não deixar Deal zumbi', async () => {
+    await moderate('ADM', { action: 'remove_listing', targetId: 'L1' });
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith({
+      where: { listingId: 'L1', status: { in: ['pending', 'accepted'] } },
+      data: { status: 'listing_removed' },
+    });
+    expect(mockDb.deal.updateMany).toHaveBeenCalledWith({
+      where: { listingId: 'L1', status: 'seller_confirmed' },
+      data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null },
+    });
+    expect(mockDb.listing.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'L1' },
+      data: expect.objectContaining({ status: 'archived' }),
+    }));
   });
 });

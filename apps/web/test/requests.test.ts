@@ -111,6 +111,13 @@ describe('setRequestStatus', () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000, barraSoldAt: new Date() }));
     await expect(setRequestStatus('S', 'R', 'accepted')).rejects.toThrow(/já foi vendida/);
   });
+  it('rejeita aceitar pedido antigo quando a peça está reservada em outra venda', async () => {
+    mockDb.request.findUnique.mockResolvedValue(reqMock({ component: 'kite' }));
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
+    mockDb.deal.findMany.mockResolvedValue([{ component: 'conjunto' }]);
+    await expect(setRequestStatus('S', 'R', 'accepted')).rejects.toThrow(/venda em andamento/i);
+    expect(mockDb.request.update).not.toHaveBeenCalled();
+  });
   it('aceita pedido pendente com a peça disponível e manda SMS de interesse pro comprador', async () => {
     mockDb.request.findUnique
       .mockResolvedValueOnce(reqMock()) // r (guard inicial)

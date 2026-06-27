@@ -37,6 +37,7 @@ export async function moderate(
       // bump de sessionVersion mata as sessões ativas na hora (getCurrentUser invalida).
       await tx.user.update({ where: { id: targetId }, data: { status: 'blocked', sessionVersion: { increment: 1 } } });
       await tx.request.updateMany({ where: { sellerId: targetId, status: { in: ['pending', 'accepted'] } }, data: { status: 'listing_removed' } });
+      await tx.deal.updateMany({ where: { sellerId: targetId, status: 'seller_confirmed' }, data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null } });
       await tx.listing.updateMany({ where: { userId: targetId, deletedAt: null, status: { in: ['active', 'paused'] } }, data: { status: 'archived' } });
       const titleByListing = new Map(listings.map((l) => [l.id, l.title]));
       await emitMany(tx, affected.map((a) => ({ userId: a.buyerId, type: 'listing_removed' as const, listingId: a.listingId, actorId: moderatorId, data: { title: titleByListing.get(a.listingId) ?? '' } })));
@@ -50,6 +51,7 @@ export async function moderate(
       // captura compradores afetados ANTES de mudar o status, pra notificar.
       const affected = await affectedBuyerIds(tx, targetId);
       await tx.request.updateMany({ where: { listingId: targetId, status: { in: ['pending', 'accepted'] } }, data: { status: 'listing_removed' } });
+      await tx.deal.updateMany({ where: { listingId: targetId, status: 'seller_confirmed' }, data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null } });
       await tx.listing.update({ where: { id: targetId }, data: { deletedAt: new Date(), status: 'archived' } });
       await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'listing_removed' as const, listingId: targetId, actorId: moderatorId, data: { title: l.title } })));
     } else if (action === 'restore_listing') {
