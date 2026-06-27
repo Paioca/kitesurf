@@ -13,9 +13,9 @@ type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
 
 const PERKS = [
-  'Telefone verificado: 1 número, 1 conta',
-  'Reputação real, atrelada a vendas confirmadas',
-  'Fotos guiadas e anúncios padronizados',
+  'Telefone verificado para perfis mais confiáveis',
+  'Reputação construída em negociações confirmadas',
+  'Anúncios organizados, com fotos e detalhes do equipamento',
 ];
 
 export default function Entrar() {
@@ -172,9 +172,9 @@ export default function Entrar() {
         <div style={imageryInner}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></Link>
           <div>
-            <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre na comunidade</div>
+            <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre para a comunidade</div>
             <h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
-              Um número, uma conta. É assim que a confiança começa.
+              Um acesso simples para comprar, vender e negociar.
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13, maxWidth: 380 }}>
               {PERKS.map((p) => (
@@ -198,7 +198,7 @@ export default function Entrar() {
           {step === 'phone' && (
             <>
               <h1 style={h1}>Entrar ou criar conta</h1>
-              <p style={sub}>Sem senha. Te mandamos um código pra confirmar.</p>
+              <p style={sub}>Sem senha. Enviamos um código para confirmar seu telefone.</p>
 
               {/* Canal SMS é A interface — é por onde TODO cadastro novo passa. E-mail
                   é canal alternativo só pra quem JÁ TEM conta + email verificado, e
@@ -234,7 +234,7 @@ export default function Entrar() {
                 }
                 style={primaryBtn}
               >
-                {loading ? 'Enviando…' : 'Enviar código'}
+                {loading ? 'Enviando…' : 'Receber código'}
               </button>
 
               {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
@@ -252,7 +252,7 @@ export default function Entrar() {
                     Voltar pra entrar por SMS
                   </button>
                 )}
-                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Perdi acesso ao meu telefone</Link>
+                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Não tenho mais acesso a esse telefone</Link>
               </div>
 
               <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
@@ -346,10 +346,10 @@ export default function Entrar() {
           {step === 'done' && (
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
-              <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Bem-vindo à Kitetropos!</h1>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Seu telefone foi verificado e sua conta está pronta.</p>
-              <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamento</Link>
-              <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar meu primeiro item</Link>
+              <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Tudo certo. Sua conta está pronta.</h1>
+              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Agora você pode explorar equipamentos ou anunciar seu primeiro item.</p>
+              <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamentos</Link>
+              <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar equipamento</Link>
             </div>
           )}
         </div>

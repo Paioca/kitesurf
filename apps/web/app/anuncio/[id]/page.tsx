@@ -47,11 +47,11 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
 
 // Labels das opções de enum da ficha (condição kite/barra, bladder, mangueiras).
 const CONDITION: Record<string, string> = {
-  novo_lacrado: 'Novo (lacrado)', novo_10x: 'Novo (menos de 10x velejo)',
-  semi_otimo: 'Semi novo (tecido em ótimo estado)', semi_desgaste: 'Semi novo (tecido com início de desgaste)',
-  usado_desgaste: 'Usado (tecido com bastante desgaste)',
+  novo_lacrado: 'Novo, lacrado', novo_10x: 'Pouco usado',
+  semi_otimo: 'Seminovo, em ótimo estado', semi_desgaste: 'Seminovo, com sinais de uso',
+  usado_desgaste: 'Usado, com desgaste visível',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos',
-  zero: 'Zero', microfuro_adesivado: 'Microfuro adesivado', original: 'Original', ja_trocadas: 'Já trocadas',
+  zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado', original: 'Originais', ja_trocadas: 'Trocadas',
 };
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
 const soldPill: React.CSSProperties = { ...pricePill, color: color.inkFaint2, background: '#efeae0', textDecoration: 'line-through', opacity: 0.7 };
@@ -100,7 +100,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (l.brand?.name) attrs.push({ k: 'Marca', v: l.brand.name });
   if (a.bladder) attrs.push({ k: 'Bladder', v: CONDITION[a.bladder] ?? a.bladder });
   if (a.mangueiras) attrs.push({ k: 'Mangueiras', v: CONDITION[a.mangueiras] ?? a.mangueiras });
-  if (a.microfuros != null) attrs.push({ k: 'Micro furos', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
+  if (a.microfuros != null) attrs.push({ k: 'Microfuros', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
   if (a.reparos != null) attrs.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
   else if (a.repairs_count != null) attrs.push({ k: 'Reparos', v: Number(a.repairs_count) > 0 ? String(a.repairs_count) : 'Nenhum' });
   if (a.harness_size) attrs.push({ k: 'Tamanho', v: String(a.harness_size) });
@@ -116,7 +116,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (a.condition) summaryParts.push(CONDITION[a.condition] ?? a.condition);
   if (a.bladder) summaryParts.push(`bladder ${(CONDITION[a.bladder] ?? a.bladder).toLowerCase()}`);
   if (a.mangueiras) summaryParts.push(`mangueiras ${(CONDITION[a.mangueiras] ?? a.mangueiras).toLowerCase()}`);
-  if (a.microfuros != null) summaryParts.push(Number(a.microfuros) > 0 ? `${a.microfuros} micro furo(s)` : 'sem micro furos');
+  if (a.microfuros != null) summaryParts.push(Number(a.microfuros) > 0 ? `${a.microfuros} microfuro(s)` : 'sem microfuros');
   if (a.reparos != null) summaryParts.push(Number(a.reparos) > 0 ? `${a.reparos} reparo(s)` : 'sem reparos');
   summaryParts.push(`em ${l.city}${l.spot ? ` (${l.spot})` : ''}`);
   const visitSummary = summaryParts.join(', ');
@@ -152,7 +152,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (l.year) ficha.push({ k: 'Ano', v: String(l.year) });
   if (sizeM2) ficha.push({ k: 'Tamanho', v: sizeM2 });
   if (a.condition) ficha.push({ k: 'Condição', v: CONDITION[a.condition] ?? a.condition });
-  if (a.microfuros != null) ficha.push({ k: 'Micro furos', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
+  if (a.microfuros != null) ficha.push({ k: 'Microfuros', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
   if (a.reparos != null) ficha.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
   if (a.bladder) ficha.push({ k: 'Bladder', v: CONDITION[a.bladder] ?? a.bladder });
   if (a.mangueiras) ficha.push({ k: 'Mangueiras', v: CONDITION[a.mangueiras] ?? a.mangueiras });
@@ -166,7 +166,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: color.inkFaint, textDecoration: 'none' }}>Comprar</Link><span>›</span>
-          <a href={`/?cat=${l.category?.slug ?? ''}`} style={{ color: color.inkFaint, textDecoration: 'none' }}>{l.category?.namePt}</a><span>›</span>
+          <a href={`/?cat=${l.category?.slug ?? ''}`} style={{ color: color.inkFaint, textDecoration: 'none' }}>{l.category?.slug === 'kite' ? 'Kites' : l.category?.namePt}</a><span>›</span>
           <span style={{ color: color.ink, fontWeight: 600 }}>{title}</span>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           <h1 style={{ fontFamily: font.serif, fontSize: 36, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '0 0 12px' }}>{title}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14.5, color: color.inkMute, marginBottom: 22 }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
-            {l.city}{l.spot ? ` · ${l.spot}` : ''}. {[l.pickup && 'retirada', l.shippable && 'envio'].filter(Boolean).join(' + ') || 'retirada'}
+            {l.city}{l.spot ? ` · ${l.spot}` : ''} · {[l.pickup && 'retirada no spot', l.shippable && 'envio'].filter(Boolean).join(' ou ') || 'retirada no spot'}
           </div>
           {l.status !== 'active' && statusLabel[l.status] && (
             <div style={{ background: '#fbf0d8', border: '1px solid #ecdcb0', color: '#7a5e1f', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', borderRadius: 10, marginBottom: 16 }}>
@@ -190,7 +190,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
           {/* Buy box (Lifestyle): preço num card rotulado, como o rail de preço do Stitch. */}
           <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 20, marginBottom: 24, boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 10 }}>Preço do equipamento</div>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 10 }}>Preço</div>
             {isKit ? (
               <div>
                 <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(primaryPrice)}</div>
@@ -207,7 +207,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             ) : (
               <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(l.price)}</div>
             )}
-            <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 12, lineHeight: 1.4 }}>Pagamento e entrega combinados diretamente entre as partes.</div>
+            <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 12, lineHeight: 1.4 }}>Pagamento e entrega são combinados direto com o vendedor.</div>
           </div>
 
           {attrs.length > 0 && (
@@ -317,7 +317,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkFaint2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{primaryTarget ? primaryTarget.label : l.user?.name ? `Vendido por ${l.user.name}` : 'Preço'}</div>
               <div style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary, lineHeight: 1.15 }}>{formatBRL(primaryPrice)}</div>
             </div>
-            <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Fazer oferta</a>
+            <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Fazer uma oferta</a>
           </div>
         ) : (
           <MobileTabBar />

@@ -87,9 +87,9 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       <div style={{ marginBottom: 24 }}>
         {selector}
         <JourneyStepper step={journeyStep} />
-        <div style={{ fontSize: 13, color: color.primary, fontWeight: 600, marginBottom: 8 }}>✓ O vendedor liberou o contato{targets.length > 1 ? ` (${target.label.toLowerCase()})` : ''}.</div>
-        <a href={state.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', textAlign: 'center', background: '#25D366', color: '#fff', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>Falar no WhatsApp</a>
-        <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>Combinem preço, visita e o resto por lá.</div>
+        <div style={{ fontSize: 13, color: color.primary, fontWeight: 600, marginBottom: 8 }}>✓ Contato liberado{targets.length > 1 ? ` (${target.label.toLowerCase()})` : ''}.</div>
+        <a href={state.whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', textAlign: 'center', background: '#25D366', color: '#fff', padding: 16, borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>Conversar pelo WhatsApp</a>
+        <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 8 }}>Agora vocês podem combinar retirada, envio e pagamento diretamente.</div>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       {selector}
       <JourneyStepper step={journeyStep} />
       {!showOffer ? (
-        <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer oferta</button>
+        <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer uma oferta</button>
       ) : (
         <div style={{ border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ position: 'relative', marginBottom: 12 }}>
@@ -122,7 +122,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       {!confirmVisit ? (
         // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
         // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).
-        (<button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Quero ver pessoalmente'}</button>)
+        (<button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Quero ver de perto'}</button>)
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
@@ -136,11 +136,11 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
           </div>
         </div>
       )}
-      {state.visit && <SentBox title="Visita solicitada" status={state.visit.status} />}
+      {state.visit && <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />}
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>
-        <strong style={{ color: color.ink }}>O que acontece:</strong> avisamos o vendedor e o pedido fica no painel dele com o seu contato. Ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
+        <strong style={{ color: color.ink }}>Como funciona:</strong> O vendedor recebe seu pedido com o seu contato. Se ele aceitar, o WhatsApp dele também é liberado para você.
       </div>
     </div>
   );
@@ -153,7 +153,7 @@ const disabledBtn: React.CSSProperties = { background: '#dfe3df', color: color.i
 // Stepper da jornada (Lifestyle): Interesse → Contato → Negócio em losangos,
 // o passo atual destacado. Visual no lugar de só texto (ajuda a ler onde se está).
 function JourneyStepper({ step }: { step: number }) {
-  const steps = ['Interesse', 'Contato', 'Negócio'];
+  const steps = ['Interesse', 'Contato', 'Negociação'];
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 18 }}>
       {steps.map((label, i) => {
@@ -202,7 +202,7 @@ function SentBox({ title, status }: { title: string; status: string }) {
       <span style={{ width: 22, height: 22, borderRadius: 999, flex: 'none', background: declined ? '#b3261e' : color.primary, color: '#fff', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{declined ? '✕' : '✓'}</span>
       <div>
         <div style={{ fontSize: 14.5, fontWeight: 700, color: declined ? '#b3261e' : color.primary }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 3, lineHeight: 1.45 }}>{declined ? 'O vendedor recusou desta vez.' : 'Aguardando o vendedor aceitar. Quando ele aceitar, o WhatsApp dele aparece aqui.'}</div>
+        <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 3, lineHeight: 1.45 }}>{declined ? 'O vendedor recusou desta vez.' : 'Quando o vendedor aceitar, o contato dele aparece aqui para vocês combinarem pelo WhatsApp.'}</div>
       </div>
     </div>
   );

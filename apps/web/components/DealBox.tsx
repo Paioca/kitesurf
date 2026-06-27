@@ -17,8 +17,8 @@ type Deal = {
 } | null;
 
 // Critérios padronizados por papel:
-const SELLER_TAGS = ['Equipamento como descrito', 'Pontual', 'Comunicação boa', 'Pagamento tranquilo', 'Recomendo']; // comprador avalia o vendedor
-const BUYER_TAGS = ['Pontual', 'Comunicação boa', 'Negócio tranquilo', 'Recomendo']; // vendedor avalia o comprador
+const SELLER_TAGS = ['Equipamento como anunciado', 'Pontual', 'Boa comunicação', 'Pagamento tranquilo', 'Recomendo']; // comprador avalia o vendedor
+const BUYER_TAGS = ['Pontual', 'Boa comunicação', 'Negociação tranquila', 'Recomendo']; // vendedor avalia o comprador
 
 // Motivos de correção (§11) — valores batem com o enum DisputeReason / a rota.
 const REVERSAL_REASONS: [string, string][] = [['devolvido', 'O item foi devolvido'], ['engano', 'Marquei por engano'], ['nao_aconteceu', 'A venda não aconteceu'], ['outro', 'Outro motivo']];
@@ -51,7 +51,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
 
   const ask = (label: string, run: () => void) => { setErr(''); setPending({ label, run }); };
 
-  const reviewing = role === 'seller' ? 'o comprador' : 'o vendedor';
+  const reviewTitle = role === 'seller' ? 'Como foi a negociação com o comprador?' : 'Como foi a negociação com o vendedor?';
   const tagOptions = role === 'seller' ? BUYER_TAGS : SELLER_TAGS;
   const toggleTag = (t: string) => setTags((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
 
@@ -69,8 +69,8 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   } else if (deal!.status === 'completed') {
     confirm = (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: color.primary }}>Negócio concluído ✓</div>
-        <button onClick={() => { setErr(''); setReversing(true); }} disabled={busy} style={linkBtn}>Solicitar correção da venda</button>
+        <div style={{ fontSize: 13, fontWeight: 700, color: color.primary }}>Negociação concluída ✓</div>
+        <button onClick={() => { setErr(''); setReversing(true); }} disabled={busy} style={linkBtn}>Corrigir informação da venda</button>
       </div>
     );
   // Sem ramo para 'voided': quando a peça é vendida a outro, o Request do comprador
@@ -131,7 +131,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   // painel de motivo do pedido de correção (§11)
   const reversalPanel = reversing && deal ? (
     <div style={{ background: '#f3f1e9', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: color.ink }}>Solicitar correção da venda</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: color.ink }}>Corrigir informação da venda</div>
       <div style={{ fontSize: 12, color: color.inkMute, lineHeight: 1.4 }}>A outra parte precisa confirmar. Se não concordar, a moderação decide.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {REVERSAL_REASONS.map(([val, label]) => (
@@ -162,8 +162,8 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
         </div>
       : (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa porque constrói a reputação da comunidade.</div>
-          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Avalie {reviewing}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negociação concluída. Sua avaliação ajuda outros riders a comprar com mais confiança.</div>
+          <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{reviewTitle}</div>
           <div style={{ display: 'flex', gap: 6, margin: '10px 0' }}>
             {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`${n} de 5 estrelas`} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, lineHeight: 1, color: n <= rating ? color.primary : color.lineInput, padding: 0 }}>★</button>)}
           </div>
@@ -173,10 +173,10 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
               return <button key={t} onClick={() => toggleTag(t)} style={{ fontFamily: font.sans, fontSize: 12.5, fontWeight: 600, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', background: on ? color.primary : '#fff', color: on ? '#fff' : color.ink, border: `1.5px solid ${on ? color.primary : color.lineInput}` }}>{t}</button>;
             })}
           </div>
-          <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário (opcional)" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 10, fontSize: 14, fontFamily: font.sans, resize: 'vertical' }} />
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Deixe um comentário, se quiser" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 10, fontSize: 14, fontFamily: font.sans, resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
             <button onClick={() => rating > 0 && call(`/api/deals/${deal.id}/review`, { rating, tags, comment: comment || undefined })} disabled={busy || rating === 0} style={{ ...btn, marginTop: 0 }}>Enviar avaliação</button>
-            <button onClick={() => setReviewSkipped(true)} disabled={busy} style={linkBtn}>Agora não</button>
+            <button onClick={() => setReviewSkipped(true)} disabled={busy} style={linkBtn}>Avaliar depois</button>
           </div>
         </div>
       );
@@ -191,7 +191,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   const showNote = !done && (noDeal || deal!.status === 'seller_confirmed' || deal!.status === 'completed');
   const note = showNote ? (
     <div style={{ fontSize: 12, lineHeight: 1.5, color: color.inkMute, background: '#f3f1e9', borderRadius: 9, padding: '9px 12px' }}>
-      Confirmar a compra/venda e avaliar fortalece os dois perfis. Quem tem histórico de negócios vende mais rápido e passa mais confiança.
+      Avaliações ajudam a comunidade a entender quem negocia bem e mantém o marketplace mais confiável.
     </div>
   ) : null;
 

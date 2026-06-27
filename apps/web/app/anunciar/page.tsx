@@ -15,19 +15,25 @@ import { SearchSelect } from '../../components/SearchSelect';
 // Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
 const CONDITION_LABEL: Record<string, string> = {
   // condição do kite (tecido)
-  novo_lacrado: 'Novo (lacrado)',
-  novo_10x: 'Usado menos de 10 vezes',
-  semi_otimo: 'Seminovo (tecido em ótimo estado)',
-  semi_desgaste: 'Seminovo (tecido com início de desgaste)',
-  usado_desgaste: 'Usado (tecido com bastante desgaste)',
+  novo_lacrado: 'Novo, lacrado',
+  novo_10x: 'Pouco usado',
+  semi_otimo: 'Seminovo, em ótimo estado',
+  semi_desgaste: 'Seminovo, com sinais de uso',
+  usado_desgaste: 'Usado, com desgaste visível',
   // condição da barra
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
   // bladder + mangueiras
-  zero: 'Zero', microfuro_adesivado: 'Microfuro adesivado',
-  original: 'Original', ja_trocadas: 'Já trocadas',
+  zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado',
+  original: 'Originais', ja_trocadas: 'Trocadas',
+};
+const FIELD_LABEL: Record<string, string> = {
+  size_m2: 'Tamanho do kite',
+  condition: 'Estado do equipamento',
+  reparos: 'Reparos no tecido',
+  microfuros: 'Microfuros no bladder',
 };
 const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
-const KITE_SLOTS = ['Foto geral do kite', 'Outro ângulo', 'Detalhe da marca', 'Etiqueta / tamanho', 'Válvulas e bordas', 'Reparos (se houver)'];
+const KITE_SLOTS = ['Foto geral do equipamento', 'Outro ângulo', 'Marca e modelo', 'Etiqueta e tamanho', 'Válvulas e bordas', 'Reparos ou desgastes'];
 const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
 const DRAFT_KEY = 'vaya:anunciar-draft';
 
@@ -233,10 +239,10 @@ export default function Criar() {
   const priceMsg = priceErr(price) || (sellKiteAlone ? priceErr(kitePrice) : '') || (sellBarraAlone ? priceErr(barraPrice) : '') || (!priceOk ? 'Defina o preço' : '');
   const deliveryOk = pickup || shippable;
   const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading && !publishing;
-  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
+  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Preencha os dados obrigatórios' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
 
   // wizard: validade e mensagem por passo
-  const RAIL = ['Tipo & ficha', 'Fotos guiadas', 'Preço & entrega', 'Revisão'];
+  const RAIL = ['Tipo & ficha', 'Fotos do equipamento', 'Preço & entrega', 'Revisão'];
   const TIPS = [
     'As listas padronizadas fazem a busca por tamanho funcionar. Informe furos e reparos para que o comprador saiba exatamente o que está avaliando.',
     'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo. Mínimo de 3.',
@@ -245,7 +251,7 @@ export default function Criar() {
   ];
   const stepValid = [!!kind && fichaOk, photosOk, priceOk && deliveryOk && !!city, canPublish];
   const stepMissing = [
-    !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Complete a ficha' : '',
+    !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Preencha os dados obrigatórios' : '',
     !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : '',
     !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
     missing,
@@ -308,11 +314,11 @@ export default function Criar() {
       <Shell>
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
-          <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Anúncio publicado!</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Já está no ar. Ofertas e pedidos de visita aparecem em Minhas negociações; as notificações dependem do canal disponível.</p>
+          <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Seu anúncio está no ar</h1>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Quando alguém fizer uma oferta ou pedir uma visita, você acompanha tudo em Minhas negociações.</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
-            <Link href="/" style={outline}>Voltar à busca</Link>
+            <Link href="/" style={outline}>Ver outros equipamentos</Link>
           </div>
         </div>
       </Shell>
@@ -400,7 +406,7 @@ export default function Criar() {
                 <>
                   {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
-                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
+                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} placeholder="Selecione a marca" onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
                     <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
                     {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><ChipSelect options={yearOpts} value={year} onChange={setYear} /></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
@@ -418,8 +424,8 @@ export default function Criar() {
                     <div style={{ marginTop: 22, border: `1px solid ${color.lineCard}`, borderRadius: 14, overflow: 'hidden' }}>
                       <button type="button" onClick={() => setDetailOpen((o) => !o)} aria-expanded={detailOpen} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: '#faf7f0', border: 'none', padding: '15px 16px', cursor: 'pointer', textAlign: 'left' }}>
                         <span>
-                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>Estado detalhado</span>
-                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Furos, reparos, bladder e mangueiras para um anúncio honesto.</span>
+                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>Detalhes do estado</span>
+                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Informe os pontos que impactam o uso e a negociação.</span>
                         </span>
                         <span aria-hidden="true" style={{ fontSize: 13, color: color.inkMute, flex: 'none', transform: detailOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
                       </button>
@@ -465,19 +471,19 @@ export default function Criar() {
           {/* PASSO 2 — FOTOS */}
           {step === 1 && (
             <>
-              <StepHead n={2} title="Fotos guiadas" lead={`Mínimo de 3 fotos obrigatórias.${isKit ? ' No kit, ao menos uma do kite e uma da barra.' : ' O GPS das imagens é removido automaticamente.'}`} />
+              <StepHead n={2} title="Fotos do equipamento" lead="Adicione pelo menos 3 fotos para mostrar bem o estado do equipamento." />
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '8px 14px', borderRadius: 999, marginBottom: 22 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de no mínimo 3. Pode adicionar mais
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de 3 fotos mínimas
               </div>
-              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
-              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
+              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : ''} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
+              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : ''} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
             </>
           )}
 
           {/* PASSO 3 — PREÇO, LOCAL E ENTREGA */}
           {step === 2 && (
             <>
-              <StepHead n={3} title="Preço, local e entrega" lead="Sem pagamento na plataforma. O combinado é direto entre as partes." />
+              <StepHead n={3} title="Preço e entrega" lead="Defina o preço, o spot e como o comprador pode receber o equipamento." />
               {isKit ? (
                 <div>
                   <Label>Preço do conjunto (kite + barra) *</Label>
@@ -496,14 +502,15 @@ export default function Criar() {
 
               <div className="criar-loc" style={{ display: 'grid', gap: 16, marginTop: 28 }}>
                 <Cell><Label>Spot *</Label><select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>{SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}</select></Cell>
-                <Cell><Label>Outro ponto (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder="Ex.: Lagoa do Cauípe" /></Cell>
+                <Cell><Label>Ponto de referência opcional</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder="Ex.: Lagoa do Cauípe" /></Cell>
               </div>
               <div style={{ marginTop: 24 }}>
-                <Label>Como entrega? <span style={{ color: color.inkFaint2, fontWeight: 500 }}>· escolha ao menos uma</span></Label>
+                <Label>Como o comprador pode receber?</Label>
                 <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 10 }}>
-                  <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title="Retirada no spot" desc="Encontro presencial. Combinam o ponto no WhatsApp." />
-                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio" desc="A transportadora, o valor e o pagamento são combinados diretamente com o comprador." />
+                  <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title="Retirada no spot" desc="Vocês combinam pelo WhatsApp o melhor ponto para retirada." />
+                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio" desc="Frete, transportadora e pagamento são combinados diretamente entre comprador e vendedor." />
                 </div>
+                <Helper>A Kitetropos não processa pagamentos. Combine pagamento e entrega diretamente com o comprador.</Helper>
               </div>
             </>
           )}
@@ -578,7 +585,7 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
         const req = required.includes(key);
         return (
           <Cell key={key}>
-            <Label>{(spec.label ?? key)}{req ? ' *' : ''}</Label>
+            <Label>{(FIELD_LABEL[key] ?? spec.label ?? key)}{req ? ' *' : ''}</Label>
             {spec.enum ? (
               // listas curtas → chips on-brand (sem picker cinza do iOS)
               <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} labels={CONDITION_LABEL} />
@@ -604,7 +611,7 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
                     type="text"
                     inputMode="decimal"
                     value={values[key] ?? ''}
-                    placeholder={spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
+                    placeholder={key === 'size_m2' ? 'Ex.: 9 ou 8.1' : spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
                     onChange={(e) => {
                       // máscara: vírgula→ponto, só dígitos; máx. 2 dígitos inteiros + 1 decimal
                       // (tamanho de kite/barra nunca passa de 2 dígitos) — impede 3º dígito.
@@ -615,7 +622,9 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
                       onChange(key, v);
                     }}
                   />
-                  {err ? <ErrorText>{err}</ErrorText> : spec.min != null && spec.max != null ? (
+                  {err ? <ErrorText>{err}</ErrorText> : key === 'size_m2' ? (
+                    <Helper>Use ponto para decimais. Ex.: 8.1</Helper>
+                  ) : spec.min != null && spec.max != null ? (
                     <Helper>Use ponto para decimais (ex.: 8.1). Entre {spec.min} e {spec.max}.</Helper>
                   ) : null}
                 </>
@@ -647,7 +656,7 @@ function ChipSelect({ options, value, onChange, labels }: { options: (string | n
 function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRemove }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; progress?: { done: number; total: number; pct: number } | null; onPick: () => void; onRemove: (img: Img) => void }) {
   return (
     <div style={{ marginBottom: 22 }}>
-      <SubHead>{title}</SubHead>
+      {title && <SubHead>{title}</SubHead>}
       {progress && (
         // Barra de progresso real do lote (bytes enviados) — substitui o "…" mudo.
         <div role="status" aria-live="polite" style={{ marginTop: 10 }}>

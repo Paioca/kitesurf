@@ -65,13 +65,13 @@ function perspectiveOf(f: Filters): Perspective {
 }
 
 const COND_LABEL: Record<string, string> = {
-  novo_lacrado: 'Novo (lacrado)', novo_10x: 'Novo · pouco uso', semi_otimo: 'Seminovo · ótimo',
-  semi_desgaste: 'Seminovo · desgaste', usado_desgaste: 'Usado · desgaste',
+  novo_lacrado: 'Novo, lacrado', novo_10x: 'Pouco usado', semi_otimo: 'Seminovo, em ótimo estado',
+  semi_desgaste: 'Seminovo, com sinais de uso', usado_desgaste: 'Usado, com desgaste visível',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
 };
 const COND_ORDER = Object.keys(COND_LABEL);
-const BLADDER_LABEL: Record<string, string> = { zero: 'Bladder zero', microfuro_adesivado: 'Microfuro adesivado' };
-const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas: 'Já trocadas' };
+const BLADDER_LABEL: Record<string, string> = { zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado' };
+const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas: 'Trocadas' };
 
 // Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
 // a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.

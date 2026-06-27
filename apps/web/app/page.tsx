@@ -55,12 +55,12 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const landing = !hasAnyFilter(sp) && !browseFlag;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
-    { value: 'kite', label: 'Kite', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
-    { value: 'kit', label: 'Kite + Barra', count: facets.withbar[0]?.count ?? 0 },
-    { value: 'barra', label: 'Barra', count: facets.category.find((c) => c.value === 'barra')?.count ?? 0 },
+    { value: 'kite', label: 'Kites', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
+    { value: 'kit', label: 'Kite + barra', count: facets.withbar[0]?.count ?? 0 },
+    { value: 'barra', label: 'Barras', count: facets.category.find((c) => c.value === 'barra')?.count ?? 0 },
   ].filter((t) => t.count > 0);
 
-  const sorts: [string, string][] = [['recent', 'Recentes'], ['price_asc', 'Menor preço'], ['price_desc', 'Maior preço']];
+  const sorts: [string, string][] = [['recent', 'Mais recentes'], ['price_asc', 'Menor preço'], ['price_desc', 'Maior preço']];
 
   return (
     <>
@@ -73,8 +73,8 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
             <div style={{ position: 'relative', padding: '0 20px 60px', animation: 'kl-up 0.7s ease both' }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Nascido em Cumbuco · Feito para o mundo</div>
-              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>Equipamentos de kitesurf com mais confiança</h1>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Nascido em Cumbuco. Aberto para o mundo.</div>
+              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>O jeito mais leve de comprar e vender kite</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
                 <span style={{ width: 26, height: 3, background: color.accent, borderRadius: 2, flex: 'none' }} />
                 <span style={{ fontFamily: font.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: color.gold }}>Premium Marketplace</span>
@@ -137,8 +137,8 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
-                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>À venda agora</div>
-                  <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.5vw,50px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: 0, lineHeight: 0.98 }}>Kites e barras disponíveis</h2>
+                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>No vento agora</div>
+                  <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.5vw,50px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: 0, lineHeight: 0.98 }}>Equipamentos rodando pela comunidade</h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {sorts.map(([key, label]) => (
@@ -149,9 +149,9 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
 
               {typeChips.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 36 }}>
-                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos <span style={{ opacity: 0.5, fontWeight: 500 }}>{totalAll}</span></Link>
+                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</Link>
                   {typeChips.map((t) => (
-                    <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label} <span style={{ opacity: 0.5, fontWeight: 500 }}>{t.count}</span></Link>
+                    <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
                   ))}
                 </div>
               )}
@@ -179,7 +179,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
                 <div>
-                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Kites e barras disponíveis</h1>
+                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Equipamentos rodando pela comunidade</h1>
                   <div style={{ fontSize: 14, color: color.inkMute }}>{countLabel}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -223,19 +223,19 @@ function Hero({ priority = true }: { priority?: boolean }) {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,rgba(12,37,32,0.45) 0%,rgba(12,37,32,0) 40%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco · Feito para o mundo</div>
-          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Equipamentos de kitesurf com mais confiança para negociar</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Encontre, anuncie e negocie kite e barra. Perfis com telefone verificado, informações estruturadas e contato pelo WhatsApp.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco. Aberto para o mundo.</div>
+          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>O jeito mais leve de comprar e vender kite</h1>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Equipamentos de kitesurf anunciados por quem vive o esporte. Busque por marca, tamanho, cidade e fale direto com o vendedor pelo WhatsApp.</p>
           <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
             <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
             <div style={{ flex: 1.4, minWidth: 0, padding: '8px 14px', borderRight: '1px solid #efeadd' }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#9aa49d', marginBottom: 3 }}>Busca</div>
-              <input name="q" type="search" placeholder="Marca ou modelo" style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: font.sans, fontSize: 15, fontWeight: 600, color: color.ink, outline: 'none' }} />
+              <input name="q" type="search" placeholder="Busque por marca ou modelo" style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: font.sans, fontSize: 15, fontWeight: 600, color: color.ink, outline: 'none' }} />
             </div>
-            <HeroSelect name="cat" label="Tipo" placeholder="Todos" options={TYPE_OPTS} />
-            <HeroSelect name="size" label="Tamanho" placeholder="Qualquer" options={SIZE_OPTS} accent />
-            <HeroSelect name="city" label="Cidade" placeholder="Todos" options={SPOT_OPTS} last />
-            <button type="submit" className="kl-lift" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar</button>
+            <HeroSelect name="cat" label="Tipo" placeholder="Kite, barra ou todos" options={TYPE_OPTS} />
+            <HeroSelect name="size" label="Tamanho" placeholder="Qualquer tamanho" options={SIZE_OPTS} accent />
+            <HeroSelect name="city" label="Cidade" placeholder="Todas as cidades" options={SPOT_OPTS} last />
+            <button type="submit" className="kl-lift" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar equipamentos</button>
           </form>
           <div style={{ marginTop: 22 }}>
             <HowItWorks />
@@ -300,10 +300,10 @@ function Community() {
 // ---------- TRUST ----------
 function Trust() {
   const pillars = [
-    { title: 'Telefone verificado', desc: 'Cada conta confirma seu número por código enviado ao celular.' },
-    { title: 'Perfil reconhecível', desc: 'Foto, spot e nacionalidade ajudam você a saber com quem está negociando.' },
-    { title: 'Avaliações de negócios', desc: 'As avaliações ficam públicas depois que comprador e vendedor confirmam o negócio.' },
-    { title: 'Contato com intenção', desc: 'O comprador compartilha seu WhatsApp no pedido. Se o vendedor aceitar, o contato dele também é liberado.' },
+    { title: 'Número verificado', desc: 'Cada rider confirma o telefone antes de anunciar ou negociar.' },
+    { title: 'Perfil mais humano', desc: 'Foto, cidade e spot ajudam a entender quem está do outro lado da conversa.' },
+    { title: 'Histórico depois da venda', desc: 'Depois de uma negociação confirmada, comprador e vendedor podem deixar uma avaliação.' },
+    { title: 'WhatsApp só quando faz sentido', desc: 'O contato é liberado quando existe interesse real, evitando conversa solta e perda de tempo.' },
   ];
   return (
     <section id="trust" className="kl-reveal" style={{ background: '#ece3d2' }}>
@@ -312,8 +312,8 @@ function Trust() {
           {/* manchete editorial — à esquerda, dominante */}
           <div>
             <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.primary, marginBottom: 16 }}>Mais contexto antes de negociar</div>
-            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(38px,5.4vw,62px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.8px', color: color.ink, margin: '0 0 20px', lineHeight: 0.94 }}>Mais confiança em cada etapa</h2>
-            <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0, maxWidth: 420 }}>Telefone verificado, foto de perfil obrigatória, anúncios estruturados e avaliações ligadas a negócios confirmados.</p>
+            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(38px,5.4vw,62px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.8px', color: color.ink, margin: '0 0 20px', lineHeight: 0.94 }}>Negocie com mais confiança</h2>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0, maxWidth: 420 }}>Veja quem está anunciando, entenda o estado do equipamento e converse direto com quem vive o esporte.</p>
           </div>
           {/* pilares — grade 2×2 à direita, alinhados à esquerda, losango como bullet */}
           <div className="trust-pillars">
@@ -334,19 +334,19 @@ function Trust() {
 // ---------- COMO FUNCIONA ----------
 function Flow() {
   const steps = [
-    { n: '1', title: 'Anuncie ou encontre', desc: 'Consulte tamanho, condição, fotos e informações do equipamento.' },
-    { n: '2', title: 'Faça uma oferta ou peça uma visita', desc: 'Envie um valor ao vendedor ou solicite uma visita para conhecer o equipamento.' },
-    { n: '3', title: 'Conversem pelo WhatsApp', desc: 'O comprador compartilha seu contato no pedido. Se o vendedor aceitar, o WhatsApp dele também é liberado.' },
-    { n: '4', title: 'Confirmem o negócio', desc: 'Se a negociação for concluída, os dois confirmam. As avaliações passam a fazer parte da reputação dos perfis.' },
+    { n: '1', title: 'Encontre ou anuncie', desc: 'Veja fotos, tamanho, condição, cidade e detalhes do equipamento antes de chamar.' },
+    { n: '2', title: 'Faça uma oferta ou combine uma visita', desc: 'Envie uma proposta ou combine de ver o equipamento de perto antes de decidir.' },
+    { n: '3', title: 'Conversem direto pelo WhatsApp', desc: 'Quando o vendedor aceita o interesse, o contato é liberado para vocês seguirem a negociação.' },
+    { n: '4', title: 'Fechem entre vocês', desc: 'Se a venda acontecer, comprador e vendedor confirmam o negócio e podem deixar uma avaliação.' },
   ];
   return (
     <section className="kl-reveal" style={{ background: color.dark, color: '#fff' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 0 44px' }}>
           <div style={{ marginBottom: 20 }}><DiamondTrail /></div>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como funciona</div>
-          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio ao contato</h2>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>A Kitetropos não processa pagamentos nem cobra comissão; preço, pagamento e entrega são combinados entre as partes.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como a negociação acontece</div>
+          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio à conversa</h2>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>A Kitetropos ajuda você a encontrar, avaliar e iniciar a conversa. Preço, pagamento e entrega ficam combinados diretamente entre comprador e vendedor.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
           {steps.map((f) => (

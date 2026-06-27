@@ -174,9 +174,9 @@ const titleTxt: React.CSSProperties = { fontFamily: font.serif, fontSize: 19, fo
 const okTag: React.CSSProperties = { marginTop: 12, fontSize: 13, fontWeight: 600, color: color.primary };
 function Row({ children }: { children: React.ReactNode }) { return <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 14, marginBottom: 12 }}>{children}</div>; }
 
-// Mini-jornada Interesse → Contato → Negócio (refresh tela negociação). Puramente visual.
+// Mini-jornada Interesse → Contato → Negociação (refresh tela negociação). Puramente visual.
 function MiniStepper() {
-  const steps: { l: string; done?: boolean; active?: boolean }[] = [{ l: 'Interesse', done: true }, { l: 'Contato', active: true }, { l: 'Negócio' }];
+  const steps: { l: string; done?: boolean; active?: boolean }[] = [{ l: 'Interesse', done: true }, { l: 'Contato', active: true }, { l: 'Negociação' }];
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '0 10px', margin: '4px 0 16px' }}>
       <div style={{ position: 'absolute', top: 11, left: 28, right: 28, height: 1, background: color.line }} />
@@ -202,12 +202,11 @@ function ContactLiberado({ name, whatsapp }: { name?: string; whatsapp?: string 
     <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 14, padding: '16px 16px 14px', marginTop: 12, boxShadow: '0 6px 24px rgba(20,72,62,0.06)' }}>
       <MiniStepper />
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
-        <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 15, color: '#8a6a3a' }}>Contato liberado</div>
-        {name && <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', color: color.primary, marginTop: 2 }}>{name} está aguardando</div>}
+        {name && <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', color: color.primary, marginTop: 2 }}>Contato liberado com {name}</div>}
       </div>
-      {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#25D366', color: '#fff', padding: '13px 18px', borderRadius: 11, fontSize: 14.5, fontWeight: 700, textDecoration: 'none' }}>Conversar no WhatsApp</a>}
-      <p style={{ fontSize: 12.5, color: color.inkMute, textAlign: 'center', lineHeight: 1.45, margin: '12px 0 0' }}>O contato foi liberado pra vocês combinarem entrega e pagamento direto.</p>
-      <p style={{ fontSize: 11, color: color.inkFaint2, textAlign: 'center', margin: '6px 0 0' }}>Depois de combinar, confirme o negócio abaixo.</p>
+      {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#25D366', color: '#fff', padding: '13px 18px', borderRadius: 11, fontSize: 14.5, fontWeight: 700, textDecoration: 'none' }}>Conversar pelo WhatsApp</a>}
+      <p style={{ fontSize: 12.5, color: color.inkMute, textAlign: 'center', lineHeight: 1.45, margin: '12px 0 0' }}>Agora vocês podem combinar retirada, envio e pagamento diretamente.</p>
+      <p style={{ fontSize: 11, color: color.inkFaint2, textAlign: 'center', margin: '6px 0 0' }}>Depois que a venda acontecer, confirme o negócio para liberar a avaliação.</p>
     </div>
   );
 }

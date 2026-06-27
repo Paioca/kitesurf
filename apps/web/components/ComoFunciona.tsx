@@ -10,12 +10,12 @@ const BEACH = '/hero-beach.jpg';
 
 const SCENES = [
   { dur: 5000, no: '01', label: 'Entre na plataforma', sub: 'Comunidade verificada de kitesurf' },
-  { dur: 5600, no: '02', label: 'Login por SMS', sub: 'Sem senha. Só o seu número' },
+  { dur: 5600, no: '02', label: 'Login por SMS', sub: 'Sem senha. Código no telefone' },
   { dur: 5600, no: '03', label: 'Anuncie seu equipamento', sub: 'Ficha padronizada, em minutos' },
   { dur: 5200, no: '04', label: 'Filtre por tamanho', sub: 'Ache o kite certo na hora' },
-  { dur: 5400, no: '05', label: 'Agende uma visita', sub: 'Veja e teste no spot' },
+  { dur: 5400, no: '05', label: 'Combine uma visita', sub: 'Veja de perto no spot' },
   { dur: 7000, no: '06', label: 'Combinem no WhatsApp', sub: 'Contato direto, sem intermediário' },
-  { dur: 5200, no: '07', label: 'Feche o negócio', sub: 'Combinem direto, sem taxa' },
+  { dur: 5200, no: '07', label: 'Fechem entre vocês', sub: 'Combinem direto, sem taxa' },
   { dur: 6200, no: '08', label: 'Avalie e gere reputação', sub: 'Confiança que fica pra comunidade' },
 ];
 const TOTAL = SCENES.reduce((a, s) => a + s.dur, 0);
@@ -141,14 +141,14 @@ export function ComoFunciona() {
             <div style={wrap(1)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '56px 22px 0', opacity: aOp(1) }}>
                 <h1 style={h1}>Entrar ou criar conta</h1>
-                <p style={pSub}>Sem senha. Te mandamos um código por SMS pra confirmar.</p>
+                <p style={pSub}>Sem senha. Enviamos um código para confirmar seu telefone.</p>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: '#48564f', marginBottom: 8 }}>Telefone</div>
                 <div style={{ display: 'flex', gap: 9, marginBottom: 14 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#23332e', border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 12px', background: '#fff' }}>+55</div>
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 500, border: '1.5px solid #1f6b5c', borderRadius: 11, padding: '13px 14px', background: '#fff', boxShadow: '0 0 0 3px rgba(31,107,92,0.1)' }}>(85) 99988-7766</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11.5, color: '#8a948d', marginBottom: 26, lineHeight: 1.45 }}><span>🌎</span> Aceita número internacional. Default Brasil (+55).</div>
-                <div style={{ ...cta, position: 'absolute', left: 22, right: 22, top: 402, borderRadius: 12 }}>Enviar código</div>
+                <div style={{ ...cta, position: 'absolute', left: 22, right: 22, top: 402, borderRadius: 12 }}>Receber código</div>
               </div>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '56px 22px 0', opacity: bOp(1), zIndex: 2 }}>
                 <h1 style={h1}>Digite o código</h1>
@@ -186,7 +186,7 @@ export function ComoFunciona() {
                 <div style={{ ...cta, position: 'absolute', left: 20, right: 20, bottom: 24, borderRadius: 12 }}>Publicar anúncio</div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(2) }}>
-                <Check /><h1 style={successH1}>Anúncio publicado!</h1><p style={successP}>Sua Duotone Evo D/LAB já está no ar em Cumbuco.</p>
+                <Check /><h1 style={successH1}>Seu anúncio está no ar</h1><p style={successP}>Quando alguém fizer uma oferta ou pedir uma visita, você acompanha em Minhas negociações.</p>
               </div>
             </div>
 
@@ -245,13 +245,13 @@ export function ComoFunciona() {
                   <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px' }}>R$ 21.459</div>
                 </div>
                 <div style={{ position: 'absolute', left: 20, right: 20, bottom: 22, display: 'flex', flexDirection: 'column', gap: 9 }}>
-                  <div style={{ ...cta, borderRadius: 12, padding: 14, fontSize: 15 }}>Fazer oferta</div>
-                  <div style={{ background: '#fff', border: '1.5px solid #d3ccbd', color: '#23332e', borderRadius: 12, padding: 13, textAlign: 'center', fontSize: 14.5, fontWeight: 600 }}>Agendar visita</div>
+                  <div style={{ ...cta, borderRadius: 12, padding: 14, fontSize: 15 }}>Fazer uma oferta</div>
+                  <div style={{ background: '#fff', border: '1.5px solid #d3ccbd', color: '#23332e', borderRadius: 12, padding: 13, textAlign: 'center', fontSize: 14.5, fontWeight: 600 }}>Quero ver de perto</div>
                 </div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(4) }}>
-                <Check /><h1 style={successH1}>Visita solicitada</h1><p style={{ ...successP, marginBottom: 22 }}>O Lucas recebeu seu pedido e seu contato por SMS.</p>
-                <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 11, padding: '13px 28px', fontSize: 14.5, fontWeight: 700 }}>Falar no WhatsApp</div>
+                <Check /><h1 style={successH1}>Pedido enviado ao vendedor</h1><p style={{ ...successP, marginBottom: 22 }}>Quando o vendedor aceitar, o contato dele aparece para vocês combinarem pelo WhatsApp.</p>
+                <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 11, padding: '13px 28px', fontSize: 14.5, fontWeight: 700 }}>Conversar pelo WhatsApp</div>
               </div>
             </div>
 
@@ -323,21 +323,21 @@ export function ComoFunciona() {
                   </div>
                   <div style={{ borderTop: '1px solid #f0ebde', background: '#f3f6f3', padding: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#1f6b5c', marginBottom: 11 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Aceito. Contato liberado</div>
-                    <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700, marginBottom: 9 }}>Falar com Lucas no WhatsApp</div>
+                    <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700, marginBottom: 9 }}>Conversar pelo WhatsApp</div>
                     <div style={{ background: '#fff', border: '1.5px solid #1f6b5c', color: '#1f6b5c', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700 }}>Confirmar que comprei</div>
                   </div>
                 </div>
               </div>
               <div style={{ ...successWrap, opacity: bOp(6) }}>
-                <Check /><h1 style={successH1}>Compra confirmada!</h1><p style={successP}>Negócio fechado com o Lucas. Falta só avaliar.</p>
+                <Check /><h1 style={successH1}>Negociação concluída!</h1><p style={successP}>Depois da venda, a avaliação ajuda outros riders a comprar com mais confiança.</p>
               </div>
             </div>
 
             {/* SCREEN 7 — avaliar */}
             <div style={wrap(7)}>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '52px 22px 0', opacity: ci === 7 ? 1 - r7 : 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 12, fontWeight: 600, padding: '9px 12px', borderRadius: 10, marginBottom: 18 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Negócio concluído com Lucas M.</div>
-                <h1 style={{ ...h1, fontSize: 23, marginBottom: 16 }}>Como foi a compra?</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 12, fontWeight: 600, padding: '9px 12px', borderRadius: 10, marginBottom: 18 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Negociação concluída com Lucas M.</div>
+                <h1 style={{ ...h1, fontSize: 23, marginBottom: 16 }}>Como foi a negociação?</h1>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {[1, 2, 3, 4, 5].map((n) => <span key={n} style={{ fontSize: 34, lineHeight: 1, color: n <= starN ? '#d9a86b' : '#d8cfbd' }}>★</span>)}
                 </div>
@@ -345,7 +345,7 @@ export function ComoFunciona() {
                   <span style={tagOn}>Como descrito</span><span style={tagOn}>Honesto</span>
                   <span style={{ fontSize: 12.5, fontWeight: 600, padding: '8px 13px', borderRadius: 999, background: '#fff', color: '#23332e', border: '1.5px solid #ddd5c5', whiteSpace: 'nowrap' }}>Resposta rápida</span>
                 </div>
-                <div style={{ fontSize: 13, color: '#9aa49d', border: '1.5px solid #e0d9c9', borderRadius: 12, padding: 13, background: '#fff' }}>Comentário (opcional)</div>
+                <div style={{ fontSize: 13, color: '#9aa49d', border: '1.5px solid #e0d9c9', borderRadius: 12, padding: 13, background: '#fff' }}>Deixe um comentário, se quiser</div>
                 <div style={{ ...cta, position: 'absolute', left: 22, right: 22, bottom: 24, borderRadius: 12 }}>Enviar avaliação</div>
               </div>
               <div style={{ ...successWrap, opacity: ci === 7 ? r7 : 0 }}>

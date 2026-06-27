@@ -17,7 +17,7 @@ export function Footer() {
         </div>
         <div style={{ borderTop: '1px solid rgba(220,232,225,0.14)', paddingTop: 26, display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: '#8aa399' }}>© 2026 Kitetropos</span>
-          <span style={{ fontSize: 13, color: '#8aa399' }}>Nascido em Cumbuco · Feito para o mundo</span>
+          <span style={{ fontSize: 13, color: '#8aa399' }}>Nascido em Cumbuco. Aberto para o mundo.</span>
         </div>
       </div>
     </footer>
