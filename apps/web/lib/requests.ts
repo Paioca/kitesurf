@@ -26,8 +26,8 @@ function contactAllowed(deal: { status: string } | null) {
 
 const listingSel = { id: true, title: true, price: true, status: true, images: { orderBy: { position: 'asc' as const }, take: 1, select: { url: true, thumbUrl: true } } };
 
-// Comprador faz oferta (valor) ou pede visita. 1 oferta + 1 visita por anúncio
-// (re-oferecer atualiza o valor e volta pra pendente).
+// Comprador faz oferta (valor) ou pede visita. 1 oferta + 1 visita por anúncio.
+// Reenvio só reabre estados encerrados/pendentes; pedido aceito não volta atrás.
 export async function createRequest(userId: string, listingId: string, type: 'offer' | 'visit', amount?: number | null, component: Component = 'conjunto') {
   const listing = await db.listing.findFirst({ where: { id: listingId, deletedAt: null }, select: { ...sellableSel, userId: true, title: true, user: { select: { phone: true } } } });
   if (!listing) throw new RequestError('Anúncio não encontrado.', 404);
@@ -54,8 +54,20 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   if (buyer && buyer.phone === listing.user.phone) throw new RequestError('Você não pode negociar com a própria conta.', 400);
   const title = component === 'conjunto' ? listing.title : `${listing.title} · ${COMPONENT_LABEL[component]}`;
   const r = await db.$transaction(async (tx) => {
+    const key = { listingId, buyerId: userId, type, component };
+    const active = await tx.request.findMany({
+      where: { listingId, buyerId: userId, component, status: { in: ['pending', 'accepted'] } },
+      select: { id: true, type: true, status: true },
+    });
+    if (active.some((r) => r.status === 'accepted')) {
+      throw new RequestError('Este pedido já foi aceito. Continue pela negociação em Minhas negociações.', 409);
+    }
+    const pendingOtherTypeIds = active.filter((r) => r.status === 'pending' && r.type !== type).map((r) => r.id);
+    if (pendingOtherTypeIds.length > 0) {
+      await tx.request.updateMany({ where: { id: { in: pendingOtherTypeIds } }, data: { status: 'withdrawn' } });
+    }
     const req = await tx.request.upsert({
-      where: { listingId_buyerId_type_component: { listingId, buyerId: userId, type, component } },
+      where: { listingId_buyerId_type_component: key },
       update: { amount: type === 'offer' ? amount! : null, status: 'pending' },
       create: { listingId, buyerId: userId, sellerId: listing.userId, type, amount: type === 'offer' ? amount! : null, component },
     });

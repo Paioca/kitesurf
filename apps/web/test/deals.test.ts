@@ -218,6 +218,14 @@ describe('openNegotiationExists', () => {
     mockDb.deal.count.mockResolvedValue(0);
     expect(await openNegotiationExists('L', 'kite')).toBe(true);
   });
+  it('true quando o conjunto tem pedido aceito e a peça é barra', async () => {
+    mockDb.request.count.mockResolvedValue(1);
+    mockDb.deal.count.mockResolvedValue(0);
+    await expect(openNegotiationExists('L', 'barra')).resolves.toBe(true);
+    expect(mockDb.request.count).toHaveBeenCalledWith({
+      where: { listingId: 'L', component: { in: ['conjunto', 'barra'] }, status: 'accepted' },
+    });
+  });
   it('true quando há deal seller_confirmed', async () => {
     mockDb.request.count.mockResolvedValue(0);
     mockDb.deal.count.mockResolvedValue(1);

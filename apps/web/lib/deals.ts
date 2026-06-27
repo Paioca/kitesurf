@@ -390,9 +390,11 @@ export async function createReview(userId: string, dealId: string, rating: numbe
 // confirmação). Usado pra travar a remoção/edição de disponibilidade de uma peça
 // com negócio em andamento — a transição de domínio fica centralizada aqui, não no route.
 export async function openNegotiationExists(listingId: string, component: Component): Promise<boolean> {
+  const candidates: Component[] = ['conjunto', 'kite', 'barra'];
+  const components = candidates.filter((c) => reservationConflict(c, component));
   const [acceptedReq, openDeal] = await Promise.all([
-    db.request.count({ where: { listingId, component, status: 'accepted' } }),
-    db.deal.count({ where: { listingId, component, status: 'seller_confirmed' } }),
+    db.request.count({ where: { listingId, component: { in: components }, status: 'accepted' } }),
+    db.deal.count({ where: { listingId, component: { in: components }, status: 'seller_confirmed' } }),
   ]);
   return acceptedReq > 0 || openDeal > 0;
 }

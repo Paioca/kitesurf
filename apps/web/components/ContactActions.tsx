@@ -67,7 +67,12 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
-      setStateMap((m) => ({ ...m, [component]: { ...m[component], ...(type === 'offer' ? { offer: { id: data.id, status: 'pending', amount: amountCents ?? null } } : { visit: { id: data.id, status: 'pending' } }) } }));
+      setStateMap((m) => ({
+        ...m,
+        [component]: type === 'offer'
+          ? { ...m[component], offer: { id: data.id, status: 'pending', amount: amountCents ?? null }, visit: null }
+          : { ...m[component], visit: { id: data.id, status: 'pending' }, offer: null },
+      }));
       setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount('');
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }

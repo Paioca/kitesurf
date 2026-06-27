@@ -4,7 +4,7 @@ const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     listing: { findFirst: vi.fn(), findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
-    request: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    request: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn() },
     deal: { count: vi.fn(), findMany: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
@@ -36,6 +36,8 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.notification.create.mockResolvedValue({});
   mockDb.listing.findUnique.mockResolvedValue({ title: 't' });
+  mockDb.request.findMany.mockResolvedValue([]);
+  mockDb.request.updateMany.mockResolvedValue({ count: 0 });
   mockDb.deal.findMany.mockResolvedValue([]); // §7 reserve-block: sem reservas ativas por padrão
 });
 
@@ -72,6 +74,39 @@ describe('createRequest', () => {
     expect(r).toMatchObject({ id: 'R' });
     expect(notifyNewRequest).toHaveBeenCalledOnce();
   });
+  it('não deixa reenviar um pedido já aceito e voltar para pending', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock());
+    mockDb.request.findMany.mockResolvedValue([{ id: 'R', type: 'visit', status: 'accepted' }]);
+
+    await expect(createRequest('B', 'L', 'offer', 150000)).rejects.toThrow(/já foi aceito/i);
+
+    expect(mockDb.request.upsert).not.toHaveBeenCalled();
+    expect(notifyNewRequest).not.toHaveBeenCalled();
+  });
+  it('substitui visita pendente por oferta no mesmo item e peça', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock());
+    mockDb.request.findMany.mockResolvedValue([{ id: 'VISIT1', type: 'visit', status: 'pending' }]);
+    mockDb.request.upsert.mockResolvedValue({ id: 'OFFER1', status: 'pending' });
+
+    await expect(createRequest('B', 'L', 'offer', 150000)).resolves.toMatchObject({ id: 'OFFER1' });
+
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['VISIT1'] } },
+      data: { status: 'withdrawn' },
+    });
+  });
+  it('substitui oferta pendente por visita no mesmo item e peça', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock());
+    mockDb.request.findMany.mockResolvedValue([{ id: 'OFFER1', type: 'offer', status: 'pending' }]);
+    mockDb.request.upsert.mockResolvedValue({ id: 'VISIT1', status: 'pending' });
+
+    await expect(createRequest('B', 'L', 'visit')).resolves.toMatchObject({ id: 'VISIT1' });
+
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['OFFER1'] } },
+      data: { status: 'withdrawn' },
+    });
+  });
   it('rejeita ofertar numa peça já vendida do kit', async () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000, barraSoldAt: new Date() }));
     await expect(createRequest('B', 'L', 'offer', 100000, 'barra')).rejects.toThrow(/não está mais disponível|já foi vendida/i);
@@ -85,6 +120,18 @@ describe('createRequest', () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
     mockDb.request.upsert.mockResolvedValue({ id: 'R', status: 'pending' });
     await expect(createRequest('B', 'L', 'offer', 170000, 'barra')).resolves.toMatchObject({ id: 'R' });
+  });
+  it('mantém intenções de componentes diferentes independentes', async () => {
+    mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000 }));
+    mockDb.request.findMany.mockResolvedValue([]);
+    mockDb.request.upsert.mockResolvedValue({ id: 'KITE_OFFER', status: 'pending' });
+
+    await expect(createRequest('B', 'L', 'offer', 170000, 'kite')).resolves.toMatchObject({ id: 'KITE_OFFER' });
+
+    expect(mockDb.request.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ component: 'kite' }),
+    }));
+    expect(mockDb.request.updateMany).not.toHaveBeenCalled();
   });
   // §7/§15 #4 — peça com venda aguardando confirmação (reserva) rejeita nova solicitação
   // no BACKEND (não só esconde). E #16: conjunto reservado bloqueia o kite.
