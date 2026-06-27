@@ -17,6 +17,8 @@ const kitListing = (over: Record<string, unknown> = {}) => ({
   title: 'Kite + Barra',
   brand: { name: 'Duotone' },
   model: { name: 'Rebel' },
+  barraBrand: null,
+  barraModel: null,
   year: 2023,
   price: 620000,
   hasBarra: true,
@@ -46,7 +48,7 @@ describe('getFavorites', () => {
     expect(card.brand).toBe('North');
     expect(card.model).toBe('Barra do kit');
     expect(card.priceCents).toBe(180000);
-    expect(card.sizeLabel).toBe('linhas 22 m');
+    expect(card.sizeLabel).toBe('Barra');
     expect(card.photo).toBe('/barra.jpg');
     expect(card.partOfKit).toBe(true);
     expect(card.includesBar).toBe(false);
@@ -66,6 +68,22 @@ describe('getFavorites', () => {
     expect(card.brand).toBe('North');
     expect(card.priceCents).toBe(180000);
     expect(card.partOfKit).toBe(true);
+  });
+
+  it('kit favorito usa marca e modelo próprios da barra quando existirem', async () => {
+    mockDb.favorite.findMany.mockResolvedValue([{
+      listing: kitListing({
+        barraBrand: { name: 'Duotone' },
+        barraModel: { name: 'Trust Bar' },
+        barraAttributes: { condition: 'bom', compatible_brand: 'North' },
+      }),
+    }]);
+
+    const [card] = await getFavorites('B');
+
+    expect(card.catSlug).toBe('barra');
+    expect(card.brand).toBe('Duotone');
+    expect(card.model).toBe('Trust Bar');
   });
 
   it('não mostra favorito quando todas as peças estão reservadas', async () => {

@@ -38,7 +38,7 @@ export const getProfile = cache(async (id: string) => {
       where: publicListingWhere,
       orderBy: { createdAt: 'desc' },
       take: 12, // só exibição; o total é activeCount
-      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, category: true },
+      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
     }),
     db.listing.count({ where: publicListingWhere }),
   ]);

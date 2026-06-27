@@ -70,6 +70,8 @@ export async function searchListings(p: SearchParams) {
       images: { orderBy: { position: 'asc' }, take: 1 },
       brand: true,
       model: true,
+      barraBrand: true,
+      barraModel: true,
       category: true,
     },
   });
@@ -84,6 +86,8 @@ export const getListing = cache(async (id: string) => {
       images: { orderBy: { position: 'asc' } },
       brand: true,
       model: true,
+      barraBrand: true,
+      barraModel: true,
       category: true,
       user: {
         select: {

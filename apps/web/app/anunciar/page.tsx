@@ -34,7 +34,7 @@ const FIELD_LABEL: Record<string, string> = {
 };
 const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
 const KITE_SLOTS = ['Foto geral do equipamento', 'Outro ângulo', 'Marca e modelo', 'Etiqueta e tamanho', 'Válvulas e bordas', 'Reparos ou desgastes'];
-const BARRA_SLOTS = ['Foto geral da barra', 'Linhas', 'Detalhe / chicken loop', 'Desgaste (se houver)'];
+const BARRA_SLOTS = ['Foto geral da barra', 'Detalhe / chicken loop', 'Trim e grip', 'Desgaste (se houver)'];
 const DRAFT_KEY = 'vaya:anunciar-draft';
 
 type Kind = '' | 'kite' | 'barra' | 'kit';
@@ -47,6 +47,8 @@ export default function Criar() {
   const [kind, setKind] = useState<Kind>('');
   const [brandId, setBrandId] = useState('');
   const [modelId, setModelId] = useState('');
+  const [barraBrandId, setBarraBrandId] = useState('');
+  const [barraModelId, setBarraModelId] = useState('');
   const [year, setYear] = useState('');
   const [attrs, setAttrs] = useState<Record<string, any>>({}); // ficha da peça principal (kite, ou barra no barra-only)
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>({}); // ficha da barra do kit
@@ -86,7 +88,9 @@ export default function Criar() {
       if (raw) {
         const d = JSON.parse(raw);
         if (d && d.kind) {
-          setKind(d.kind); setBrandId(d.brandId ?? ''); setModelId(d.modelId ?? ''); setYear(d.year ?? '');
+          setKind(d.kind); setBrandId(d.brandId ?? ''); setModelId(d.modelId ?? '');
+          setBarraBrandId(d.barraBrandId ?? ''); setBarraModelId(d.barraModelId ?? '');
+          setYear(d.year ?? '');
           setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
           setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
           setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
@@ -102,9 +106,9 @@ export default function Criar() {
   useEffect(() => {
     if (!hydrated.current || !kind) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ kind, brandId, modelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ kind, brandId, modelId, barraBrandId, barraModelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step }));
     } catch {}
-  }, [kind, brandId, modelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
+  }, [kind, brandId, modelId, barraBrandId, barraModelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
 
   useEffect(() => { if (createdId) { try { localStorage.removeItem(DRAFT_KEY); } catch {} } }, [createdId]);
 
@@ -113,26 +117,34 @@ export default function Criar() {
   const kiteCat = useMemo(() => categories.find((c) => c.slug === 'kite'), [categories]);
   const barraCat = useMemo(() => categories.find((c) => c.slug === 'barra'), [categories]);
   const brand = useMemo(() => brands.find((b) => b.id === brandId), [brands, brandId]);
+  const barraBrand = useMemo(() => brands.find((b) => b.id === barraBrandId), [brands, barraBrandId]);
 
   const isKit = kind === 'kit';
   const mainCat = kind === 'barra' ? barraCat : kiteCat; // categoria primária enviada
-  const mainProps = mainCat?.attributeSchema?.properties ?? {};
-  const barraProps = barraCat?.attributeSchema?.properties ?? {};
+  const visibleBarraSchema = useMemo(() => {
+    const condition = barraCat?.attributeSchema?.properties?.condition;
+    return { required: ['condition'], properties: condition ? { condition } : {} };
+  }, [barraCat]);
+  const mainProps = kind === 'barra' ? visibleBarraSchema.properties : mainCat?.attributeSchema?.properties ?? {};
+  const barraProps = visibleBarraSchema.properties;
   // Essencial = campos `required` do schema; o resto vai pro "Estado detalhado" colapsável (auditoria #02).
   const pickProps = (props: Record<string, any>, keys: string[], want: boolean) =>
     Object.fromEntries(Object.entries(props).filter(([k]) => keys.includes(k) === want));
-  const mainReq: string[] = (mainCat?.attributeSchema as any)?.required ?? [];
-  const barraReq: string[] = (barraCat?.attributeSchema as any)?.required ?? [];
+  const mainReq: string[] = kind === 'barra' ? visibleBarraSchema.required : (mainCat?.attributeSchema as any)?.required ?? [];
+  const barraReq: string[] = visibleBarraSchema.required;
   const mainEss = pickProps(mainProps, mainReq, true);
   const mainDet = pickProps(mainProps, mainReq, false);
   const barraEss = pickProps(barraProps, barraReq, true);
   const barraDet = pickProps(barraProps, barraReq, false);
   const hasDetail = Object.keys(mainDet).length > 0 || (kind === 'kit' && Object.keys(barraDet).length > 0);
-  const brandOpts = useMemo(() => brands.map((b) => ({ value: b.id, label: b.name })), [brands]);
+  const mainBrandOpts = useMemo(() => brands.filter((b) => !mainCat?.id || b.models.some((m) => m.categoryId === mainCat.id)).map((b) => ({ value: b.id, label: b.name })), [brands, mainCat]);
+  const barraBrandOpts = useMemo(() => brands.filter((b) => !barraCat?.id || b.models.some((m) => m.categoryId === barraCat.id)).map((b) => ({ value: b.id, label: b.name })), [brands, barraCat]);
   // Modelos da categoria atual: kite/kit usam modelos de kite, barra usa modelos de barra
   // (mainCat já reflete isso). Sem o filtro, o dropdown listaria modelos das duas categorias.
   const kindModels = useMemo(() => (brand?.models ?? []).filter((m) => m.categoryId === mainCat?.id), [brand, mainCat]);
   const modelOpts = useMemo(() => kindModels.map((m) => ({ value: m.id, label: m.name })), [kindModels]);
+  const barraKindModels = useMemo(() => (barraBrand?.models ?? []).filter((m) => m.categoryId === barraCat?.id), [barraBrand, barraCat]);
+  const barraModelOpts = useMemo(() => barraKindModels.map((m) => ({ value: m.id, label: m.name })), [barraKindModels]);
   const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
   const showKitePhotos = kind === 'kite' || kind === 'kit';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
@@ -142,17 +154,52 @@ export default function Criar() {
   const autoTitle = useMemo(() => {
     const b = brand?.name;
     const model = brand?.models.find((m) => m.id === modelId)?.name;
-    if (kind === 'barra') return ['Barra', b, model, attrs.line_length_m ? `${attrs.line_length_m} m` : ''].filter(Boolean).join(' · ');
+    const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name].filter(Boolean).join(' ');
+    if (kind === 'barra') return ['Barra', b, model].filter(Boolean).join(' · ');
     const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? CONDITION_LABEL[attrs.condition] : ''].filter(Boolean).join(' · ');
-    return kind === 'kit' ? (base ? `${base} + Barra` : '') : base;
-  }, [brand, modelId, attrs, year, kind]);
+    return kind === 'kit' ? (base ? `${base} + ${bmBarra || 'Barra'}` : '') : base;
+  }, [brand, modelId, barraBrand, barraModelId, attrs, year, kind]);
 
   function selectKind(k: Kind) {
+    const prev = kind;
     setKind(k);
-    setModelId(''); // modelo é específico da categoria (kite vs barra) — zera ao trocar de tipo
-    setAttrs({});
-    setBarraAttrs({});
-    setImages([]);
+    setError('');
+    if (k === 'kite') {
+      if (prev === 'barra') {
+        setBrandId('');
+        setModelId('');
+        setAttrs({});
+      }
+      setBarraBrandId('');
+      setBarraModelId('');
+      setBarraAttrs({});
+      setSellBarraAlone(false);
+      setBarraPrice('');
+      setImages((imgs) => imgs.filter((i) => i.component !== 'barra'));
+    } else if (k === 'barra') {
+      setBrandId('');
+      setModelId('');
+      setBarraBrandId('');
+      setBarraModelId('');
+      setYear('');
+      setAttrs({});
+      setBarraAttrs({});
+      setSellKiteAlone(false);
+      setSellBarraAlone(false);
+      setKitePrice('');
+      setBarraPrice('');
+      setImages([]);
+    } else if (k === 'kit') {
+      if (prev === 'barra') {
+        setBrandId('');
+        setModelId('');
+        setAttrs({});
+        setImages([]);
+      }
+      setBarraBrandId('');
+      setBarraModelId('');
+      setBarraAttrs({});
+    }
   }
   function pickPhotos(component: 'kite' | 'barra') {
     setUploadTarget(component);
@@ -208,7 +255,9 @@ export default function Criar() {
 
   // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
   // além de marca, ano e modelo (modelo só quando a marca tem modelos cadastrados).
-  const headOk = !!brandId && (kindModels.length === 0 || !!modelId) && (kind === 'barra' || !!year);
+  const mainHeadOk = !!brandId && (kindModels.length === 0 || !!modelId) && (kind === 'barra' || !!year);
+  const barraHeadOk = !isKit || (!!barraBrandId && (barraKindModels.length === 0 || !!barraModelId));
+  const headOk = mainHeadOk && barraHeadOk;
   // Erro de faixa dos campos numéricos (ex.: tamanho 3–20), client-side: bloqueia o
   // avanço de passo ANTES do publish — o erro não fica só na tela final.
   const numError = (props: Record<string, any>, vals: Record<string, any>): string => {
@@ -271,6 +320,8 @@ export default function Criar() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           categoryId: mainCat?.id, brandId: brandId || undefined, modelId: modelId || undefined,
+          barraBrandId: isKit ? barraBrandId || undefined : undefined,
+          barraModelId: isKit ? barraModelId || undefined : undefined,
           year: year ? Number(year) : undefined, attributes: attrs,
           title: autoTitle || mainCat?.namePt || 'Anúncio', price: Math.round(Number(price) * 100),
           city, spot: spot || undefined, pickup, shippable, images,
@@ -331,7 +382,7 @@ export default function Criar() {
     ? (brand?.models.find((m) => m.id === modelId)?.name || `Barra${previewBrand ? ` ${previewBrand}` : ''}`)
     : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || 'Seu anúncio');
   const previewCond = attrs.condition ? CONDITION_LABEL[attrs.condition] : null;
-  const previewSize = kind === 'barra' ? (attrs.line_length_m ? `${attrs.line_length_m} m` : 'Sem tamanho') : (attrs.size_m2 ? `${attrs.size_m2} m²` : 'Sem tamanho');
+  const previewSize = kind === 'barra' ? 'Barra' : (attrs.size_m2 ? `${attrs.size_m2} m²` : 'Sem tamanho');
   const previewDelivery = pickup && shippable ? 'Retirada · Envio' : shippable ? 'Envio' : 'Retirada';
   const previewPhoto = images[0]?.thumbUrl ?? images[0]?.url ?? null;
   const tipoLabel = kind === 'barra' ? 'Barra' : kind === 'kit' ? 'Kit' : 'Kite';
@@ -386,7 +437,7 @@ export default function Criar() {
           {/* PASSO 1 — TIPO & FICHA */}
           {step === 0 && (
             <>
-              <StepHead n={1} title="O que você está vendendo?" lead="Tipo e ficha padronizada. Tudo sai de listas controladas, sem texto solto e sem descrição livre." />
+              <StepHead n={1} title="O que você está vendendo?" lead="Escolha o tipo e preencha a ficha principal." />
               <UpLabel>Tipo</UpLabel>
               <div className="criar-tipos" style={{ marginBottom: 28 }}>
                 <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" icon={IconKite} />
@@ -394,27 +445,28 @@ export default function Criar() {
                 <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Conjunto" icon={IconKit} />
               </div>
 
-              <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
-                <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção: descreva fielmente</div>
-                  <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Informe furos, reparos, estado do bladder e troca de mangueiras. Informações incorretas podem remover o anúncio e restringir a conta.</p>
-                </div>
-              </div>
-
               {kind && (
                 <>
+                  <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção: descreva fielmente</div>
+                      <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Informe estado real e reparos. Informações incorretas podem remover o anúncio e restringir a conta.</p>
+                    </div>
+                  </div>
                   {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
-                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} placeholder="Selecione a marca" onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
-                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
-                    {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><ChipSelect options={yearOpts} value={year} onChange={setYear} /></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
+                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={mainBrandOpts} placeholder="Selecione a marca" onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
+                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
+                    {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder="Selecione o ano" /></Cell>}
                     <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
                   </div>
-                  {isKit && Object.keys(barraEss).length > 0 && (
+                  {isKit && (
                     <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
                       <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
+                      <Cell><Label>Marca da barra *</Label><SearchSelect value={barraBrandId} options={barraBrandOpts} placeholder="Selecione a marca da barra" onChange={(v) => { setBarraBrandId(v); setBarraModelId(''); }} /></Cell>
+                      <Cell><Label>Modelo da barra{barraKindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? 'Escolha a marca primeiro' : barraKindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setBarraModelId} disabled={!barraBrandId || barraKindModels.length === 0} /></Cell>
                       <Fields props={barraEss} required={Object.keys(barraEss)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
                     </div>
                   )}
@@ -650,6 +702,15 @@ function ChipSelect({ options, value, onChange, labels }: { options: (string | n
         );
       })}
     </div>
+  );
+}
+
+function CompactSelect({ options, value, onChange, placeholder }: { options: string[]; value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <select className="kl-select" value={value} onChange={(e) => onChange(e.target.value)} style={{ maxWidth: 220 }}>
+      <option value="">{placeholder}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
   );
 }
 

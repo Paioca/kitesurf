@@ -39,6 +39,8 @@ const createSchema = z.object({
   categoryId: z.string().uuid(),
   brandId: z.string().uuid().optional(),
   modelId: z.string().uuid().optional(),
+  barraBrandId: z.string().uuid().optional(),
+  barraModelId: z.string().uuid().optional(),
   year: z.number().int().min(1990).max(2100).optional(),
   attributes: z.record(z.any()),
   title: z.string().min(4).max(120),
@@ -55,6 +57,30 @@ const createSchema = z.object({
   barraPrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }).nullable().optional(), // barra avulsa
   barraAttributes: z.record(z.any()).optional(),
 });
+
+function conditionOnlySchema(schema: any): any {
+  const condition = schema?.properties?.condition;
+  return { required: ['condition'], properties: condition ? { condition } : {} };
+}
+
+async function validateCatalogPair(args: {
+  brandId?: string;
+  modelId?: string;
+  categoryId: string;
+  label: string;
+  requireBoth?: boolean;
+}) {
+  const { brandId, modelId, categoryId, label, requireBoth } = args;
+  if (requireBoth && (!brandId || !modelId)) return `${label}: informe marca e modelo.`;
+  if (modelId && !brandId) return `${label}: modelo informado sem marca.`;
+  if (brandId && !(await db.brand.findUnique({ where: { id: brandId } }))) return `${label}: marca inválida.`;
+  if (modelId) {
+    const model = await db.model.findUnique({ where: { id: modelId } });
+    if (!model || model.brandId !== brandId) return `${label}: modelo inválido para a marca.`;
+    if (model.categoryId && model.categoryId !== categoryId) return `${label}: modelo não pertence a esta categoria.`;
+  }
+  return null;
+}
 
 // POST /api/listings — criar anúncio (exige login)
 export async function POST(req: Request) {
@@ -79,18 +105,11 @@ export async function POST(req: Request) {
     if (!category) return NextResponse.json({ message: 'Categoria inválida.' }, { status: 400 });
     if (!category.active) return NextResponse.json({ message: 'Categoria indisponível.' }, { status: 400 });
 
-    // Marca/modelo: existir, casar entre si e com a categoria do anúncio.
-    if (dto.modelId && !dto.brandId) return NextResponse.json({ message: 'Modelo informado sem marca.' }, { status: 400 });
-    if (dto.brandId && !(await db.brand.findUnique({ where: { id: dto.brandId } }))) {
-      return NextResponse.json({ message: 'Marca inválida.' }, { status: 400 });
-    }
-    if (dto.modelId) {
-      const model = await db.model.findUnique({ where: { id: dto.modelId } });
-      if (!model || model.brandId !== dto.brandId) return NextResponse.json({ message: 'Modelo inválido para a marca.' }, { status: 400 });
-      if (model.categoryId && model.categoryId !== dto.categoryId) return NextResponse.json({ message: 'Modelo não pertence a esta categoria.' }, { status: 400 });
-    }
+    // Marca/modelo: existir, casar entre si e com a categoria da peça.
+    const mainCatalogError = await validateCatalogPair({ brandId: dto.brandId, modelId: dto.modelId, categoryId: dto.categoryId, label: 'Equipamento' });
+    if (mainCatalogError) return NextResponse.json({ message: mainCatalogError }, { status: 400 });
 
-    const attributes = validateAttributes(category.attributeSchema as any, dto.attributes, { requireAll: true });
+    const attributes = validateAttributes(category.slug === 'barra' ? conditionOnlySchema(category.attributeSchema) : category.attributeSchema as any, dto.attributes, { requireAll: true });
 
     // Kit: categoria primária precisa ser kite; valida infos da barra; exige
     // ao menos 1 foto de cada peça (a barra precisa de foto própria pra busca de barra).
@@ -100,7 +119,9 @@ export async function POST(req: Request) {
       if (category.slug !== 'kite') return NextResponse.json({ message: 'Kit precisa ter o kite como peça principal.' }, { status: 400 });
       const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
       if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });
-      barraAttributes = validateAttributes(barraCat.attributeSchema as any, dto.barraAttributes ?? {}, { requireAll: true }) as Prisma.InputJsonValue;
+      const barraCatalogError = await validateCatalogPair({ brandId: dto.barraBrandId, modelId: dto.barraModelId, categoryId: barraCat.id, label: 'Barra', requireBoth: true });
+      if (barraCatalogError) return NextResponse.json({ message: barraCatalogError }, { status: 400 });
+      barraAttributes = validateAttributes(conditionOnlySchema(barraCat.attributeSchema), dto.barraAttributes ?? {}, { requireAll: true }) as Prisma.InputJsonValue;
       const hasKitePhoto = dto.images.some((i) => i.component === 'kite');
       const hasBarraPhoto = dto.images.some((i) => i.component === 'barra');
       if (!hasKitePhoto || !hasBarraPhoto) return NextResponse.json({ message: 'Envie pelo menos uma foto do kite e uma da barra.' }, { status: 400 });
@@ -112,6 +133,8 @@ export async function POST(req: Request) {
         categoryId: dto.categoryId,
         brandId: dto.brandId ?? null,
         modelId: dto.modelId ?? null,
+        barraBrandId: hasBarra ? dto.barraBrandId ?? null : null,
+        barraModelId: hasBarra ? dto.barraModelId ?? null : null,
         year: dto.year ?? null,
         attributes: attributes as Prisma.InputJsonValue,
         title: dto.title,

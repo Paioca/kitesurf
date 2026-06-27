@@ -13,6 +13,11 @@ import { isEditable, type ListingStatus } from '../../../../lib/listing-status';
 
 export const dynamic = 'force-dynamic';
 
+function conditionOnlySchema(schema: any) {
+  const condition = schema?.properties?.condition;
+  return { required: ['condition'], properties: condition ? { condition } : {} };
+}
+
 export default async function EditarAnuncio(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const [l, me] = await Promise.all([getListing(params.id), getCurrentUser()]);
@@ -20,7 +25,9 @@ export default async function EditarAnuncio(props: { params: Promise<{ id: strin
   // Anúncio vendido/arquivado não é editável (preserva o histórico de venda).
   if (!isEditable(l.status as ListingStatus)) notFound();
 
-  const barraSchema = l.hasBarra ? (await db.category.findUnique({ where: { slug: 'barra' } }))?.attributeSchema ?? null : null;
+  const barraCat = l.hasBarra ? await db.category.findUnique({ where: { slug: 'barra' } }) : null;
+  const barraSchema = barraCat ? conditionOnlySchema(barraCat.attributeSchema) : null;
+  const mainSchema = l.category?.slug === 'barra' ? conditionOnlySchema(l.category?.attributeSchema) : l.category?.attributeSchema;
 
   const data = {
     id: l.id,
@@ -31,6 +38,9 @@ export default async function EditarAnuncio(props: { params: Promise<{ id: strin
     spot: l.spot,
     shippable: l.shippable,
     hasBarra: l.hasBarra,
+    barraBrandId: (l as any).barraBrandId,
+    barraModelId: (l as any).barraModelId,
+    barraCategoryId: barraCat?.id ?? null,
     kitePrice: l.kitePrice,
     barraPrice: l.barraPrice,
     attributes: l.attributes,
@@ -38,7 +48,7 @@ export default async function EditarAnuncio(props: { params: Promise<{ id: strin
     images: (l.images ?? []).map((i: any) => ({ url: i.url, thumbUrl: i.thumbUrl, component: i.component })),
   };
 
-  const form = <EditForm data={data} mainSchema={l.category?.attributeSchema as any} barraSchema={barraSchema as any} />;
+  const form = <EditForm data={data} mainSchema={mainSchema as any} barraSchema={barraSchema as any} />;
 
   return (
     <>

@@ -88,6 +88,9 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const ba = ((l as any).barraAttributes ?? {}) as Record<string, any>;
   const kitePrice = (l as any).kitePrice as number | null;
   const barraPrice = (l as any).barraPrice as number | null;
+  const barraBrandName = (l as any).barraBrand?.name ?? (typeof ba.compatible_brand === 'string' ? ba.compatible_brand : null);
+  const barraModelName = (l as any).barraModel?.name ?? null;
+  const barraName = [barraBrandName, barraModelName].filter(Boolean).join(' ') || 'Barra do kit';
   const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
   const title = `${l.model?.name ?? l.title}${sizeM2 ? ` ${sizeM2}` : ''}`;
   const memberSince = l.user?.createdAt ? new Date(l.user.createdAt).getFullYear() : null;
@@ -122,7 +125,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const visitSummary = summaryParts.join(', ');
 
   // Alvos vendáveis (peça única → 1 alvo 'conjunto'; kit com avulso → 2-3 alvos).
-  const barraSummary = [ba.compatible_brand ? `compatível ${ba.compatible_brand}` : '', ba.line_length_m ? `linhas ${ba.line_length_m} m` : '', ba.condition ? (CONDITION[ba.condition] ?? ba.condition) : '', `em ${l.city}${l.spot ? ` (${l.spot})` : ''}`].filter(Boolean).join(', ');
+  const barraSummary = [barraName, ba.condition ? (CONDITION[ba.condition] ?? ba.condition) : '', `em ${l.city}${l.spot ? ` (${l.spot})` : ''}`].filter(Boolean).join(', ');
   const compMeta: Record<Component, { summary: string; itemNoun: string }> = {
     conjunto: { summary: visitSummary, itemNoun },
     kite: { summary: visitSummary, itemNoun: 'o kite' },
@@ -225,13 +228,13 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             <div style={{ border: `1px solid ${color.lineCard}`, background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
                 <span style={{ background: '#e8f1ec', color: color.primary, fontSize: 11.5, fontWeight: 800, padding: '4px 10px', borderRadius: 999 }}>+ Barra</span>
-                <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600 }}>Barra que acompanha</div>
+                <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600 }}>{barraName}</div>
               </div>
               <BarraPhotos photos={barraPhotos} />
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 14, color: color.ink }}>
-                {ba.line_length_m != null && <div><span style={{ color: color.inkFaint }}>Comprimento: </span><b>{ba.line_length_m} m</b></div>}
+                {barraBrandName && <div><span style={{ color: color.inkFaint }}>Marca: </span><b>{barraBrandName}</b></div>}
+                {barraModelName && <div><span style={{ color: color.inkFaint }}>Modelo: </span><b>{barraModelName}</b></div>}
                 {ba.condition && <div><span style={{ color: color.inkFaint }}>Estado: </span><b>{CONDITION[ba.condition] ?? ba.condition}</b></div>}
-                {ba.compatible_brand && <div><span style={{ color: color.inkFaint }}>Compatível: </span><b>{ba.compatible_brand}</b></div>}
               </div>
             </div>
           )}
@@ -317,7 +320,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkFaint2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{primaryTarget ? primaryTarget.label : l.user?.name ? `Vendido por ${l.user.name}` : 'Preço'}</div>
               <div style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary, lineHeight: 1.15 }}>{formatBRL(primaryPrice)}</div>
             </div>
-            <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Fazer uma oferta</a>
+            <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Quero ver de perto</a>
           </div>
         ) : (
           <MobileTabBar />

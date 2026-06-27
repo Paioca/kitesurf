@@ -1,6 +1,6 @@
 'use client';
 
-// Contato estruturado no anúncio: Fazer oferta (valor) | Pedir visita.
+// Contato estruturado no anúncio: Pedir visita | Fazer oferta (valor).
 // Venda por componente: 1 alvo = UI direta; 2+ (kit com peça avulsa) = seletor.
 import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
@@ -106,10 +106,34 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     <div style={{ marginBottom: 24 }}>
       {selector}
       <JourneyStepper step={journeyStep} />
-      {!showOffer ? (
-        <button onClick={() => { setShowOffer(true); setCiente(false); }} disabled={!!busy} style={btnPrimary}>Fazer uma oferta</button>
+      {!confirmVisit ? (
+        // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
+        // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).
+        (<button onClick={() => { setConfirmVisit(true); setShowOffer(false); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={btnPrimary}>{busy === 'visit' ? '…' : 'Quero ver de perto'}</button>)
       ) : (
         <div style={{ border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
+            Seu WhatsApp será compartilhado com o vendedor para vocês combinarem a visita. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
+          </div>
+          <WarnBox>Combine só se for comparecer. Pedir pra ver só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
+          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
+          <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
+            <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
+            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Enviar pedido e compartilhar WhatsApp'}</button>
+          </div>
+        </div>
+      )}
+      {state.visit && (
+        <>
+          <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />
+          {state.visit.status === 'pending' && state.visit.id && <CancelRequestButton requestId={state.visit.id} type="visit" onCancelled={() => clearRequest('visit')} />}
+        </>
+      )}
+
+      {!showOffer ? (
+        <button onClick={() => { setShowOffer(true); setConfirmVisit(false); setCiente(false); }} disabled={!!busy} style={{ ...btnOutline, marginTop: 10 }}>Fazer uma oferta</button>
+      ) : (
+        <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ position: 'relative', marginBottom: 12 }}>
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: color.inkFaint }}>R$</span>
             <input autoFocus type="text" inputMode="numeric" value={amount ? Number(amount).toLocaleString('pt-BR') : ''} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Sua oferta" style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 11, padding: '14px 14px 14px 40px', fontSize: 16, fontWeight: 700, fontFamily: font.sans }} />
@@ -129,30 +153,6 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
         <>
           <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />
           {state.offer.status === 'pending' && state.offer.id && <CancelRequestButton requestId={state.offer.id} type="offer" onCancelled={() => clearRequest('offer')} />}
-        </>
-      )}
-
-      {!confirmVisit ? (
-        // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
-        // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).
-        (<button onClick={() => { setConfirmVisit(true); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={{ ...btnOutline, marginTop: 10 }}>{busy === 'visit' ? '…' : 'Quero ver de perto'}</button>)
-      ) : (
-        <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
-          <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
-            Seu WhatsApp será compartilhado com o vendedor para vocês combinarem a visita. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
-          </div>
-          <WarnBox>Combine só se for comparecer. Pedir pra ver só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
-          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
-          <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
-            <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
-            <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Enviar pedido e compartilhar WhatsApp'}</button>
-          </div>
-        </div>
-      )}
-      {state.visit && (
-        <>
-          <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />
-          {state.visit.status === 'pending' && state.visit.id && <CancelRequestButton requestId={state.visit.id} type="visit" onCancelled={() => clearRequest('visit')} />}
         </>
       )}
 

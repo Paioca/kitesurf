@@ -74,7 +74,7 @@ const BLADDER_LABEL: Record<string, string> = { zero: 'Sem furo', microfuro_ades
 const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas: 'Trocadas' };
 
 // Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
-// a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
+// a sua barra (foto/preço da barra); senão, a cara é o kite.
 function toCard(l: any, persp: Perspective): Card {
   const showAvailableBarraFromPartialKit =
     persp === 'all' && l.hasBarra === true && l.kiteSoldAt != null && l.barraSoldAt == null && l.barraPrice != null;
@@ -85,15 +85,16 @@ function toCard(l: any, persp: Perspective): Card {
   if (showBarra) {
     const kit = l.hasBarra === true;
     const ba = (kit ? l.barraAttributes : l.attributes) ?? {};
-    const len = ba.line_length_m != null ? String(ba.line_length_m) : null;
     const price = kit ? l.barraPrice ?? l.price : l.price;
+    const legacyBrand = typeof ba.compatible_brand === 'string' ? ba.compatible_brand : '';
+    const barraBrandName = kit ? (l.barraBrand?.name ?? legacyBrand) : (l.brand?.name ?? legacyBrand);
+    const barraModelName = kit ? (l.barraModel?.name ?? 'Barra do kit') : (l.model?.name ?? l.title);
     return {
       id: l.id,
-      // Num kit, l.brand é a marca do KITE — não pode vazar pra barra (mistura relatada
-      // no audit). Barra do kit só usa a marca compatível informada; sem ela, fica sem marca.
-      // Barra avulsa segue com a marca própria do anúncio (l.brand).
-      brand: kit ? ((ba.compatible_brand as string) || '') : ((ba.compatible_brand as string) || l.brand?.name || ''),
-      model: kit ? 'Barra do kit' : l.model?.name ?? l.title,
+      // Num kit, l.brand/l.model são do KITE. A barra tem relações próprias; legado
+      // cai para compatible_brand ou texto genérico.
+      brand: barraBrandName,
+      model: barraModelName,
       year: null,
       priceCents: price,
       priceLabel: brl(price),
@@ -103,7 +104,7 @@ function toCard(l: any, persp: Perspective): Card {
       ship: !!l.shippable,
       city: l.city,
       sizeM2: null,
-      sizeLabel: len ? `linhas ${len} m` : 'Barra',
+      sizeLabel: 'Barra',
       condLabel: ba.condition ? (COND_LABEL[ba.condition] ?? ba.condition) : null,
       repair: false,
       includesBar: false,
@@ -425,7 +426,7 @@ export async function getBrowseData(sp: SP) {
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
   const where = buildWhere(f, persp);
-  const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, category: true, user: { select: { id: true, name: true, avatarUrl: true } } };
+  const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true, user: { select: { id: true, name: true, avatarUrl: true } } };
 
   // Ordenação por preço NO BANCO. O "preço efetivo" por perspectiva (barra:
   // COALESCE(barraPrice,price); kite: COALESCE(kitePrice,price); all: price) está
@@ -479,7 +480,7 @@ export async function getMyListings(userId: string): Promise<(Card & { status: s
   const raw = await db.listing.findMany({
     where: { userId, deletedAt: null },
     orderBy: { createdAt: 'desc' },
-    include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true },
+    include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
   });
   return raw.map((l) => ({ ...toCard(l, 'all'), status: l.status }));
 }
@@ -489,7 +490,7 @@ export async function getFavorites(userId: string): Promise<Card[]> {
   const favs = await db.favorite.findMany({
     where: { userId, listing: { status: 'active', deletedAt: null, category: { is: { active: true } } } },
     orderBy: { createdAt: 'desc' },
-    include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true, deals: { where: { status: 'seller_confirmed' }, select: { component: true } } } } },
+    include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true, deals: { where: { status: 'seller_confirmed' }, select: { component: true } } } } },
   });
   return favs.flatMap((f) => {
     const card = toFavoriteCard(f.listing);

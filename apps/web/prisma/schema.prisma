@@ -150,7 +150,8 @@ model Brand {
   createdAt DateTime @default(now())
 
   models   Model[]
-  listings Listing[]
+  listings Listing[] @relation("ListingBrand")
+  barraListings Listing[] @relation("ListingBarraBrand")
 }
 
 model Model {
@@ -162,7 +163,8 @@ model Model {
 
   brand    Brand     @relation(fields: [brandId], references: [id])
   category Category? @relation(fields: [categoryId], references: [id])
-  listings Listing[]
+  listings Listing[] @relation("ListingModel")
+  barraListings Listing[] @relation("ListingBarraModel")
 
   @@unique([brandId, name])
 }
@@ -173,6 +175,8 @@ model Listing {
   categoryId      String
   brandId         String?
   modelId         String?
+  barraBrandId    String?
+  barraModelId    String?
   year            Int?
   attributes      Json          @default("{}") // validado contra Category.attributeSchema (peça primária)
   title           String
@@ -201,8 +205,10 @@ model Listing {
 
   user          User           @relation(fields: [userId], references: [id])
   category      Category       @relation(fields: [categoryId], references: [id])
-  brand         Brand?         @relation(fields: [brandId], references: [id])
-  model         Model?         @relation(fields: [modelId], references: [id])
+  brand         Brand?         @relation("ListingBrand", fields: [brandId], references: [id])
+  model         Model?         @relation("ListingModel", fields: [modelId], references: [id])
+  barraBrand    Brand?         @relation("ListingBarraBrand", fields: [barraBrandId], references: [id])
+  barraModel    Model?         @relation("ListingBarraModel", fields: [barraModelId], references: [id])
   images        ListingImage[]
   conversations Conversation[]
   deals         Deal[]
@@ -211,6 +217,8 @@ model Listing {
 
   @@index([userId]) // perfil, meus anúncios, ownership
   @@index([categoryId])
+  @@index([barraBrandId])
+  @@index([barraModelId])
   @@index([city])
   @@index([status, deletedAt]) // filtro base de toda busca (active + não-excluído)
   @@index([kiteSoldAt])

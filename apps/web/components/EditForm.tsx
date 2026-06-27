@@ -2,9 +2,11 @@
 
 // Edição de anúncio — campos pré-preenchidos. Não muda tipo/categoria (kite vs kit);
 // edita ficha, fotos (add/remove), preços e entrega. Salva via PATCH.
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
+import { SearchSelect } from './SearchSelect';
+import type { Brand } from '../lib/api';
 
 type Img = { url: string; thumbUrl?: string | null; component?: 'kite' | 'barra' | null };
 type Spec = { type: string; enum?: (string | number)[]; label?: string };
@@ -28,6 +30,9 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
   const [title, setTitle] = useState<string>(data.title ?? '');
   const [attrs, setAttrs] = useState<Record<string, any>>(data.attributes ?? {});
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>(data.barraAttributes ?? {});
+  const [barraBrandId, setBarraBrandId] = useState<string>(data.barraBrandId ?? '');
+  const [barraModelId, setBarraModelId] = useState<string>(data.barraModelId ?? '');
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [images, setImages] = useState<Img[]>(data.images ?? []);
   const [price, setPrice] = useState<string>(String(Math.round((data.price ?? 0) / 100)));
   const [sellKite, setSellKite] = useState<boolean>(data.kitePrice != null);
@@ -45,6 +50,15 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
 
   const kitePhotos = images.filter((i) => (i.component ?? 'kite') === 'kite' || !isKit);
   const barraPhotos = images.filter((i) => i.component === 'barra');
+  const barraBrand = useMemo(() => brands.find((b) => b.id === barraBrandId), [brands, barraBrandId]);
+  const barraBrandOpts = useMemo(() => brands.filter((b) => b.models.some((m) => m.categoryId === data.barraCategoryId)).map((b) => ({ value: b.id, label: b.name })), [brands, data.barraCategoryId]);
+  const barraModels = useMemo(() => (barraBrand?.models ?? []).filter((m) => m.categoryId === data.barraCategoryId), [barraBrand, data.barraCategoryId]);
+  const barraModelOpts = useMemo(() => barraModels.map((m) => ({ value: m.id, label: m.name })), [barraModels]);
+
+  useEffect(() => {
+    if (!isKit) return;
+    fetch('/api/catalog/brands').then((r) => r.json()).then(setBrands).catch(() => {});
+  }, [isKit]);
 
   function pick(target: 'kite' | 'barra') { setUploadTarget(target); fileRef.current?.click(); }
   function removePhoto(img: Img) { setImages((imgs) => imgs.filter((i) => i.url !== img.url)); }
@@ -75,6 +89,8 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
         body.kitePrice = sellKite ? Math.round(Number(kitePrice) * 100) : null;
         body.barraPrice = sellBarra ? Math.round(Number(barraPrice) * 100) : null;
         body.barraAttributes = barraAttrs;
+        if (barraBrandId) body.barraBrandId = barraBrandId;
+        if (barraModelId) body.barraModelId = barraModelId;
       }
       const res = await fetch(`/api/listings/${data.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Erro ao salvar.');
@@ -90,7 +106,8 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
     : '';
   const priceOk = Number(price) >= MIN_PRICE && (!sellKite || Number(kitePrice) >= MIN_PRICE) && (!sellBarra || Number(barraPrice) >= MIN_PRICE);
   const fichaOk = fichaComplete(mainSchema, attrs) && (!isKit || !barraSchema || fichaComplete(barraSchema, barraAttrs));
-  const canSave = title.trim().length >= 4 && images.length >= 3 && priceOk && fichaOk && !saving && !uploading;
+  const barraCatalogOk = !isKit || !barraBrandId || (barraModels.length === 0 || !!barraModelId);
+  const canSave = title.trim().length >= 4 && images.length >= 3 && priceOk && fichaOk && barraCatalogOk && !saving && !uploading;
 
   return (
     <div style={{ maxWidth: 620, margin: '0 auto' }}>
@@ -106,7 +123,17 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
         <Fields schema={mainSchema} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
       </Section>
       {isKit && barraSchema && (
-        <Section title="Ficha da barra">
+        <Section title="Barra">
+          <div style={{ display: 'grid', gap: 14, marginBottom: 14 }}>
+            <div>
+              <Label>Marca da barra</Label>
+              <SearchSelect value={barraBrandId} options={barraBrandOpts} placeholder="Selecione a marca da barra" onChange={(v) => { setBarraBrandId(v); setBarraModelId(''); }} />
+            </div>
+            <div>
+              <Label>Modelo da barra{barraModels.length > 0 ? ' *' : ''}</Label>
+              <SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? 'Escolha a marca primeiro' : barraModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setBarraModelId} disabled={!barraBrandId || barraModels.length === 0} />
+            </div>
+          </div>
           <Fields schema={barraSchema} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
         </Section>
       )}
@@ -152,6 +179,11 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
       {!fichaOk && title.trim().length >= 4 && images.length >= 3 && priceOk && (
         <div style={{ color: '#8a6d00', background: '#fdf6e3', fontSize: 12.5, padding: '9px 12px', borderRadius: 9, marginTop: 4 }}>
           Preencha todos os campos da ficha antes de salvar. Campos vazios fazem o anúncio sumir dos filtros de busca.
+        </div>
+      )}
+      {!barraCatalogOk && (
+        <div style={{ color: '#8a6d00', background: '#fdf6e3', fontSize: 12.5, padding: '9px 12px', borderRadius: 9, marginTop: 4 }}>
+          Se escolher a marca da barra, selecione também o modelo.
         </div>
       )}
 

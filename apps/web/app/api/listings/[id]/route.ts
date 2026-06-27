@@ -41,8 +41,32 @@ const patchSchema = z.object({
   images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40).optional(),
   kitePrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).nullable().optional(),
   barraPrice: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).nullable().optional(),
+  barraBrandId: z.string().uuid().optional(),
+  barraModelId: z.string().uuid().optional(),
   barraAttributes: z.record(z.any()).optional(),
 });
+
+function conditionOnlySchema(schema: any): any {
+  const condition = schema?.properties?.condition;
+  return { required: ['condition'], properties: condition ? { condition } : {} };
+}
+
+async function validateCatalogPair(args: {
+  brandId?: string | null;
+  modelId?: string | null;
+  categoryId: string;
+  label: string;
+}) {
+  const { brandId, modelId, categoryId, label } = args;
+  if (modelId && !brandId) return `${label}: modelo informado sem marca.`;
+  if (brandId && !(await db.brand.findUnique({ where: { id: brandId } }))) return `${label}: marca inválida.`;
+  if (modelId) {
+    const model = await db.model.findUnique({ where: { id: modelId } });
+    if (!model || model.brandId !== brandId) return `${label}: modelo inválido para a marca.`;
+    if (model.categoryId && model.categoryId !== categoryId) return `${label}: modelo não pertence a esta categoria.`;
+  }
+  return null;
+}
 
 async function ownedListing(id: string, userId: string) {
   const l = await db.listing.findFirst({
@@ -99,7 +123,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (dto.attributes !== undefined) {
       // requireAll: mesma regra do cadastro — não deixa um PATCH esvaziar a ficha
       // (campo essencial faltando faz o anúncio sumir dos filtros de busca).
-      data.attributes = validateAttributes(listing!.category.attributeSchema as any, dto.attributes, { requireAll: true }) as Prisma.InputJsonValue;
+      const nextAttrs = validateAttributes(listing!.category.slug === 'barra' ? conditionOnlySchema(listing!.category.attributeSchema) : listing!.category.attributeSchema as any, dto.attributes, { requireAll: true });
+      data.attributes = (listing!.category.slug === 'barra'
+        ? { ...((listing!.attributes as Record<string, unknown> | null) ?? {}), ...nextAttrs }
+        : nextAttrs) as Prisma.InputJsonValue;
     }
     if (listing!.hasBarra) {
       // Proteção de disponibilidade por peça: não dá pra mexer numa peça já vendida,
@@ -118,9 +145,19 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
       if (dto.kitePrice !== undefined) data.kitePrice = dto.kitePrice;
       if (dto.barraPrice !== undefined) data.barraPrice = dto.barraPrice;
-      if (dto.barraAttributes !== undefined) {
+      if (dto.barraBrandId !== undefined || dto.barraModelId !== undefined || dto.barraAttributes !== undefined) {
         const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
-        data.barraAttributes = validateAttributes(barraCat!.attributeSchema as any, dto.barraAttributes, { requireAll: true }) as Prisma.InputJsonValue;
+        if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });
+        const nextBarraBrandId = dto.barraBrandId ?? listing!.barraBrandId;
+        const nextBarraModelId = dto.barraModelId ?? listing!.barraModelId;
+        const barraCatalogError = await validateCatalogPair({ brandId: nextBarraBrandId, modelId: nextBarraModelId, categoryId: barraCat.id, label: 'Barra' });
+        if (barraCatalogError) return NextResponse.json({ message: barraCatalogError }, { status: 400 });
+        if (dto.barraBrandId !== undefined) (data as any).barraBrandId = dto.barraBrandId;
+        if (dto.barraModelId !== undefined) (data as any).barraModelId = dto.barraModelId;
+        if (dto.barraAttributes !== undefined) {
+          const validatedBarraAttrs = validateAttributes(conditionOnlySchema(barraCat.attributeSchema), dto.barraAttributes, { requireAll: true });
+          data.barraAttributes = { ...((listing!.barraAttributes as Record<string, unknown> | null) ?? {}), ...validatedBarraAttrs } as Prisma.InputJsonValue;
+        }
       }
     }
     if (dto.images !== undefined) {
