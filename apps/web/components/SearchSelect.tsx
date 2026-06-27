@@ -8,7 +8,7 @@ import { color, font } from '../lib/tokens';
 
 type Opt = { value: string; label: string };
 
-export function SearchSelect({ value, placeholder = '—', options, onChange, disabled }: {
+export function SearchSelect({ value, placeholder = 'Selecione', options, onChange, disabled }: {
   value: string;
   placeholder?: string;
   options: Opt[];

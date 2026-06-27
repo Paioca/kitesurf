@@ -57,7 +57,7 @@ export default async function MeusAnuncios() {
                     <div style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, lineHeight: 1.1, margin: '3px 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.model}</div>
                     <div style={{ fontFamily: font.sans, fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary }}>{it.priceLabel}</div>
                   </a>
-                  {hasSale && <div style={{ fontSize: 12, color: '#8a6a3a', marginTop: 8, fontStyle: 'italic' }}>Tem venda registrada — fica no histórico e não pode ser excluído.</div>}
+                  {hasSale && <div style={{ fontSize: 12, color: '#8a6a3a', marginTop: 8, fontStyle: 'italic' }}>Tem venda registrada. Fica no histórico e não pode ser excluído.</div>}
                   <div style={{ marginTop: 'auto', paddingTop: 14 }}>
                     <OwnerControls listingId={it.id} status={it.status} saleRecord={hasSale} compact />
                   </div>

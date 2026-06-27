@@ -20,9 +20,9 @@ export const SIZE_RANGES: Record<string, [number, number]> = {
 };
 export const SIZE_LABELS: Record<string, string> = {
   s1: 'até 7 m²',
-  s2: '7–9 m²',
-  s3: '9–11 m²',
-  s4: '11–13 m²',
+  s2: '7 a 9 m²',
+  s3: '9 a 11 m²',
+  s4: '11 a 13 m²',
   s5: '13 m² ou +',
 };
 
@@ -35,8 +35,8 @@ export const PRICE_RANGES: Record<string, [number, number]> = {
 };
 export const PRICE_LABELS: Record<string, string> = {
   p1: 'Até R$ 500',
-  p2: 'R$ 500 – 2.000',
-  p3: 'R$ 2.000 – 5.000',
+  p2: 'R$ 500 a 2.000',
+  p3: 'R$ 2.000 a 5.000',
   p4: 'Acima de R$ 5.000',
 };
 

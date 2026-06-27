@@ -83,7 +83,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
           <button onClick={() => ask('Cancelar a venda marcada? O negócio volta atrás e você pode marcar de novo.', () => call(`/api/deals/${deal!.id}/cancel`))} disabled={busy} style={btnGhost}>Cancelar venda</button>
         </div>
       : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={() => ask('Confirmar que você comprou? O anúncio será marcado como vendido — não dá pra desfazer.', () => call(`/api/deals/${deal!.id}/confirm`))} disabled={busy} style={btn}>Confirmar que comprei</button>
+          <button onClick={() => ask('Confirmar que você comprou? O anúncio será marcado como vendido. Não dá pra desfazer.', () => call(`/api/deals/${deal!.id}/confirm`))} disabled={busy} style={btn}>Confirmar que comprei</button>
           {/* Saída pro comprador marcado por engano: sem isto, só restava esperar 72h
               até o cron encerrar como closed_unconfirmed. Desfaz o negócio e a peça
               volta a ficar disponível (rota /deny → denyPurchase). */}
@@ -94,7 +94,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
     // sozinho (o comprador nunca confirmou — unilateral).
     confirm = role === 'seller'
       ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={muted}>Encerrado como vendido — o comprador não confirmou a tempo. Não conta como venda nem libera avaliação.</div>
+          <div style={muted}>Encerrado como vendido. O comprador não confirmou a tempo. Não conta como venda nem libera avaliação.</div>
           <button onClick={() => ask('Corrigir e voltar a anunciar? O anúncio volta a ficar à venda e este negócio é encerrado.', () => call(`/api/deals/${deal!.id}/correct`))} disabled={busy} style={btnGhost}>Corrigir e voltar a anunciar</button>
         </div>
       : <div style={muted}>O vendedor encerrou esta venda como concluída. Você não confirmou a compra.</div>;
@@ -114,7 +114,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   } else if (deal!.status === 'disputed') {
     confirm = <div style={muted}>Vocês não chegaram a um acordo sobre a correção. A moderação vai analisar e decidir.</div>;
   } else if (deal!.status === 'reversed') {
-    confirm = <div style={muted}>Venda corrigida — voltou atrás. O item voltou a ficar disponível.</div>;
+    confirm = <div style={muted}>Venda corrigida. Voltou atrás. O vínculo com esta compra foi desfeito.</div>;
   }
 
   // barra de confirmação inline pra ações irreversíveis
@@ -157,12 +157,12 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
       ? <div style={{ fontSize: 12.5, color: color.primary, fontWeight: 600 }}>Avaliação enviada ✓ · já está pública</div>
       : reviewSkipped
       ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-          <div style={muted}>Avaliação é opcional — você pode avaliar quando quiser.</div>
+          <div style={muted}>Avaliação é opcional. Você pode avaliar quando quiser.</div>
           <button onClick={() => setReviewSkipped(false)} disabled={busy} style={btnGhost}>Avaliar agora</button>
         </div>
       : (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa — é o que constrói a reputação da comunidade.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#e8f1ec', color: '#15463b', fontSize: 13, fontWeight: 600, padding: '9px 13px', borderRadius: 10, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Negócio concluído! Avaliação importa porque constrói a reputação da comunidade.</div>
           <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Avalie {reviewing}</div>
           <div style={{ display: 'flex', gap: 6, margin: '10px 0' }}>
             {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`${n} de 5 estrelas`} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, lineHeight: 1, color: n <= rating ? color.primary : color.lineInput, padding: 0 }}>★</button>)}
@@ -183,7 +183,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   } else if (deal && deal.myReviewDone && (deal.status === 'reversal_requested' || deal.status === 'disputed')) {
     review = <div style={muted}>Sua avaliação fica oculta enquanto a correção está em análise.</div>;
   } else if (deal && deal.myReviewDone && deal.status === 'reversed') {
-    review = <div style={muted}>Sua avaliação foi ocultada — a venda foi corrigida.</div>;
+    review = <div style={muted}>Sua avaliação foi ocultada porque a venda foi corrigida.</div>;
   }
 
   // --- mensagem de importância (só nos estados ativos/concluído; some quando avaliado) ---
@@ -191,7 +191,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
   const showNote = !done && (noDeal || deal!.status === 'seller_confirmed' || deal!.status === 'completed');
   const note = showNote ? (
     <div style={{ fontSize: 12, lineHeight: 1.5, color: color.inkMute, background: '#f3f1e9', borderRadius: 9, padding: '9px 12px' }}>
-      Confirmar a compra/venda e avaliar fortalece os dois perfis — quem tem histórico de negócios vende mais rápido e passa mais confiança.
+      Confirmar a compra/venda e avaliar fortalece os dois perfis. Quem tem histórico de negócios vende mais rápido e passa mais confiança.
     </div>
   ) : null;
 
@@ -201,7 +201,7 @@ export function DealBox({ requestId, role, deal }: { requestId: string; role: 's
 
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${color.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {liberado && <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Aceito — contato liberado</div>}
+      {liberado && <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary }}><span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary, flex: 'none' }} />Aceito. Contato liberado</div>}
       {head}
       {!reversing && review && <div style={confirm ? { paddingTop: 12, borderTop: `1px solid ${color.line}` } : undefined}>{review}</div>}
       {note}

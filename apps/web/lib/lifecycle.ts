@@ -25,7 +25,7 @@ export async function removeListing(userId: string, listingId: string) {
   // §10 — anúncio vendido é imutável: não pode ser excluído (preserva o registro do
   // negócio). Gatilho: Listing.sold OU qualquer Deal histórico/concluído.
   if (listing.status === 'sold' || (await listingHasSaleRecord(listingId))) {
-    throw new LifecycleError('Este anúncio registra uma venda e não pode ser excluído — ele fica no seu histórico como vendido.', 409);
+    throw new LifecycleError('Este anúncio registra uma venda e não pode ser excluído. Ele fica no seu histórico como vendido.', 409);
   }
 
   await db.$transaction(async (tx) => {

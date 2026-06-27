@@ -32,9 +32,9 @@ export default async function Conta() {
   ];
   const links: { href: string; label: string; desc: string }[] = [
     { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, spot, e-mail, idioma' },
-    { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar — editar, pausar, excluir (inclui pausados)' },
+    { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar, editar, pausar e excluir (inclui pausados)' },
     { href: '/pedidos', label: 'Minhas negociações', desc: 'Ofertas, pedidos de visita e negócios enviados ou recebidos' },
-    { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem — anúncios e avaliações' },
+    { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem: anúncios e avaliações' },
   ];
 
   // Peças reaproveitadas por mobile (coluna única) e desktop (bento). Mesmos dados/rotas.

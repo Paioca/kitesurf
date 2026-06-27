@@ -28,13 +28,13 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const params = await props.params;
   const l = await getListing(params.id);
   // OG/preview só pra anúncio publicado — não vaza título/preço de rascunho/pausado.
-  if (!l || !isPubliclyVisible(l.status)) return { title: 'Anúncio não encontrado — Kitetropos' };
+  if (!l || !isPubliclyVisible(l.status)) return { title: 'Anúncio não encontrado | Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
   const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
   const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
   const price = formatBRL(l.price);
-  const title = `${name} — ${price} · Kitetropos`;
-  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados — na Kitetropos.`;
+  const title = `${name} | ${price} · Kitetropos`;
+  const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados na Kitetropos.`;
   const img = (l.images ?? [])[0]?.url;
   const images = img ? [img] : undefined;
   return {
@@ -77,7 +77,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const favorited = !!me && !isOwner && (await db.favorite.findUnique({ where: { userId_listingId: { userId: me.id, listingId: l.id } } })) != null;
   const emptyReq = { offer: null, visit: null, whatsapp: null };
   const reqState = me && !isOwner ? await getListingRequestState(me.id, l.id) : { conjunto: emptyReq, kite: emptyReq, barra: emptyReq };
-  const statusLabel: Record<string, string> = { paused: 'Pausado — não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
+  const statusLabel: Record<string, string> = { paused: 'Pausado. Não aparece na busca', archived: 'Arquivado', sold: 'Vendido' };
 
   const a = (l.attributes ?? {}) as Record<string, any>;
   const isKit = (l as any).hasBarra === true;
@@ -146,7 +146,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
   // Ficha completa estruturada (seção "100% estruturado" do design).
   const ficha: { k: string; v: string }[] = [];
-  ficha.push({ k: 'Tipo', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? '—' });
+  ficha.push({ k: 'Tipo', v: isKit ? 'Kite + Barra (kit)' : l.category?.namePt ?? 'Não informado' });
   if (l.brand?.name) ficha.push({ k: 'Marca', v: l.brand.name });
   if (l.model?.name) ficha.push({ k: 'Modelo', v: l.model.name });
   if (l.year) ficha.push({ k: 'Ano', v: String(l.year) });
@@ -180,7 +180,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           <h1 style={{ fontFamily: font.serif, fontSize: 36, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '0 0 12px' }}>{title}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14.5, color: color.inkMute, marginBottom: 22 }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: l.shippable ? color.primary : color.accent }} />
-            {l.city}{l.spot ? ` · ${l.spot}` : ''} — {[l.pickup && 'retirada', l.shippable && 'envio'].filter(Boolean).join(' + ') || 'retirada'}
+            {l.city}{l.spot ? ` · ${l.spot}` : ''}. {[l.pickup && 'retirada', l.shippable && 'envio'].filter(Boolean).join(' + ') || 'retirada'}
           </div>
           {l.status !== 'active' && statusLabel[l.status] && (
             <div style={{ background: '#fbf0d8', border: '1px solid #ecdcb0', color: '#7a5e1f', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', borderRadius: 10, marginBottom: 16 }}>
@@ -251,7 +251,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           ) : l.status === 'active' && reservedLabels.length > 0 ? (
             // §7 — todas as peças reservadas (venda aguardando confirmação): sem CTA, com estado.
             (<div style={{ background: '#f3e7d3', border: '1px solid #e6d3ad', borderRadius: 13, padding: '16px 18px', marginBottom: 16, fontSize: 14.5, fontWeight: 600, color: '#8a6a3a' }}>
-              Venda em andamento — este item está reservado. Volte mais tarde: se não se concretizar, ele fica disponível de novo.
+              Venda em andamento. Este item está reservado. Volte mais tarde: se não se concretizar, ele fica disponível de novo.
             </div>)
           ) : (
             // Anúncio não-ativo: sem ações de contato (o backend já rejeita; aqui evitamos
@@ -294,7 +294,6 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
       {/* FICHA COMPLETA — 100% estruturado (handoff Anuncio.dc.html) */}
       <section style={{ maxWidth: 1240, margin: '56px auto 0', padding: '0 24px' }}>
         <div style={{ background: '#ece3d2', borderRadius: 22, padding: 'clamp(28px, 4vw, 44px) clamp(22px, 4vw, 48px)' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 6 }}>100% estruturado — sem texto solto</div>
           <h2 style={{ fontFamily: font.sans, fontSize: 32, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.2px', margin: '0 0 28px' }}>Ficha completa</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1, background: '#dccdb2', border: '1px solid #dccdb2', borderRadius: 16, overflow: 'hidden' }}>
             {ficha.map((f) => (
@@ -303,10 +302,6 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
                 <div style={{ fontSize: 16, fontWeight: 600, color: color.ink }}>{f.v}</div>
               </div>
             ))}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 22, fontSize: 13.5, color: '#6b6353' }}>
-            <span style={{ width: 9, height: 9, borderRadius: 999, background: color.primary, flex: 'none' }} />
-            Toda a ficha vem de listas controladas. Sem campo de descrição livre — é o que mantém a busca confiável.
           </div>
         </div>
       </section>

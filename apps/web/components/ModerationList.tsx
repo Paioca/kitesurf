@@ -89,7 +89,7 @@ export function ModerationList({ reports: initial }: { reports: Report[] }) {
               <div style={{ background: '#faf7f0', borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
                 {r.actions.map((a, i) => (
                   <div key={i} style={{ fontSize: 12, color: color.inkMute, lineHeight: 1.6 }}>
-                    <span style={{ fontWeight: 700, color: color.ink }}>{ACTION_LABEL[a.action] ?? a.action}</span> · {a.by} · {new Date(a.at).toLocaleDateString('pt-BR')}{a.note ? ` — ${a.note}` : ''}
+                    <span style={{ fontWeight: 700, color: color.ink }}>{ACTION_LABEL[a.action] ?? a.action}</span> · {a.by} · {new Date(a.at).toLocaleDateString('pt-BR')}{a.note ? `. ${a.note}` : ''}
                   </div>
                 ))}
               </div>

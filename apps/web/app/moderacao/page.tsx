@@ -47,9 +47,9 @@ export default async function Moderacao() {
     reason: r.reason,
     status: r.status,
     createdAt: r.createdAt.toISOString(),
-    reporter: r.reporter?.name ?? '—',
+    reporter: r.reporter?.name ?? 'Não informado',
     targetState: targetState(r),
-    actions: r.actions.map((a) => ({ action: a.action, by: a.moderator?.name ?? '—', at: a.createdAt.toISOString(), note: a.note })),
+    actions: r.actions.map((a) => ({ action: a.action, by: a.moderator?.name ?? 'Não informado', at: a.createdAt.toISOString(), note: a.note })),
   }));
 
   // 2ª fila (§11) — disputas de venda aguardando decisão do admin (contraparte recusou
@@ -71,14 +71,14 @@ export default async function Moderacao() {
     id: d.id,
     dealId: d.dealId,
     listingId: d.deal.listingId,
-    listingTitle: dispTitle.get(d.deal.listingId) ?? '—',
+    listingTitle: dispTitle.get(d.deal.listingId) ?? 'Não informado',
     component: d.deal.component,
     reason: d.reason,
     description: d.description,
     openedById: d.openedBy?.id ?? d.openedByUserId,
-    openedBy: d.openedBy?.name ?? '—',
+    openedBy: d.openedBy?.name ?? 'Não informado',
     counterpartyId: d.counterparty?.id ?? d.counterpartyId,
-    counterparty: d.counterparty?.name ?? '—',
+    counterparty: d.counterparty?.name ?? 'Não informado',
     createdAt: d.createdAt.toISOString(),
   }));
 

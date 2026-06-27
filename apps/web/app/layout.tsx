@@ -26,7 +26,7 @@ const spectral = Spectral({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'),
-  title: 'Kitetropos — kite e barra com mais confiança',
+  title: 'Kitetropos | kite e barra com mais confiança',
   description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
 };
 

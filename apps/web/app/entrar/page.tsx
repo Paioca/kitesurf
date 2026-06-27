@@ -13,7 +13,7 @@ type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
 
 const PERKS = [
-  'Telefone verificado — 1 número, 1 conta',
+  'Telefone verificado: 1 número, 1 conta',
   'Reputação real, atrelada a vendas confirmadas',
   'Fotos guiadas e anúncios padronizados',
 ];

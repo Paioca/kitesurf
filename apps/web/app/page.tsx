@@ -21,10 +21,10 @@ export const dynamic = 'force-dynamic';
 
 // OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
 export const metadata = {
-  title: 'Kitetropos — kite e barra com mais confiança',
+  title: 'Kitetropos | kite e barra com mais confiança',
   description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
   openGraph: {
-    title: 'Kitetropos — kite e barra com mais confiança',
+    title: 'Kitetropos | kite e barra com mais confiança',
     description: 'Encontre, anuncie e negocie kite e barra com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
     images: ['/hero-beach.jpg'],
     type: 'website',

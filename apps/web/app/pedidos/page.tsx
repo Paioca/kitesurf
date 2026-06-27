@@ -16,15 +16,15 @@ import { CancelRequestButton } from '../../components/CancelRequestButton';
 import { MarkNotificationsRead } from '../../components/MarkNotificationsRead';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Minhas negociações — Kitetropos' };
+export const metadata = { title: 'Minhas negociações | Kitetropos' };
 
 const HATCH = 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)';
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const ST: Record<string, string> = { pending: 'Aguardando você', accepted: 'Aceito', declined: 'Recusado' };
-const STO: Record<string, string> = { pending: 'Aguardando o vendedor', accepted: 'Aceito — contato liberado', declined: 'Recusado' };
+const STO: Record<string, string> = { pending: 'Aguardando o vendedor', accepted: 'Aceito. Contato liberado', declined: 'Recusado' };
 
 function typeLabel(t: string, amount: number | null) {
-  return t === 'offer' ? `Oferta de ${amount != null ? brl(amount) : '—'}` : 'Pedido de visita';
+  return t === 'offer' ? `Oferta de ${amount != null ? brl(amount) : 'valor não informado'}` : 'Pedido de visita';
 }
 
 function Thumb({ src }: { src: string | null }) {

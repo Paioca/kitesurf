@@ -37,7 +37,7 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   }
   if (type === 'offer') {
     if (!amount || amount < 100) throw new RequestError('Informe um valor válido.', 400);
-    if (amount > sell.price * 3) throw new RequestError('Valor muito acima do anúncio — confira.', 400); // teto anti-erro de digitação
+    if (amount > sell.price * 3) throw new RequestError('Valor muito acima do anúncio. Confira.', 400); // teto anti-erro de digitação
   }
   const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
   // §12 — defesa adicional contra negociar consigo (o owner-check acima já cobre o caso
@@ -71,6 +71,13 @@ export async function setRequestStatus(userId: string, id: string, status: 'acce
     if (!listing || listing.status !== 'active') throw new RequestError('Anúncio não está disponível.', 409);
     const sell = sellables(listing as ListingLike).find((s) => s.component === r.component);
     if (!sell?.available) throw new RequestError('Esta peça já foi vendida.', 409);
+    // Pedido antigo também precisa respeitar reserva atual. createRequest já bloqueia
+    // novas solicitações; sem isto, um pending antigo podia liberar WhatsApp depois de
+    // outra venda entrar em seller_confirmed.
+    const reservas = await db.deal.findMany({ where: { listingId: r.listingId, status: 'seller_confirmed' }, select: { component: true } });
+    if (reservas.some((d) => reservationConflict(d.component, r.component))) {
+      throw new RequestError('Esta peça está com uma venda em andamento. Cancele ou conclua a venda marcada antes de aceitar outro pedido.', 409);
+    }
   }
   const lst = await db.listing.findUnique({ where: { id: r.listingId }, select: { title: true } });
   await db.$transaction(async (tx) => {

@@ -2,7 +2,7 @@
 import { LegalPage, type LegalSection } from '../../components/LegalPage';
 import Link from 'next/link';
 
-export const metadata = { title: 'Termos de Uso — Kitetropos' };
+export const metadata = { title: 'Termos de Uso | Kitetropos' };
 
 const sections: LegalSection[] = [
   { id: 'o-que-e', title: 'O que é a Kitetropos', body: 'A Kitetropos é uma plataforma que conecta pessoas que compram e vendem equipamento de kitesurf. A Kitetropos não é parte das negociações: não vende, não compra, não intermedia pagamento e não garante os itens anunciados. O negócio é feito diretamente entre comprador e vendedor.' },

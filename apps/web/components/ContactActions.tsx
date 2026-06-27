@@ -140,7 +140,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>
-        <strong style={{ color: color.ink }}>O que acontece:</strong> avisamos o vendedor e o pedido fica no painel dele com o seu contato — ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
+        <strong style={{ color: color.ink }}>O que acontece:</strong> avisamos o vendedor e o pedido fica no painel dele com o seu contato. Ele pode te chamar direto no WhatsApp. Se ele aceitar por aqui, o WhatsApp dele também aparece pra você.
       </div>
     </div>
   );

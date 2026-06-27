@@ -10,7 +10,7 @@ const BEACH = '/hero-beach.jpg';
 
 const SCENES = [
   { dur: 5000, no: '01', label: 'Entre na plataforma', sub: 'Comunidade verificada de kitesurf' },
-  { dur: 5600, no: '02', label: 'Login por SMS', sub: 'Sem senha — só o seu número' },
+  { dur: 5600, no: '02', label: 'Login por SMS', sub: 'Sem senha. Só o seu número' },
   { dur: 5600, no: '03', label: 'Anuncie seu equipamento', sub: 'Ficha padronizada, em minutos' },
   { dur: 5200, no: '04', label: 'Filtre por tamanho', sub: 'Ache o kite certo na hora' },
   { dur: 5400, no: '05', label: 'Agende uma visita', sub: 'Veja e teste no spot' },
@@ -131,7 +131,7 @@ export function ComoFunciona() {
                 </div>
               </div>
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#f6f3ec', borderRadius: '26px 26px 0 0', padding: '24px 22px 30px' }}>
-                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de kite e barra com gente <strong style={{ color: '#23332e' }}>verificada</strong> — sem anúncio fake.</div>
+                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de kite e barra com gente <strong style={{ color: '#23332e' }}>verificada</strong>. Sem anúncio fake.</div>
                 <div style={cta}>Entrar ou criar conta</div>
                 <div style={{ textAlign: 'center', fontSize: 12, color: '#8a948d', marginTop: 12 }}>Sem senha · código por SMS</div>
               </div>
@@ -147,7 +147,7 @@ export function ComoFunciona() {
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#23332e', border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 12px', background: '#fff' }}>+55</div>
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 500, border: '1.5px solid #1f6b5c', borderRadius: 11, padding: '13px 14px', background: '#fff', boxShadow: '0 0 0 3px rgba(31,107,92,0.1)' }}>(85) 99988-7766</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11.5, color: '#8a948d', marginBottom: 26, lineHeight: 1.45 }}><span>🌎</span> Aceita número internacional — default Brasil (+55).</div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11.5, color: '#8a948d', marginBottom: 26, lineHeight: 1.45 }}><span>🌎</span> Aceita número internacional. Default Brasil (+55).</div>
                 <div style={{ ...cta, position: 'absolute', left: 22, right: 22, top: 402, borderRadius: 12 }}>Enviar código</div>
               </div>
               <div style={{ position: 'absolute', inset: 0, background: '#f6f3ec', padding: '56px 22px 0', opacity: bOp(1), zIndex: 2 }}>
@@ -241,7 +241,7 @@ export function ComoFunciona() {
                 <div style={{ padding: '16px 20px 0' }}>
                   <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#1f6b5c', marginBottom: 5 }}>Duotone · 2026</div>
                   <h1 style={{ ...h1, fontSize: 25, marginBottom: 8 }}>Evo D/LAB 10 m²</h1>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Cumbuco · Cauípe — retirada no spot</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Cumbuco · Cauípe. Retirada no spot</div>
                   <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px' }}>R$ 21.459</div>
                 </div>
                 <div style={{ position: 'absolute', left: 20, right: 20, bottom: 22, display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -322,7 +322,7 @@ export function ComoFunciona() {
                     <div style={{ textAlign: 'right', flex: 'none' }}><div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#9aa49d' }}>Oferta</div><div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>R$ 21.459</div></div>
                   </div>
                   <div style={{ borderTop: '1px solid #f0ebde', background: '#f3f6f3', padding: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#1f6b5c', marginBottom: 11 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Aceito — contato liberado</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#1f6b5c', marginBottom: 11 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: '#1f6b5c' }} />Aceito. Contato liberado</div>
                     <div style={{ background: '#1f6b5c', color: '#fff', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700, marginBottom: 9 }}>Falar com Lucas no WhatsApp</div>
                     <div style={{ background: '#fff', border: '1.5px solid #1f6b5c', color: '#1f6b5c', borderRadius: 10, padding: 11, textAlign: 'center', fontSize: 13.5, fontWeight: 700 }}>Confirmar que comprei</div>
                   </div>

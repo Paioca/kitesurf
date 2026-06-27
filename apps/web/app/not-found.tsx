@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Logo } from '../components/ui';
 import { Footer } from '../components/Footer';
 
-export const metadata = { title: 'Página não encontrada — Kitetropos' };
+export const metadata = { title: 'Página não encontrada | Kitetropos' };
 
 export default function NotFound() {
   return (

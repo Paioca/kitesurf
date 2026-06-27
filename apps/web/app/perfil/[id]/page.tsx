@@ -15,10 +15,10 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const params = await props.params;
   const data = await getProfile(params.id);
-  if (!data) return { title: 'Perfil não encontrado — Kitetropos' };
+  if (!data) return { title: 'Perfil não encontrado | Kitetropos' };
   const { user, stats } = data;
   const rep = stats.ratingCount ? `★ ${stats.ratingAvg?.toFixed(1)} · ${stats.salesCount} venda(s)` : `${stats.activeCount} anúncio(s) ativo(s)`;
-  const title = `${user.name} — Kitetropos`;
+  const title = `${user.name} | Kitetropos`;
   const description = `Perfil de ${user.name} na Kitetropos. ${rep}. Telefone verificado, reputação real.`;
   const images = user.avatarUrl ? [user.avatarUrl] : ['/hero-beach.jpg'];
   return { title, description, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
@@ -86,7 +86,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>E-mail e CPF nunca são compartilhados. O telefone não aparece no perfil público — só é liberado para a outra parte quando uma solicitação é aceita.</p>
+              <p style={{ fontSize: 12, lineHeight: 1.5, color: color.inkFaint2, margin: 0 }}>E-mail e CPF nunca são compartilhados. O telefone não aparece no perfil público. Só é liberado para a outra parte quando uma solicitação é aceita.</p>
             </div>
           </div>
           <div style={card}>
@@ -100,7 +100,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
 
         {/* stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: color.line, border: `1px solid ${color.line}`, borderRadius: 16, overflow: 'hidden', marginBottom: 44 }}>
-          <Stat value={stats.ratingAvg != null ? `★ ${stats.ratingAvg.toFixed(1)}` : '—'} label={stats.ratingCount ? `média de ${stats.ratingCount} avaliações` : 'sem avaliações ainda'} star />
+          <Stat value={stats.ratingAvg != null ? `★ ${stats.ratingAvg.toFixed(1)}` : 'Sem nota'} label={stats.ratingCount ? `média de ${stats.ratingCount} avaliações` : 'sem avaliações ainda'} star />
           <Stat value={String(stats.salesCount)} label="vendas concluídas" />
           <Stat value={String(stats.purchasesCount)} label="compras realizadas" />
           <Stat value={String(stats.activeCount)} label="anúncios ativos" />
@@ -153,7 +153,7 @@ const card: React.CSSProperties = { background: '#fff', border: `1px solid ${col
 function VerifiedRow({ on, title, desc, link }: { on: boolean; title: string; desc: string; link?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11, opacity: on ? 1 : 0.5 }}>
-      <span style={{ width: 26, height: 26, borderRadius: 999, background: '#e8f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><span style={{ color: color.primary, fontSize: 14 }}>{on ? '✓' : '—'}</span></span>
+      <span style={{ width: 26, height: 26, borderRadius: 999, background: '#e8f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><span style={{ color: color.primary, fontSize: 14 }}>{on ? '✓' : '×'}</span></span>
       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: color.inkFaint }}>{desc}</div></div>
       {on && link && <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: color.primary, textDecoration: 'none', flex: 'none' }}>Ver ›</a>}
     </div>

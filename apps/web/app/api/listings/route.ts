@@ -44,7 +44,7 @@ const createSchema = z.object({
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
   price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }), // conjunto (kit) ou peça única
-  city: z.string().refine((c) => SPOTS.includes(c), { message: 'Spot inválido — escolha um da lista oficial.' }),
+  city: z.string().refine((c) => SPOTS.includes(c), { message: 'Spot inválido. Escolha um da lista oficial.' }),
   spot: z.string().optional(),
   pickup: z.boolean().optional(),
   shippable: z.boolean(),

@@ -151,7 +151,7 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
 
       {!fichaOk && title.trim().length >= 4 && images.length >= 3 && priceOk && (
         <div style={{ color: '#8a6d00', background: '#fdf6e3', fontSize: 12.5, padding: '9px 12px', borderRadius: 9, marginTop: 4 }}>
-          Preencha todos os campos da ficha antes de salvar — campos vazios fazem o anúncio sumir dos filtros de busca.
+          Preencha todos os campos da ficha antes de salvar. Campos vazios fazem o anúncio sumir dos filtros de busca.
         </div>
       )}
 
@@ -182,7 +182,7 @@ function Fields({ schema, values, onChange }: { schema: Schema; values: Record<s
             </div>
           ) : spec.enum ? (
             <select className="kl-select" value={values[key] ?? ''} onChange={(e) => onChange(key, e.target.value)}>
-              <option value="">—</option>
+              <option value="">Selecione</option>
               {spec.enum.map((o) => <option key={String(o)} value={String(o)}>{CONDITION_LABEL[String(o)] ?? String(o)}</option>)}
             </select>
           ) : spec.type === 'boolean' ? (

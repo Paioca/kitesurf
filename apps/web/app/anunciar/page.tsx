@@ -63,7 +63,7 @@ export default function Criar() {
   const [publishing, setPublishing] = useState(false); // trava anti duplo-clique no Publicar
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
   const [restored, setRestored] = useState(false); // rascunho recuperado
-  const [detailOpen, setDetailOpen] = useState(false); // seção "Estado detalhado" colapsável (auditoria #02)
+  const [detailOpen, setDetailOpen] = useState(true); // seção "Estado detalhado" visível no refresh, ainda colapsável
   const fileRef = useRef<HTMLInputElement>(null);
   const hydrated = useRef(false);
 
@@ -240,7 +240,7 @@ export default function Criar() {
   const TIPS = [
     'As listas padronizadas fazem a busca por tamanho funcionar. Informe furos e reparos para que o comprador saiba exatamente o que está avaliando.',
     'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo. Mínimo de 3.',
-    'Sem pagamento na plataforma. Marque ao menos uma forma de entrega — retirada no spot ou envio.',
+    'Sem pagamento na plataforma. Marque ao menos uma forma de entrega: retirada no spot ou envio.',
     'Tudo certo? Revise antes de publicar. Anúncios ativos ou pausados podem ser editados depois.',
   ];
   const stepValid = [!!kind && fichaOk, photosOk, priceOk && deliveryOk && !!city, canPublish];
@@ -325,7 +325,7 @@ export default function Criar() {
     ? (brand?.models.find((m) => m.id === modelId)?.name || `Barra${previewBrand ? ` ${previewBrand}` : ''}`)
     : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || 'Seu anúncio');
   const previewCond = attrs.condition ? CONDITION_LABEL[attrs.condition] : null;
-  const previewSize = kind === 'barra' ? (attrs.line_length_m ? `${attrs.line_length_m} m` : '—') : (attrs.size_m2 ? `${attrs.size_m2} m²` : '—');
+  const previewSize = kind === 'barra' ? (attrs.line_length_m ? `${attrs.line_length_m} m` : 'Sem tamanho') : (attrs.size_m2 ? `${attrs.size_m2} m²` : 'Sem tamanho');
   const previewDelivery = pickup && shippable ? 'Retirada · Envio' : shippable ? 'Envio' : 'Retirada';
   const previewPhoto = images[0]?.thumbUrl ?? images[0]?.url ?? null;
   const tipoLabel = kind === 'barra' ? 'Barra' : kind === 'kit' ? 'Kit' : 'Kite';
@@ -336,7 +336,7 @@ export default function Criar() {
       {restored && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#e8f1ec', border: '1px solid #cfe3d9', borderRadius: 12, padding: '11px 15px', marginBottom: 20, fontSize: 13.5, color: color.ink }}>
           <span style={{ width: 7, height: 7, borderRadius: 999, background: color.primary, flex: 'none' }} />
-          <span>Rascunho recuperado — continue de onde parou.</span>
+          <span>Rascunho recuperado. Continue de onde parou.</span>
           <button onClick={clearDraft} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: color.primary, fontWeight: 700, cursor: 'pointer', fontFamily: font.sans, fontSize: 13.5 }}>Começar do zero</button>
         </div>
       )}
@@ -380,7 +380,7 @@ export default function Criar() {
           {/* PASSO 1 — TIPO & FICHA */}
           {step === 0 && (
             <>
-              <StepHead n={1} title="O que você está vendendo?" lead="Tipo e ficha padronizada. Tudo sai de listas controladas — sem texto solto, sem descrição livre." />
+              <StepHead n={1} title="O que você está vendendo?" lead="Tipo e ficha padronizada. Tudo sai de listas controladas, sem texto solto e sem descrição livre." />
               <UpLabel>Tipo</UpLabel>
               <div className="criar-tipos" style={{ marginBottom: 28 }}>
                 <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" icon={IconKite} />
@@ -391,7 +391,7 @@ export default function Criar() {
               <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
                 <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção — descreva fielmente</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção: descreva fielmente</div>
                   <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Informe furos, reparos, estado do bladder e troca de mangueiras. Informações incorretas podem remover o anúncio e restringir a conta.</p>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function Criar() {
                   {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
                     <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={brandOpts} onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
-                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : '—'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
+                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
                     {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><ChipSelect options={yearOpts} value={year} onChange={setYear} /></Cell>}
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
                     <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
@@ -419,7 +419,7 @@ export default function Criar() {
                       <button type="button" onClick={() => setDetailOpen((o) => !o)} aria-expanded={detailOpen} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: '#faf7f0', border: 'none', padding: '15px 16px', cursor: 'pointer', textAlign: 'left' }}>
                         <span>
                           <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>Estado detalhado</span>
-                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Furos, reparos, bladder e mangueiras — pra um anúncio honesto.</span>
+                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Furos, reparos, bladder e mangueiras para um anúncio honesto.</span>
                         </span>
                         <span aria-hidden="true" style={{ fontSize: 13, color: color.inkMute, flex: 'none', transform: detailOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
                       </button>
@@ -454,7 +454,7 @@ export default function Criar() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '14px 15px' }}>
                         <span style={{ fontFamily: font.serif, fontSize: 16, fontWeight: 600, color: color.ink }}>{autoTitle}</span>
                       </div>
-                      <Helper>Padronizado a partir da ficha — todo anúncio segue o mesmo formato, e é isso que faz a busca por tamanho funcionar.</Helper>
+                      <Helper>Padronizado a partir da ficha. Todo anúncio segue o mesmo formato, e é isso que faz a busca por tamanho funcionar.</Helper>
                     </div>
                   )}
                 </>
@@ -465,9 +465,9 @@ export default function Criar() {
           {/* PASSO 2 — FOTOS */}
           {step === 1 && (
             <>
-              <StepHead n={2} title="Fotos guiadas" lead={`Mínimo de 3 fotos — obrigatório.${isKit ? ' No kit, ao menos uma do kite e uma da barra.' : ' O GPS das imagens é removido automaticamente.'}`} />
+              <StepHead n={2} title="Fotos guiadas" lead={`Mínimo de 3 fotos obrigatórias.${isKit ? ' No kit, ao menos uma do kite e uma da barra.' : ' O GPS das imagens é removido automaticamente.'}`} />
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '8px 14px', borderRadius: 999, marginBottom: 22 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de no mínimo 3 — pode adicionar mais
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de no mínimo 3. Pode adicionar mais
               </div>
               {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : 'Fotos'} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
               {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : 'Fotos'} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
@@ -477,7 +477,7 @@ export default function Criar() {
           {/* PASSO 3 — PREÇO, LOCAL E ENTREGA */}
           {step === 2 && (
             <>
-              <StepHead n={3} title="Preço, local e entrega" lead="Sem pagamento na plataforma — o combinado é direto entre as partes." />
+              <StepHead n={3} title="Preço, local e entrega" lead="Sem pagamento na plataforma. O combinado é direto entre as partes." />
               {isKit ? (
                 <div>
                   <Label>Preço do conjunto (kite + barra) *</Label>
@@ -524,7 +524,7 @@ export default function Criar() {
                     <span style={{ fontSize: 11.5, fontWeight: 600, color: color.primary, background: color.chipSoftBg, padding: '4px 10px', borderRadius: 999 }}>{tipoLabel}</span>
                     {previewCond && <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{previewCond}</span>}
                   </div>
-                  <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>{price ? `R$ ${Number(price).toLocaleString('pt-BR')}` : '—'}</div>
+                  <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>{price ? `R$ ${Number(price).toLocaleString('pt-BR')}` : 'Sem preço'}</div>
                 </div>
               </div>
             </>

@@ -53,7 +53,7 @@ export function OwnerControls({ listingId, status, saleRecord = false, compact =
         {status === 'archived' && <button onClick={() => setStatus('active', 'Anúncio republicado.')} disabled={busy} style={btnOutline}>Republicar</button>}
         {!locked && <button onClick={remove} disabled={busy} style={btnDanger}>Excluir</button>}
       </div>
-      {locked && <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 10, lineHeight: 1.45 }}>{status === 'sold' ? 'Vendido — este anúncio fica no seu histórico e não pode ser excluído.' : 'Este anúncio tem uma venda registrada e não pode ser excluído.'}</div>}
+      {locked && <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 10, lineHeight: 1.45 }}>{status === 'sold' ? 'Vendido. Este anúncio fica no seu histórico e não pode ser excluído.' : 'Este anúncio tem uma venda registrada e não pode ser excluído.'}</div>}
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
     </div>
   );

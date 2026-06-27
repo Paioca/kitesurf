@@ -139,7 +139,7 @@ function toCard(l: any, persp: Perspective): Card {
     ship: !!l.shippable,
     city: l.city,
     sizeM2,
-    sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || '—',
+    sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || 'Não informado',
     condLabel: a.condition ? (COND_LABEL[a.condition] ?? a.condition) : null,
     repair: Number(a.repairs_count ?? 0) > 0,
     includesBar: l.hasBarra === true && l.barraSoldAt == null, // a barra avulsa do kit já saiu? sem badge "+ Barra"
