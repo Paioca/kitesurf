@@ -187,8 +187,8 @@ export async function getRequestsForUser(userId: string) {
 }
 
 export type RequestState = {
-  offer: { status: string; amount: number | null } | null;
-  visit: { status: string } | null;
+  offer: { id: string; status: string; amount: number | null } | null;
+  visit: { id: string; status: string } | null;
   whatsapp: string | null;
 };
 
@@ -207,8 +207,8 @@ export async function getListingRequestState(userId: string, listingId: string):
     const accepted = cr.find((r) => r.status === 'accepted');
     const acceptedDeal = accepted ? dmap.get(dkey(accepted.listingId, accepted.buyerId, accepted.sellerId, accepted.component)) ?? null : null;
     return {
-      offer: offer ? { status: offer.status, amount: offer.amount } : null,
-      visit: visit ? { status: visit.status } : null,
+      offer: offer ? { id: offer.id, status: offer.status, amount: offer.amount } : null,
+      visit: visit ? { id: visit.id, status: visit.status } : null,
       whatsapp: accepted && contactAllowed(acceptedDeal) ? waLink(accepted.seller.phone) : null,
     };
   };

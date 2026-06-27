@@ -5,10 +5,11 @@
 import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
 import type { Component } from '../lib/components';
+import { CancelRequestButton } from './CancelRequestButton';
 
 const PENDING_KEY = (id: string) => `vaya:pending-request:${id}`;
 
-type State = { offer: { status: string; amount: number | null } | null; visit: { status: string } | null; whatsapp: string | null };
+type State = { offer: { id?: string; status: string; amount: number | null } | null; visit: { id?: string; status: string } | null; whatsapp: string | null };
 export type Target = { component: Component; label: string; price: number; summary: string; itemNoun: string };
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -66,7 +67,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
-      setStateMap((m) => ({ ...m, [component]: { ...m[component], ...(type === 'offer' ? { offer: { status: 'pending', amount: amountCents ?? null } } : { visit: { status: 'pending' } }) } }));
+      setStateMap((m) => ({ ...m, [component]: { ...m[component], ...(type === 'offer' ? { offer: { id: data.id, status: 'pending', amount: amountCents ?? null } } : { visit: { id: data.id, status: 'pending' } }) } }));
       setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount('');
     } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
   }
@@ -117,7 +118,12 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
           </div>
         </div>
       )}
-      {state.offer && <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />}
+      {state.offer && (
+        <>
+          <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />
+          {state.offer.status === 'pending' && state.offer.id && <CancelRequestButton requestId={state.offer.id} type="offer" />}
+        </>
+      )}
 
       {!confirmVisit ? (
         // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
@@ -136,7 +142,12 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
           </div>
         </div>
       )}
-      {state.visit && <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />}
+      {state.visit && (
+        <>
+          <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />
+          {state.visit.status === 'pending' && state.visit.id && <CancelRequestButton requestId={state.visit.id} type="visit" />}
+        </>
+      )}
 
       {err && <div style={{ color: '#b3261e', fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 14, lineHeight: 1.5, background: '#f3f1e9', borderRadius: 10, padding: '11px 13px' }}>

@@ -222,7 +222,18 @@ describe('getListingRequestState', () => {
     ]);
 
     await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
-      conjunto: { whatsapp: null, offer: { status: 'accepted', amount: 150000 } },
+      conjunto: { whatsapp: null, offer: { id: 'R', status: 'accepted', amount: 150000 } },
+    });
+  });
+
+  it('inclui id da visita para permitir cancelar no detalhe do anúncio', async () => {
+    mockDb.request.findMany.mockResolvedValue([
+      { ...reqMock({ id: 'VISIT1', status: 'pending', type: 'visit', amount: null }), seller: { phone: '+5599999990000' } },
+    ]);
+    mockDb.deal.findMany.mockResolvedValue([]);
+
+    await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
+      conjunto: { visit: { id: 'VISIT1', status: 'pending' }, whatsapp: null },
     });
   });
 });
