@@ -13,6 +13,13 @@ describe('app-url', () => {
     expect(appUrl('/pedidos')).toBe('https://www.kitetropos.com/pedidos');
   });
 
+  it('canonicaliza o host legado do Vercel para o domínio público', () => {
+    vi.stubEnv('APP_URL', 'https://kitesurf-web.vercel.app');
+
+    expect(publicBaseUrl()).toBe('https://www.kitetropos.com');
+    expect(sessionCookieDomain()).toBe('.kitetropos.com');
+  });
+
   it('preserva hosts que não são o domínio principal', () => {
     vi.stubEnv('APP_URL', 'https://staging.kitetropos.com/');
 
@@ -25,7 +32,7 @@ describe('app-url', () => {
     expect(sessionCookieDomain()).toBe('.kitetropos.com');
 
     vi.stubEnv('APP_URL', 'https://kitesurf-web.vercel.app');
-    expect(sessionCookieDomain()).toBeUndefined();
+    expect(sessionCookieDomain()).toBe('.kitetropos.com');
   });
 
   it('permite override explícito do domínio de sessão', () => {

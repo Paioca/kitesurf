@@ -1,10 +1,11 @@
 const DEFAULT_APP_URL = 'https://www.kitetropos.com';
+const CANONICAL_HOST_ALIASES = new Set(['kitetropos.com', 'kitesurf-web.vercel.app']);
 
 export function publicBaseUrl() {
   const raw = (process.env.APP_URL || DEFAULT_APP_URL).replace(/\/+$/, '');
   try {
     const url = new URL(raw);
-    if (url.hostname === 'kitetropos.com') url.hostname = 'www.kitetropos.com';
+    if (CANONICAL_HOST_ALIASES.has(url.hostname)) url.hostname = 'www.kitetropos.com';
     return url.toString().replace(/\/+$/, '');
   } catch {
     return DEFAULT_APP_URL;
