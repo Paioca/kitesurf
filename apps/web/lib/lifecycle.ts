@@ -47,13 +47,14 @@ export async function deleteAccount(userId: string) {
     throw new LifecycleError('Você tem uma venda aguardando confirmação. Conclua ou cancele antes de excluir a conta.', 409);
   }
 
-  // Snapshot do PII ANTES da anonimização — necessário pra disputa/LGPD e pra qualquer
-  // reclamação de "quem era esse usuário?" depois. Sem este snapshot, deleteAccount era
-  // destruição irreversível sem rastro.
+  // Snapshot operacional ANTES da anonimização — necessário pra disputa/LGPD e pra
+  // qualquer reclamação de "quem era esse usuário?" depois. Documentos sensíveis ficam
+  // fora do audit mesmo que existam no schema.
   const priorState = await db.user.findUnique({
     where: { id: userId },
-    select: { name: true, lastName: true, email: true, phone: true, cpf: true, spot: true, country: true, instagramHandle: true, emailVerified: true, phoneVerified: true, status: true },
+    select: { name: true, lastName: true, email: true, phone: true, spot: true, country: true, instagramHandle: true, emailVerified: true, phoneVerified: true, status: true },
   });
+  const auditBefore = priorState ? omitSensitiveAuditFields(priorState) : null;
 
   const now = new Date();
   await db.$transaction(async (tx) => {
@@ -84,8 +85,13 @@ export async function deleteAccount(userId: string) {
       action: 'account.delete',
       entityType: 'user',
       entityId: userId,
-      before: priorState ?? null,
+      before: auditBefore,
       after: { name: 'Conta removida', email: `deleted_${userId}@removed.invalid`, phone: `deleted_${userId}`, status: 'blocked', deletedAt: now.toISOString() },
     });
   });
+}
+
+function omitSensitiveAuditFields<T extends Record<string, unknown>>(value: T) {
+  const { cpf: _cpf, ...safeValue } = value;
+  return safeValue;
 }

@@ -77,4 +77,19 @@ describe('deleteAccount', () => {
     expect(statuses).toContain('listing_removed');
     expect(mockDb.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Conta removida', status: 'blocked' }) }));
   });
+  it('não grava cpf no snapshot de auditoria da exclusão', async () => {
+    mockDb.deal.count.mockResolvedValue(0);
+    mockDb.user.findUnique.mockResolvedValue({ name: 'Old', email: 'old@x.com', phone: '+5511', cpf: '12345678900', emailVerified: true, phoneVerified: true, status: 'active' });
+
+    await deleteAccount('U');
+
+    expect(mockDb.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      select: expect.not.objectContaining({ cpf: true }),
+    }));
+    expect(mockDb.auditEvent.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        before: expect.not.objectContaining({ cpf: expect.anything() }),
+      }),
+    }));
+  });
 });
