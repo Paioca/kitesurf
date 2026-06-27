@@ -428,17 +428,12 @@ export async function getBrowseData(sp: SP) {
   const where = buildWhere(f, persp);
   const include = { images: { orderBy: { position: 'asc' as const }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true, user: { select: { id: true, name: true, avatarUrl: true } } };
 
-  // Ordenação por preço NO BANCO. O "preço efetivo" por perspectiva (barra:
-  // COALESCE(barraPrice,price); kite: COALESCE(kitePrice,price); all: price) está
-  // materializado nas colunas geradas kiteEffPrice/barraEffPrice — então orderBy +
-  // skip/take rodam no Postgres (índice parcial), sem carregar tudo em memória.
+  // Ordenação por preço NO BANCO. Mantemos em Listing.price porque é a coluna real do
+  // schema Prisma em produção; ordenação por preço efetivo de peça exige migration.
   const priceSort = f.sort === 'price_asc' || f.sort === 'price_desc';
   const orderBy: Prisma.ListingOrderByWithRelationInput[] = priceSort
     ? [
-        (() => {
-          const dir = f.sort === 'price_asc' ? 'asc' : 'desc';
-          return persp === 'barra' ? { barraEffPrice: dir } : persp === 'kite' ? { kiteEffPrice: dir } : { price: dir };
-        })(),
+        { price: f.sort === 'price_asc' ? 'asc' : 'desc' },
         { createdAt: 'desc' }, // desempate estável (mesmo critério da ordenação antiga)
       ]
     : [{ createdAt: 'desc' }];

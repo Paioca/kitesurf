@@ -85,6 +85,14 @@ describe('getBrowseData', () => {
       }),
     }));
   });
+
+  it('ordena por preço usando campo existente no schema Prisma', async () => {
+    await getBrowseData({ cat: 'kite', sort: 'price_asc' });
+
+    expect(mockDb.listing.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      orderBy: [{ price: 'asc' }, { createdAt: 'desc' }],
+    }));
+  });
 });
 
 describe('getFavorites', () => {
