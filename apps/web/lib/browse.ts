@@ -76,7 +76,9 @@ const MANG_LABEL: Record<string, string> = { original: 'Originais', ja_trocadas:
 // Renderiza o anúncio na "cara" certa pra busca. Na busca de barra, um kit vira
 // a sua barra (foto/comprimento/preço da barra); senão, a cara é o kite.
 function toCard(l: any, persp: Perspective): Card {
-  const showBarra = persp === 'barra' || (persp === 'all' && l.category?.slug === 'barra');
+  const showAvailableBarraFromPartialKit =
+    persp === 'all' && l.hasBarra === true && l.kiteSoldAt != null && l.barraSoldAt == null && l.barraPrice != null;
+  const showBarra = persp === 'barra' || showAvailableBarraFromPartialKit || (persp === 'all' && l.category?.slug === 'barra');
   // vendedor (quando a query incluiu l.user). rating preenchido em getBrowseData (batch).
   const seller = l.user ? { id: l.user.id, name: l.user.name ?? '', avatar: l.user.avatarUrl ?? null, rating: null as number | null, ratingCount: 0 } : null;
 

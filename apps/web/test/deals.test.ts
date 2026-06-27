@@ -30,7 +30,7 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.$queryRaw.mockResolvedValue([]); // lock FOR UPDATE — no-op no mock
   mockDb.listing.updateMany.mockResolvedValue({ count: 1 });
-  mockDb.listing.findUnique.mockResolvedValue({ title: 't', status: 'sold' });
+  mockDb.listing.findUnique.mockResolvedValue({ title: 't', ...listingMock({ status: 'sold' }), deletedAt: null });
   mockDb.listing.update.mockResolvedValue({});
   mockDb.deal.update.mockResolvedValue({});
   mockDb.deal.updateMany.mockResolvedValue({ count: 0 });
@@ -282,6 +282,23 @@ describe('respondReversal (§15 #11/#12)', () => {
     expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'withdrawn' } }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_reversed' }) }));
   });
+  it('N1 — aceitar correção destrava concorrentes vendidos a outro', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(reqReversal({ component: 'kite' }));
+    mockDb.listing.findUnique.mockResolvedValue({ title: 't', ...kit({ status: 'active', kiteSoldAt: new Date('2026-06-01') }), deletedAt: null });
+    await respondReversal('S', 'D', true);
+    expect(mockDb.request.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ listingId: 'L', status: 'sold_elsewhere', component: { in: ['conjunto', 'kite', 'barra'] } }),
+      data: { status: 'pending' },
+    }));
+  });
+  it('N1 — não reabre pedido de conjunto se a outra peça do kit ainda está vendida', async () => {
+    mockDb.deal.findUnique.mockResolvedValue(reqReversal({ component: 'kite' }));
+    mockDb.listing.findUnique.mockResolvedValue({ title: 't', ...kit({ status: 'sold', kiteSoldAt: new Date('2026-06-01'), barraSoldAt: new Date('2026-06-02') }), deletedAt: null });
+    await respondReversal('S', 'D', true);
+    const reopened = mockDb.request.updateMany.mock.calls.find((c: any) => c[0].where.status === 'sold_elsewhere')?.[0];
+    expect(reopened.where.component).toEqual({ in: ['kite'] });
+    expect(reopened.data.status).toBe('pending');
+  });
   it('recusar → disputed + dispute under_review (vai pra moderação)', async () => {
     mockDb.deal.findUnique.mockResolvedValue(reqReversal());
     await respondReversal('S', 'D', false);
@@ -315,6 +332,9 @@ describe('resolveDispute — admin (§11)', () => {
     await resolveDispute('ADM', 'DISP', 'uphold', 'sem evidência de devolução');
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_upheld', resolvedByAdminId: 'ADM' }) }));
+    expect(mockDb.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.arrayContaining([expect.objectContaining({ type: 'reversal_rejected', data: expect.objectContaining({ byModerator: true }) })]),
+    }));
   });
   it('reverse → Deal reversed + anúncio active + pedido withdrawn; dispute resolved_reversed', async () => {
     mockDb.dealDispute.findUnique.mockResolvedValue(disp());

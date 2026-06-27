@@ -132,6 +132,15 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const targets: Target[] = sell
     .filter((s) => s.available)
     .map((s) => ({ component: s.component, label: COMPONENT_LABEL[s.component], price: s.price, summary: compMeta[s.component].summary, itemNoun: compMeta[s.component].itemNoun }));
+  const primaryTarget = targets[0] ?? null;
+  const primaryPrice = primaryTarget?.price ?? l.price;
+  const primaryPriceNote = isKit
+    ? primaryTarget?.component === 'conjunto'
+      ? 'Conjunto · kite + barra'
+      : primaryTarget
+        ? `${primaryTarget.label} disponível`
+        : 'Conjunto · kite + barra'
+    : null;
   // peças reservadas (venda em andamento) — pra mostrar o estado, não só sumir o botão.
   const reservedLabels = sell.filter((s) => s.reserved).map((s) => COMPONENT_LABEL[s.component]);
 
@@ -184,8 +193,8 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint2, marginBottom: 10 }}>Preço do equipamento</div>
             {isKit ? (
               <div>
-                <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(l.price)}</div>
-                <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 4 }}>Conjunto · kite + barra</div>
+                <div style={{ fontFamily: font.sans, fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: color.primary }}>{formatBRL(primaryPrice)}</div>
+                <div style={{ fontSize: 13.5, color: color.inkMute, marginTop: 4 }}>{primaryPriceNote}</div>
                 {(kitePrice || barraPrice) ? (
                   <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {kitePrice ? <span style={l.kiteSoldAt ? soldPill : pricePill}>Só o kite: {formatBRL(kitePrice)}{l.kiteSoldAt ? ' · vendido' : ''}</span> : null}
@@ -310,8 +319,8 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
         {l.status === 'active' && !isOwner && targets.length > 0 ? (
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderTop: `1px solid ${color.lineCard}`, padding: '12px 18px calc(12px + env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, boxShadow: '0 -4px 18px rgba(20,72,62,0.10)' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkFaint2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.user?.name ? `Vendido por ${l.user.name}` : 'Preço'}</div>
-              <div style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary, lineHeight: 1.15 }}>{formatBRL(l.price)}</div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkFaint2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{primaryTarget ? primaryTarget.label : l.user?.name ? `Vendido por ${l.user.name}` : 'Preço'}</div>
+              <div style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: color.primary, lineHeight: 1.15 }}>{formatBRL(primaryPrice)}</div>
             </div>
             <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Fazer oferta</a>
           </div>

@@ -4,7 +4,7 @@
 export type NotificationLike = { type: string; data?: unknown };
 
 export function notificationText(n: NotificationLike): string {
-  const d = (n.data ?? {}) as { title?: string; requestType?: 'offer' | 'visit'; amount?: number | null };
+  const d = (n.data ?? {}) as { title?: string; requestType?: 'offer' | 'visit'; amount?: number | null; byModerator?: boolean };
   const t = d.title ? `"${d.title}"` : 'seu anúncio';
   switch (n.type) {
     case 'request_new': {
@@ -21,8 +21,8 @@ export function notificationText(n: NotificationLike): string {
     case 'sold_elsewhere': return `${t} foi vendido a outro comprador.`;
     case 'listing_removed': return d.title ? `O anúncio ${t} foi removido.` : 'Um anúncio que você acompanhava foi removido.';
     case 'reversal_requested': return `Pediram a correção da venda de ${t}. Responda nos seus pedidos.`;
-    case 'reversal_confirmed': return `A correção da venda de ${t} foi confirmada.`;
-    case 'reversal_rejected': return `A correção da venda de ${t} não foi aceita — está em análise.`;
+    case 'reversal_confirmed': return d.byModerator ? `A moderação reverteu a venda de ${t}.` : `A correção da venda de ${t} foi confirmada.`;
+    case 'reversal_rejected': return d.byModerator ? `A moderação manteve a venda de ${t}.` : `A correção da venda de ${t} não foi aceita. Está em análise.`;
     default: return 'Você tem uma novidade nas suas negociações.';
   }
 }

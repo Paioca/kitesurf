@@ -173,15 +173,37 @@ async function applyPieceSale(tx: any, deal: { id: string; listingId: string; bu
 // porque a venda foi desfeita e o item está de novo à venda. Decisão de produto (jun/2026):
 // voltar a paused deixava o anúncio invisível ao público e a copy prometia "volta para
 // venda" — o vendedor não reativava porque nem sabia. Agora volta visível de fato.
+//
+// Também destrava concorrentes que foram marcados como `sold_elsewhere` por esta venda:
+// se a peça voltou, os pedidos concorrentes voltam para `pending` e reaparecem para o
+// vendedor decidir. Sem isto, o anúncio reabria mas compradores antigos ficavam presos.
 async function unmarkPieceSale(tx: any, listingId: string, comp: Component) {
   const data: Record<string, unknown> = {};
   if (comp === 'kite') { data.kiteSoldAt = null; data.kiteSoldToUserId = null; }
   else if (comp === 'barra') { data.barraSoldAt = null; data.barraSoldToUserId = null; }
-  const l = await tx.listing.findUnique({ where: { id: listingId }, select: { status: true, deletedAt: true } });
+  const l = await tx.listing.findUnique({ where: { id: listingId }, select: { ...sellableSel, soldToUserId: true, deletedAt: true } });
   // Soft-deleted/removido por moderação (deletedAt != null) é TERMINAL: não ressuscita.
   // Só reabre o status de um anúncio vivo que tinha virado registro de venda.
   if (l && l.deletedAt == null && (l.status === 'sold' || l.status === 'archived')) { data.status = 'active'; data.soldToUserId = null; }
   await tx.listing.update({ where: { id: listingId }, data });
+  const nextListing = l && l.deletedAt == null
+    ? ({
+        ...l,
+        status: (data.status as string | undefined) ?? l.status,
+        kiteSoldAt: Object.prototype.hasOwnProperty.call(data, 'kiteSoldAt') ? (data.kiteSoldAt as Date | null) : l.kiteSoldAt,
+        barraSoldAt: Object.prototype.hasOwnProperty.call(data, 'barraSoldAt') ? (data.barraSoldAt as Date | null) : l.barraSoldAt,
+      } satisfies ListingLike)
+    : null;
+  const components = nextListing ? sellables(nextListing).filter((s) => s.available).map((s) => s.component) : [];
+  if (components.length === 0) return;
+  await tx.request.updateMany({
+    where: {
+      listingId,
+      status: 'sold_elsewhere',
+      component: { in: components },
+    },
+    data: { status: 'pending' },
+  });
 }
 
 // Reverter uma venda CONCLUÍDA desfaz o vínculo com o comprador: o pedido aceito dele
@@ -332,11 +354,11 @@ export async function resolveDispute(adminId: string, disputeId: string, action:
       await withdrawBuyerRequest(tx, deal);
       await tx.deal.update({ where: { id: deal.id }, data: { status: 'reversed', reversedAt: new Date() } });
       await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_reversed', resolvedByAdminId: adminId, resolvedAt: new Date(), resolution: resolution ?? null } });
-      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_confirmed' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '' } })));
+      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_confirmed' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '', byModerator: true } })));
     } else {
       await tx.deal.update({ where: { id: deal.id }, data: { status: 'completed', reversalRequestedAt: null } });
       await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'resolved_upheld', resolvedByAdminId: adminId, resolvedAt: new Date(), resolution: resolution ?? null } });
-      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_rejected' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '' } })));
+      await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_rejected' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '', byModerator: true } })));
     }
   });
 }

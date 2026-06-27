@@ -25,8 +25,21 @@ export async function moderate(
       const u = await tx.user.findUnique({ where: { id: targetId }, select: { id: true, admin: true } });
       if (!u) throw new ModerationError('Usuário não encontrado.', 404);
       if (u.admin) throw new ModerationError('Não é possível suspender um admin.', 400);
+      const listings = await tx.listing.findMany({
+        where: { userId: targetId, deletedAt: null, status: { in: ['active', 'paused'] } },
+        select: { id: true, title: true },
+      });
+      const affected = await tx.request.findMany({
+        where: { sellerId: targetId, status: { in: ['pending', 'accepted'] } },
+        select: { buyerId: true, listingId: true },
+        distinct: ['buyerId', 'listingId'],
+      });
       // bump de sessionVersion mata as sessões ativas na hora (getCurrentUser invalida).
       await tx.user.update({ where: { id: targetId }, data: { status: 'blocked', sessionVersion: { increment: 1 } } });
+      await tx.request.updateMany({ where: { sellerId: targetId, status: { in: ['pending', 'accepted'] } }, data: { status: 'listing_removed' } });
+      await tx.listing.updateMany({ where: { userId: targetId, deletedAt: null, status: { in: ['active', 'paused'] } }, data: { status: 'archived' } });
+      const titleByListing = new Map(listings.map((l) => [l.id, l.title]));
+      await emitMany(tx, affected.map((a) => ({ userId: a.buyerId, type: 'listing_removed' as const, listingId: a.listingId, actorId: moderatorId, data: { title: titleByListing.get(a.listingId) ?? '' } })));
     } else if (action === 'restore_user') {
       const u = await tx.user.findUnique({ where: { id: targetId }, select: { id: true } });
       if (!u) throw new ModerationError('Usuário não encontrado.', 404);
