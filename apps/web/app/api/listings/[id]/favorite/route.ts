@@ -10,10 +10,14 @@ export async function POST(_req: Request, props: { params: Promise<{ id: string 
   const params = await props.params;
   try {
     const user = await requireUser();
-    // Valida que o anúncio existe ANTES do upsert: um id inválido bateria na FK (P2003)
-    // e viraria um 500 genérico + ruído no Sentry. Aqui vira um 404 limpo.
-    const listing = await db.listing.findUnique({ where: { id: params.id }, select: { id: true } });
+    // Valida que o anúncio pode ser favoritado ANTES do upsert: id inválido, anúncio
+    // oculto/removido ou categoria desativada não entram no radar do usuário.
+    const listing = await db.listing.findFirst({
+      where: { id: params.id, status: 'active', deletedAt: null, category: { is: { active: true } } },
+      select: { id: true, userId: true },
+    });
     if (!listing) return NextResponse.json({ message: 'Anúncio não encontrado.' }, { status: 404 });
+    if (listing.userId === user.id) return NextResponse.json({ message: 'Você não pode favoritar o próprio anúncio.' }, { status: 400 });
     await db.favorite.upsert({
       where: { userId_listingId: { userId: user.id, listingId: params.id } },
       update: {},
