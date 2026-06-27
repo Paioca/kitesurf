@@ -12,7 +12,7 @@ type Dispute = {
   id: string; dealId: string; listingId: string; listingTitle: string; component: string;
   reason: string; description: string | null;
   openedById: string; openedBy: string; counterpartyId: string; counterparty: string;
-  createdAt: string;
+  createdAt: string; createdDate: string;
 };
 
 const REASON_LABEL: Record<string, string> = { devolvido: 'Item devolvido', engano: 'Marcado por engano', nao_aconteceu: 'A venda não aconteceu', outro: 'Outro motivo' };
@@ -49,7 +49,7 @@ export function DisputeList({ disputes: initial }: { disputes: Dispute[] }) {
               <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', color: color.inkFaint2 }}>Disputa</span>
               <a href={`/anuncio/${d.listingId}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: color.primary, textDecoration: 'none' }}>ver anúncio ›</a>
               <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 9px', borderRadius: 999, background: '#fbf0d8', color: color.ink }}>{COMP_LABEL[d.component] ?? d.component}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 11.5, color: color.inkFaint2 }}>{new Date(d.createdAt).toLocaleDateString('pt-BR')}</span>
+              <span style={{ marginLeft: 'auto', fontSize: 11.5, color: color.inkFaint2 }}>{d.createdDate}</span>
             </div>
             <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, lineHeight: 1.2 }}>{d.listingTitle}</div>
             <div style={{ fontSize: 13.5, color: color.ink, margin: '6px 0' }}>Motivo: <b>{REASON_LABEL[d.reason] ?? d.reason}</b></div>

@@ -7,9 +7,9 @@ import { useState } from 'react';
 import { color } from '../lib/tokens';
 import { useToast } from './Toast';
 
-type Act = { action: string; by: string; at: string; note: string | null };
+type Act = { action: string; by: string; at: string; date?: string; note: string | null };
 type TargetState = 'user_active' | 'user_blocked' | 'listing_active' | 'listing_removed' | null;
-type Report = { id: string; targetType: string; targetId: string; reason: string; status: string; createdAt: string; reporter: string; targetState: TargetState; actions: Act[] };
+type Report = { id: string; targetType: string; targetId: string; reason: string; status: string; createdAt: string; createdDate: string; reporter: string; targetState: TargetState; actions: Act[] };
 
 const STATUS_LABEL: Record<string, string> = { open: 'Aberta', reviewed: 'Revisada', actioned: 'Resolvida' };
 const STATUS_BG: Record<string, string> = { open: '#fbf0d8', reviewed: '#e8f1ec', actioned: '#eee' };
@@ -83,13 +83,13 @@ export function ModerationList({ reports: initial }: { reports: Report[] }) {
               <span style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: STATUS_BG[r.status] ?? '#eee', color: color.ink }}>{STATUS_LABEL[r.status] ?? r.status}</span>
             </div>
             <div style={{ fontSize: 14.5, color: color.ink, marginBottom: 8 }}>{r.reason}</div>
-            <div style={{ fontSize: 12, color: color.inkFaint2, marginBottom: 12 }}>por {r.reporter} · {new Date(r.createdAt).toLocaleDateString('pt-BR')}</div>
+            <div style={{ fontSize: 12, color: color.inkFaint2, marginBottom: 12 }}>por {r.reporter} · {r.createdDate}</div>
 
             {r.actions.length > 0 && (
               <div style={{ background: '#faf7f0', borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
                 {r.actions.map((a, i) => (
                   <div key={i} style={{ fontSize: 12, color: color.inkMute, lineHeight: 1.6 }}>
-                    <span style={{ fontWeight: 700, color: color.ink }}>{ACTION_LABEL[a.action] ?? a.action}</span> · {a.by} · {new Date(a.at).toLocaleDateString('pt-BR')}{a.note ? `. ${a.note}` : ''}
+                    <span style={{ fontWeight: 700, color: color.ink }}>{ACTION_LABEL[a.action] ?? a.action}</span> · {a.by} · {a.date ?? new Date(a.at).toLocaleDateString('pt-BR')}{a.note ? `. ${a.note}` : ''}
                   </div>
                 ))}
               </div>

@@ -12,6 +12,10 @@ import { DisputeList } from '../../components/DisputeList';
 
 export const dynamic = 'force-dynamic';
 
+function datePt(date: Date) {
+  return date.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
+}
+
 export default async function Moderacao() {
   const user = await getCurrentUser();
   if (!user || !user.admin) notFound();
@@ -47,9 +51,10 @@ export default async function Moderacao() {
     reason: r.reason,
     status: r.status,
     createdAt: r.createdAt.toISOString(),
+    createdDate: datePt(r.createdAt),
     reporter: r.reporter?.name ?? 'Não informado',
     targetState: targetState(r),
-    actions: r.actions.map((a) => ({ action: a.action, by: a.moderator?.name ?? 'Não informado', at: a.createdAt.toISOString(), note: a.note })),
+    actions: r.actions.map((a) => ({ action: a.action, by: a.moderator?.name ?? 'Não informado', at: a.createdAt.toISOString(), date: datePt(a.createdAt), note: a.note })),
   }));
 
   // 2ª fila (§11) — disputas de venda aguardando decisão do admin (contraparte recusou
@@ -80,6 +85,7 @@ export default async function Moderacao() {
     counterpartyId: d.counterparty?.id ?? d.counterpartyId,
     counterparty: d.counterparty?.name ?? 'Não informado',
     createdAt: d.createdAt.toISOString(),
+    createdDate: datePt(d.createdAt),
   }));
 
   return (
