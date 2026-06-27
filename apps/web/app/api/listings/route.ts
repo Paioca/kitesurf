@@ -42,6 +42,7 @@ const createSchema = z.object({
   barraBrandId: z.string().uuid().optional(),
   barraModelId: z.string().uuid().optional(),
   year: z.number().int().min(1990).max(2100).optional(),
+  barraYear: z.number().int().min(1990).max(2100).optional(),
   attributes: z.record(z.any()),
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
@@ -108,6 +109,9 @@ export async function POST(req: Request) {
     // Marca/modelo: existir, casar entre si e com a categoria da peça.
     const mainCatalogError = await validateCatalogPair({ brandId: dto.brandId, modelId: dto.modelId, categoryId: dto.categoryId, label: 'Equipamento' });
     if (mainCatalogError) return NextResponse.json({ message: mainCatalogError }, { status: 400 });
+    if ((category.slug === 'kite' || category.slug === 'barra') && !dto.year) {
+      return NextResponse.json({ message: 'Informe o ano do equipamento.' }, { status: 400 });
+    }
 
     const attributes = validateAttributes(category.slug === 'barra' ? conditionOnlySchema(category.attributeSchema) : category.attributeSchema as any, dto.attributes, { requireAll: true });
 
@@ -121,6 +125,7 @@ export async function POST(req: Request) {
       if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });
       const barraCatalogError = await validateCatalogPair({ brandId: dto.barraBrandId, modelId: dto.barraModelId, categoryId: barraCat.id, label: 'Barra', requireBoth: true });
       if (barraCatalogError) return NextResponse.json({ message: barraCatalogError }, { status: 400 });
+      if (!dto.barraYear) return NextResponse.json({ message: 'Informe o ano da barra.' }, { status: 400 });
       barraAttributes = validateAttributes(conditionOnlySchema(barraCat.attributeSchema), dto.barraAttributes ?? {}, { requireAll: true }) as Prisma.InputJsonValue;
       const hasKitePhoto = dto.images.some((i) => i.component === 'kite');
       const hasBarraPhoto = dto.images.some((i) => i.component === 'barra');
@@ -136,6 +141,7 @@ export async function POST(req: Request) {
         barraBrandId: hasBarra ? dto.barraBrandId ?? null : null,
         barraModelId: hasBarra ? dto.barraModelId ?? null : null,
         year: dto.year ?? null,
+        barraYear: hasBarra ? dto.barraYear ?? null : null,
         attributes: attributes as Prisma.InputJsonValue,
         title: dto.title,
         description: dto.description ?? null,

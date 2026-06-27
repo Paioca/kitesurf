@@ -34,6 +34,8 @@ export default async function EditarAnuncio(props: { params: Promise<{ id: strin
     title: l.title,
     description: l.description,
     price: l.price,
+    year: l.year,
+    barraYear: (l as any).barraYear,
     city: l.city,
     spot: l.spot,
     shippable: l.shippable,

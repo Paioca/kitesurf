@@ -131,7 +131,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
       )}
 
       {!showOffer ? (
-        <button onClick={() => { setShowOffer(true); setConfirmVisit(false); setCiente(false); }} disabled={!!busy} style={{ ...btnOutline, marginTop: 10 }}>Fazer uma oferta</button>
+        <button onClick={() => { setShowOffer(true); setConfirmVisit(false); setCiente(false); }} disabled={!!busy} style={{ ...btnOutline, marginTop: 10 }}>Fazer uma oferta antes</button>
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
           <div style={{ position: 'relative', marginBottom: 12 }}>

@@ -8,6 +8,11 @@ function brl(c: number) {
   return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function pickPhoto(images: Array<{ component: string | null; thumbUrl: string | null; url: string }>, component: string) {
+  const img = images.find((i) => i.component === component) ?? images[0];
+  return img?.thumbUrl ?? img?.url ?? null;
+}
+
 // cache(): generateMetadata + a página do perfil compartilham uma query/request.
 export const getProfile = cache(async (id: string) => {
   const user = await db.user.findFirst({
@@ -38,7 +43,7 @@ export const getProfile = cache(async (id: string) => {
       where: publicListingWhere,
       orderBy: { createdAt: 'desc' },
       take: 12, // só exibição; o total é activeCount
-      include: { images: { orderBy: { position: 'asc' }, take: 1 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
+      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
     }),
     db.listing.count({ where: publicListingWhere }),
   ]);
@@ -48,12 +53,23 @@ export const getProfile = cache(async (id: string) => {
 
   const listings: Card[] = listingsRaw.map((l) => {
     const a = (l.attributes ?? {}) as Record<string, any>;
+    const ba = (l.barraAttributes ?? {}) as Record<string, any>;
     const sizeM2 = a.size_m2 != null ? String(a.size_m2) : null;
+    const showBarra = l.hasBarra === true && l.kiteSoldAt != null && l.barraSoldAt == null && l.barraPrice != null;
+    if (showBarra) {
+      const legacyBrand = typeof ba.compatible_brand === 'string' ? ba.compatible_brand : '';
+      return {
+        id: l.id, brand: l.barraBrand?.name ?? legacyBrand, model: l.barraModel?.name ?? 'Barra do kit', year: l.barraYear ?? null,
+        priceCents: l.barraPrice ?? l.price, priceLabel: brl(l.barraPrice ?? l.price), priceNote: 'só a barra', cat: 'Barra', catSlug: 'barra',
+        ship: l.shippable, city: l.city, sizeM2: null, sizeLabel: 'Barra', condLabel: null,
+        repair: false, includesBar: false, partOfKit: true, favorited: false, photo: pickPhoto(l.images, 'barra'),
+      };
+    }
     return {
       id: l.id, brand: l.brand?.name ?? '', model: l.model?.name ?? l.title, year: l.year ?? null,
       priceCents: l.price, priceLabel: brl(l.price), priceNote: l.hasBarra ? 'kit completo' : null, cat: l.category?.namePt ?? '', catSlug: l.category?.slug ?? '',
       ship: l.shippable, city: l.city, sizeM2, sizeLabel: sizeM2 ? `${sizeM2} m²` : (a.harness_size || l.category?.namePt || 'Não informado'), condLabel: null,
-      repair: Number(a.repairs_count ?? 0) > 0, includesBar: l.hasBarra === true, partOfKit: false, favorited: false, photo: l.images[0]?.thumbUrl ?? l.images[0]?.url ?? null,
+      repair: Number(a.repairs_count ?? 0) > 0, includesBar: l.hasBarra === true, partOfKit: false, favorited: false, photo: pickPhoto(l.images, 'kite'),
     };
   });
 

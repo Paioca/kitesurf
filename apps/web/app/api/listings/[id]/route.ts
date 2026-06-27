@@ -35,6 +35,8 @@ const patchSchema = z.object({
   title: z.string().min(4).max(120).optional(),
   description: z.string().max(4000).nullable().optional(),
   price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).optional(),
+  year: z.number().int().min(1990).max(2100).nullable().optional(),
+  barraYear: z.number().int().min(1990).max(2100).nullable().optional(),
   city: z.string().min(1).optional(),
   spot: z.string().nullable().optional(),
   shippable: z.boolean().optional(),
@@ -117,6 +119,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.price !== undefined) data.price = dto.price;
+    if (dto.year !== undefined) data.year = dto.year;
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.spot !== undefined) data.spot = dto.spot;
     if (dto.shippable !== undefined) data.shippable = dto.shippable;
@@ -145,6 +148,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
       if (dto.kitePrice !== undefined) data.kitePrice = dto.kitePrice;
       if (dto.barraPrice !== undefined) data.barraPrice = dto.barraPrice;
+      if (dto.barraYear !== undefined) (data as any).barraYear = dto.barraYear;
       if (dto.barraBrandId !== undefined || dto.barraModelId !== undefined || dto.barraAttributes !== undefined) {
         const barraCat = await db.category.findUnique({ where: { slug: 'barra' } });
         if (!barraCat) return NextResponse.json({ message: 'Categoria de barra ausente.' }, { status: 400 });

@@ -178,6 +178,7 @@ model Listing {
   barraBrandId    String?
   barraModelId    String?
   year            Int?
+  barraYear       Int?
   attributes      Json          @default("{}") // validado contra Category.attributeSchema (peça primária)
   title           String
   description     String?

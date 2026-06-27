@@ -88,6 +88,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const ba = ((l as any).barraAttributes ?? {}) as Record<string, any>;
   const kitePrice = (l as any).kitePrice as number | null;
   const barraPrice = (l as any).barraPrice as number | null;
+  const barraYear = (l as any).barraYear as number | null;
   const barraBrandName = (l as any).barraBrand?.name ?? (typeof ba.compatible_brand === 'string' ? ba.compatible_brand : null);
   const barraModelName = (l as any).barraModel?.name ?? null;
   const barraName = [barraBrandName, barraModelName].filter(Boolean).join(' ') || 'Barra do kit';
@@ -125,7 +126,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const visitSummary = summaryParts.join(', ');
 
   // Alvos vendáveis (peça única → 1 alvo 'conjunto'; kit com avulso → 2-3 alvos).
-  const barraSummary = [barraName, ba.condition ? (CONDITION[ba.condition] ?? ba.condition) : '', `em ${l.city}${l.spot ? ` (${l.spot})` : ''}`].filter(Boolean).join(', ');
+  const barraSummary = [barraName, barraYear ? String(barraYear) : '', ba.condition ? (CONDITION[ba.condition] ?? ba.condition) : '', `em ${l.city}${l.spot ? ` (${l.spot})` : ''}`].filter(Boolean).join(', ');
   const compMeta: Record<Component, { summary: string; itemNoun: string }> = {
     conjunto: { summary: visitSummary, itemNoun },
     kite: { summary: visitSummary, itemNoun: 'o kite' },
@@ -234,6 +235,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 14, color: color.ink }}>
                 {barraBrandName && <div><span style={{ color: color.inkFaint }}>Marca: </span><b>{barraBrandName}</b></div>}
                 {barraModelName && <div><span style={{ color: color.inkFaint }}>Modelo: </span><b>{barraModelName}</b></div>}
+                {barraYear && <div><span style={{ color: color.inkFaint }}>Ano: </span><b>{barraYear}</b></div>}
                 {ba.condition && <div><span style={{ color: color.inkFaint }}>Estado: </span><b>{CONDITION[ba.condition] ?? ba.condition}</b></div>}
               </div>
             </div>

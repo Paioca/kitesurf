@@ -95,7 +95,7 @@ function toCard(l: any, persp: Perspective): Card {
       // cai para compatible_brand ou texto genérico.
       brand: barraBrandName,
       model: barraModelName,
-      year: null,
+      year: kit ? l.barraYear ?? null : l.year ?? null,
       priceCents: price,
       priceLabel: brl(price),
       priceNote: kit ? 'só a barra' : null, // a barra é uma peça do kit, não o conjunto

@@ -30,8 +30,10 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
   const [title, setTitle] = useState<string>(data.title ?? '');
   const [attrs, setAttrs] = useState<Record<string, any>>(data.attributes ?? {});
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>(data.barraAttributes ?? {});
+  const [year, setYear] = useState<string>(data.year != null ? String(data.year) : '');
   const [barraBrandId, setBarraBrandId] = useState<string>(data.barraBrandId ?? '');
   const [barraModelId, setBarraModelId] = useState<string>(data.barraModelId ?? '');
+  const [barraYear, setBarraYear] = useState<string>(data.barraYear != null ? String(data.barraYear) : '');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [images, setImages] = useState<Img[]>(data.images ?? []);
   const [price, setPrice] = useState<string>(String(Math.round((data.price ?? 0) / 100)));
@@ -54,6 +56,7 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
   const barraBrandOpts = useMemo(() => brands.filter((b) => b.models.some((m) => m.categoryId === data.barraCategoryId)).map((b) => ({ value: b.id, label: b.name })), [brands, data.barraCategoryId]);
   const barraModels = useMemo(() => (barraBrand?.models ?? []).filter((m) => m.categoryId === data.barraCategoryId), [barraBrand, data.barraCategoryId]);
   const barraModelOpts = useMemo(() => barraModels.map((m) => ({ value: m.id, label: m.name })), [barraModels]);
+  const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
 
   useEffect(() => {
     if (!isKit) return;
@@ -83,12 +86,14 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
     try {
       const body: any = {
         title, price: Math.round(Number(price) * 100),
+        year: year ? Number(year) : null,
         city, spot: spot || null, shippable, attributes: attrs, images,
       };
       if (isKit) {
         body.kitePrice = sellKite ? Math.round(Number(kitePrice) * 100) : null;
         body.barraPrice = sellBarra ? Math.round(Number(barraPrice) * 100) : null;
         body.barraAttributes = barraAttrs;
+        if (barraYear) body.barraYear = Number(barraYear);
         if (barraBrandId) body.barraBrandId = barraBrandId;
         if (barraModelId) body.barraModelId = barraModelId;
       }
@@ -119,6 +124,10 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
         <input className="kl-input" value={title} onChange={(e) => setTitle(e.target.value)} />
       </Section>
 
+      <Section title={isKit ? 'Ano do kite' : 'Ano'}>
+        <CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder="Selecione o ano" />
+      </Section>
+
       <Section title={isKit ? 'Ficha do kite' : 'Ficha'}>
         <Fields schema={mainSchema} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
       </Section>
@@ -132,6 +141,10 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
             <div>
               <Label>Modelo da barra{barraModels.length > 0 ? ' *' : ''}</Label>
               <SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? 'Escolha a marca primeiro' : barraModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setBarraModelId} disabled={!barraBrandId || barraModels.length === 0} />
+            </div>
+            <div>
+              <Label>Ano da barra</Label>
+              <CompactSelect options={yearOpts} value={barraYear} onChange={setBarraYear} placeholder="Selecione o ano da barra" />
             </div>
           </div>
           <Fields schema={barraSchema} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
@@ -252,6 +265,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 function Label({ children }: { children: React.ReactNode }) { return <label style={{ fontSize: 13, fontWeight: 600, color: color.inkSoft, display: 'block', marginBottom: 7 }}>{children}</label>; }
+function CompactSelect({ options, value, onChange, placeholder }: { options: string[]; value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <select className="kl-select" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
 // value = dígitos (reais inteiros). Display formatado; sem type=number (bug do separador).
 function PriceInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const display = value ? Number(value).toLocaleString('pt-BR') : '';

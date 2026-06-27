@@ -50,6 +50,7 @@ export default function Criar() {
   const [barraBrandId, setBarraBrandId] = useState('');
   const [barraModelId, setBarraModelId] = useState('');
   const [year, setYear] = useState('');
+  const [barraYear, setBarraYear] = useState('');
   const [attrs, setAttrs] = useState<Record<string, any>>({}); // ficha da peça principal (kite, ou barra no barra-only)
   const [barraAttrs, setBarraAttrs] = useState<Record<string, any>>({}); // ficha da barra do kit
   const [images, setImages] = useState<Img[]>([]);
@@ -90,7 +91,7 @@ export default function Criar() {
         if (d && d.kind) {
           setKind(d.kind); setBrandId(d.brandId ?? ''); setModelId(d.modelId ?? '');
           setBarraBrandId(d.barraBrandId ?? ''); setBarraModelId(d.barraModelId ?? '');
-          setYear(d.year ?? '');
+          setYear(d.year ?? ''); setBarraYear(d.barraYear ?? '');
           setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
           setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
           setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
@@ -106,9 +107,9 @@ export default function Criar() {
   useEffect(() => {
     if (!hydrated.current || !kind) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ kind, brandId, modelId, barraBrandId, barraModelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ kind, brandId, modelId, barraBrandId, barraModelId, year, barraYear, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step }));
     } catch {}
-  }, [kind, brandId, modelId, barraBrandId, barraModelId, year, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
+  }, [kind, brandId, modelId, barraBrandId, barraModelId, year, barraYear, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
 
   useEffect(() => { if (createdId) { try { localStorage.removeItem(DRAFT_KEY); } catch {} } }, [createdId]);
 
@@ -154,11 +155,11 @@ export default function Criar() {
   const autoTitle = useMemo(() => {
     const b = brand?.name;
     const model = brand?.models.find((m) => m.id === modelId)?.name;
-    const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name].filter(Boolean).join(' ');
-    if (kind === 'barra') return ['Barra', b, model].filter(Boolean).join(' · ');
+    const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name, barraYear].filter(Boolean).join(' ');
+    if (kind === 'barra') return ['Barra', b, model, year].filter(Boolean).join(' · ');
     const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? CONDITION_LABEL[attrs.condition] : ''].filter(Boolean).join(' · ');
     return kind === 'kit' ? (base ? `${base} + ${bmBarra || 'Barra'}` : '') : base;
-  }, [brand, modelId, barraBrand, barraModelId, attrs, year, kind]);
+  }, [brand, modelId, barraBrand, barraModelId, attrs, year, barraYear, kind]);
 
   function selectKind(k: Kind) {
     const prev = kind;
@@ -172,6 +173,7 @@ export default function Criar() {
       }
       setBarraBrandId('');
       setBarraModelId('');
+      setBarraYear('');
       setBarraAttrs({});
       setSellBarraAlone(false);
       setBarraPrice('');
@@ -181,6 +183,7 @@ export default function Criar() {
       setModelId('');
       setBarraBrandId('');
       setBarraModelId('');
+      setBarraYear('');
       setYear('');
       setAttrs({});
       setBarraAttrs({});
@@ -198,6 +201,7 @@ export default function Criar() {
       }
       setBarraBrandId('');
       setBarraModelId('');
+      setBarraYear('');
       setBarraAttrs({});
     }
   }
@@ -255,8 +259,8 @@ export default function Criar() {
 
   // Fase 0: TODA a ficha é obrigatória (não só o que o schema marca como required),
   // além de marca, ano e modelo (modelo só quando a marca tem modelos cadastrados).
-  const mainHeadOk = !!brandId && (kindModels.length === 0 || !!modelId) && (kind === 'barra' || !!year);
-  const barraHeadOk = !isKit || (!!barraBrandId && (barraKindModels.length === 0 || !!barraModelId));
+  const mainHeadOk = !!brandId && (kindModels.length === 0 || !!modelId) && !!year;
+  const barraHeadOk = !isKit || (!!barraBrandId && (barraKindModels.length === 0 || !!barraModelId) && !!barraYear);
   const headOk = mainHeadOk && barraHeadOk;
   // Erro de faixa dos campos numéricos (ex.: tamanho 3–20), client-side: bloqueia o
   // avanço de passo ANTES do publish — o erro não fica só na tela final.
@@ -322,7 +326,9 @@ export default function Criar() {
           categoryId: mainCat?.id, brandId: brandId || undefined, modelId: modelId || undefined,
           barraBrandId: isKit ? barraBrandId || undefined : undefined,
           barraModelId: isKit ? barraModelId || undefined : undefined,
-          year: year ? Number(year) : undefined, attributes: attrs,
+          year: year ? Number(year) : undefined,
+          barraYear: isKit && barraYear ? Number(barraYear) : undefined,
+          attributes: attrs,
           title: autoTitle || mainCat?.namePt || 'Anúncio', price: Math.round(Number(price) * 100),
           city, spot: spot || undefined, pickup, shippable, images,
           hasBarra: isKit,
@@ -459,7 +465,7 @@ export default function Criar() {
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
                     <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={mainBrandOpts} placeholder="Selecione a marca" onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
                     <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
-                    {kind !== 'barra' && <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano *</Label><CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder="Selecione o ano" /></Cell>}
+                    <Cell style={{ gridColumn: '1 / -1' }}><Label>{isKit ? 'Ano do kite *' : 'Ano *'}</Label><CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder="Selecione o ano" /></Cell>
                     <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
                   </div>
                   {isKit && (
@@ -467,6 +473,7 @@ export default function Criar() {
                       <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
                       <Cell><Label>Marca da barra *</Label><SearchSelect value={barraBrandId} options={barraBrandOpts} placeholder="Selecione a marca da barra" onChange={(v) => { setBarraBrandId(v); setBarraModelId(''); }} /></Cell>
                       <Cell><Label>Modelo da barra{barraKindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? 'Escolha a marca primeiro' : barraKindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setBarraModelId} disabled={!barraBrandId || barraKindModels.length === 0} /></Cell>
+                      <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano da barra *</Label><CompactSelect options={yearOpts} value={barraYear} onChange={setBarraYear} placeholder="Selecione o ano da barra" /></Cell>
                       <Fields props={barraEss} required={Object.keys(barraEss)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
                     </div>
                   )}
@@ -783,8 +790,11 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
 }
 // Ícones temáticos dos cards de categoria (refresh). Stroke = currentColor (herda do card).
 const IconKite = (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 3C6 6.5 5 9.8 5 11.8c3-1 5-1 7 .2 2-1.2 4-1.2 7-.2 0-2-1-5.3-7-8.8Z" /><path d="M12 12v8" />
+  <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16 4.5 25 15.4 16 27.5 7 15.4 16 4.5Z" />
+    <path d="M16 4.5v23" />
+    <path d="M7 15.4c3.3-1.5 6.3-1.4 9 .1 2.7-1.5 5.7-1.6 9-.1" />
+    <path d="M16 27.5c-1.1 1-2.2 1.5-3.5 1.5" />
   </svg>
 );
 const IconBarra = (
@@ -793,8 +803,13 @@ const IconBarra = (
   </svg>
 );
 const IconKit = (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 2.5C8 4.8 7.2 6.8 7.2 8.1c2-.7 3.3-.7 4.8.1 1.5-.8 2.8-.8 4.8-.1 0-1.3-.8-3.3-4.8-5.6Z" /><line x1="5" y1="15.5" x2="19" y2="15.5" /><path d="M12 8.2v7.3" />
+  <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16 3.8 23.3 12.4 16 21.8 8.7 12.4 16 3.8Z" />
+    <path d="M16 3.8v18" />
+    <path d="M8.7 12.4c2.7-1.1 5.1-1.1 7.3.1 2.2-1.2 4.6-1.2 7.3-.1" />
+    <path d="M10.5 27.2h11" />
+    <path d="M12.3 25.8v2.8M19.7 25.8v2.8" />
+    <path d="M15 21.5 12.3 25.8M17 21.5l2.7 4.3" />
   </svg>
 );
 

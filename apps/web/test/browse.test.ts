@@ -20,6 +20,7 @@ const kitListing = (over: Record<string, unknown> = {}) => ({
   barraBrand: null,
   barraModel: null,
   year: 2023,
+  barraYear: 2022,
   price: 620000,
   hasBarra: true,
   kitePrice: 480000,
@@ -47,6 +48,7 @@ describe('getFavorites', () => {
     expect(card.catSlug).toBe('barra');
     expect(card.brand).toBe('North');
     expect(card.model).toBe('Barra do kit');
+    expect(card.year).toBe(2022);
     expect(card.priceCents).toBe(180000);
     expect(card.sizeLabel).toBe('Barra');
     expect(card.photo).toBe('/barra.jpg');
@@ -84,6 +86,7 @@ describe('getFavorites', () => {
     expect(card.catSlug).toBe('barra');
     expect(card.brand).toBe('Duotone');
     expect(card.model).toBe('Trust Bar');
+    expect(card.year).toBe(2022);
   });
 
   it('não mostra favorito quando todas as peças estão reservadas', async () => {
