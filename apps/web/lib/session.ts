@@ -2,6 +2,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { db } from './db';
+import { sessionCookieDomain } from './app-url';
 
 const COOKIE = 'kite_session';
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
@@ -42,6 +43,14 @@ function resolveSecrets(): string[] {
 }
 const SECRETS = resolveSecrets();
 const SIGNING_SECRET = SECRETS[0];
+const COOKIE_DOMAIN = process.env.NODE_ENV === 'production' ? sessionCookieDomain() : undefined;
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: MAX_AGE,
+};
 
 // Cria a sessão num cookie httpOnly (anti-XSS) — não vai pro localStorage.
 // SEMPRE assina com o primeiro secret da lista (a "current key").
@@ -50,17 +59,23 @@ export async function setSession(userId: string, sessionVersion = 0) {
   // pin, uma troca futura do secret pra KeyObject/PEM, ou mudança de default da lib,
   // poderia alargar silenciosamente os algoritmos aceitos (CWE-347). Casa com o verify.
   const token = jwt.sign({ sub: userId, sv: sessionVersion }, SIGNING_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-  (await cookies()).set(COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: MAX_AGE,
-  });
+  const jar = await cookies();
+  // Mantém o host atual e o domínio canônico com o MESMO valor. Isso neutraliza
+  // cookies antigos host-only em www/apex durante a transição para .kitetropos.com.
+  jar.set(COOKIE, token, COOKIE_OPTIONS);
+  if (COOKIE_DOMAIN) jar.set(COOKIE, token, { ...COOKIE_OPTIONS, domain: COOKIE_DOMAIN });
 }
 
 export async function clearSession() {
-  (await cookies()).delete(COOKIE);
+  const jar = await cookies();
+  jar.delete(COOKIE);
+  if (COOKIE_DOMAIN) {
+    jar.set(COOKIE, '', {
+      ...COOKIE_OPTIONS,
+      domain: COOKIE_DOMAIN,
+      maxAge: 0,
+    });
+  }
 }
 
 // Revoga TODAS as sessões emitidas para um usuário, incrementando sessionVersion.
@@ -77,39 +92,53 @@ export async function revokeAllSessions(userId: string): Promise<number> {
   return updated.sessionVersion;
 }
 
-async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> {
-  const token = (await cookies()).get(COOKIE)?.value;
-  if (!token) return null;
-  // Tenta cada secret na ordem (current primeiro, depois os antigos). Aceita o primeiro
-  // que verificar. Se nenhum verificar, sessão inválida.
-  for (const secret of SECRETS) {
-    try {
-      // algorithms allowlist: só HS256. Fecha alg-confusion/alg:none de forma explícita
-      // (jsonwebtoken v9 já rejeita, mas o pin trava o contrato contra mudança futura).
-      const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as { sub: string; sv?: number };
-      return { sub: payload.sub, sv: payload.sv ?? 0 };
-    } catch {
-      // tenta o próximo
+async function getSessionPayloads(): Promise<Array<{ sub: string; sv: number }>> {
+  const tokens = Array.from(new Set((await cookies()).getAll(COOKIE).map((c) => c.value).filter(Boolean)));
+  if (tokens.length === 0) return [];
+  const sessions: Array<{ sub: string; sv: number }> = [];
+  // Tenta cada secret na ordem (current primeiro, depois os antigos). Coleta todos os
+  // cookies assinados de forma válida porque um host-only antigo pode aparecer antes do
+  // cookie canônico de domínio e ainda assim estar com sessionVersion vencida.
+  for (const token of tokens) {
+    for (const secret of SECRETS) {
+      try {
+        // algorithms allowlist: só HS256. Fecha alg-confusion/alg:none de forma explícita
+        // (jsonwebtoken v9 já rejeita, mas o pin trava o contrato contra mudança futura).
+        const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as { sub: string; sv?: number };
+        sessions.push({ sub: payload.sub, sv: payload.sv ?? 0 });
+        break;
+      } catch {
+        // tenta o próximo secret/token
+      }
     }
   }
-  return null;
+  return sessions;
+}
+
+async function getSessionPayload(): Promise<{ sub: string; sv: number } | null> {
+  return (await getSessionPayloads())[0] ?? null;
 }
 
 export async function getUserId(): Promise<string | null> {
+  const user = await getCurrentUser();
+  if (user) return user.id;
   return (await getSessionPayload())?.sub ?? null;
 }
 
 // Usuário logado (ou null). Usar em Server Components e Route Handlers.
 export async function getCurrentUser() {
-  const session = await getSessionPayload();
-  if (!session) return null;
-  const user = await db.user.findUnique({ where: { id: session.sub } });
-  if (!user || user.status === 'blocked') return null;
-  // Defesa em profundidade: rejeita conta soft-deletada mesmo que algum fluxo futuro
-  // reative `status` sem limpar `deletedAt`. Não depende só de status === 'blocked'.
-  if (user.deletedAt) return null;
-  if (user.sessionVersion !== session.sv) return null;
-  return user;
+  const sessions = await getSessionPayloads();
+  if (sessions.length === 0) return null;
+  for (const session of sessions) {
+    const user = await db.user.findUnique({ where: { id: session.sub } });
+    if (!user || user.status === 'blocked') continue;
+    // Defesa em profundidade: rejeita conta soft-deletada mesmo que algum fluxo futuro
+    // reative `status` sem limpar `deletedAt`. Não depende só de status === 'blocked'.
+    if (user.deletedAt) continue;
+    if (user.sessionVersion !== session.sv) continue;
+    return user;
+  }
+  return null;
 }
 
 // Exige login; lança se não houver — para mutations.

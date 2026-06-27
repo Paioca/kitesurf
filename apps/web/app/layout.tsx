@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ToastProvider } from '../components/Toast';
 import { ConfirmProvider } from '../components/ConfirmDialog';
+import { publicBaseUrl } from '../lib/app-url';
 import './globals.css';
 
 // Fontes self-hosted via next/font: elimina o request render-blocking ao
@@ -25,7 +26,7 @@ const spectral = Spectral({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'),
+  metadataBase: new URL(publicBaseUrl()),
   title: 'Kitetropos | kite e barra com mais confiança',
   description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
 };

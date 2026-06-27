@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { EmailTokenPurpose } from '@prisma/client';
 import { db } from './db';
 import { childLogger } from './logger';
+import { appUrl } from './app-url';
 
 const log = childLogger('email-security');
 
@@ -43,11 +44,6 @@ export async function findValidEmailToken(raw: string, purpose: EmailTokenPurpos
   const token = await db.emailToken.findUnique({ where: { tokenHash: hashEmailToken(raw) } });
   if (!token || token.purpose !== purpose || token.consumedAt || token.expiresAt <= new Date()) return null;
   return token;
-}
-
-function appUrl(path: string) {
-  const base = (process.env.APP_URL ?? 'https://kitetropos.com').replace(/\/$/, '');
-  return `${base}${path}`;
 }
 
 function escapeHtml(value: string) {

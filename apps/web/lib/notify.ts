@@ -1,6 +1,7 @@
 import 'server-only';
 import { childLogger } from './logger';
 import { db } from './db';
+import { appUrl } from './app-url';
 
 const log = childLogger('notify');
 
@@ -77,7 +78,7 @@ export async function notifyNewRequest(opts: { sellerPhone: string; type: 'offer
 
   const what = opts.type === 'offer' ? 'uma oferta' : 'um pedido de visita';
   const who = opts.buyerName ? `${opts.buyerName} fez` : 'Você recebeu';
-  const url = `${process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'}/pedidos`;
+  const url = appUrl('/pedidos');
   const to = opts.sellerPhone.replace(/[^\d+]/g, '');
 
   let body: URLSearchParams;
@@ -125,7 +126,7 @@ export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPh
   const smsFrom = process.env.TWILIO_SMS_FROM;
 
   const sellerWa = opts.sellerPhone ? `https://wa.me/${opts.sellerPhone.replace(/\D/g, '')}` : '';
-  const url = `${process.env.APP_URL ?? 'https://kitesurf-web.vercel.app'}/pedidos`;
+  const url = appUrl('/pedidos');
   const to = opts.buyerPhone.replace(/[^\d+]/g, '');
 
   let body: URLSearchParams;
