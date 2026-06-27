@@ -192,6 +192,8 @@ export type RequestState = {
   whatsapp: string | null;
 };
 
+const DETAIL_VISIBLE_REQUEST_STATUSES = new Set(['pending', 'accepted', 'declined']);
+
 // Estado dos pedidos do comprador num anúncio, POR COMPONENTE (pro detalhe).
 export async function getListingRequestState(userId: string, listingId: string): Promise<Record<Component, RequestState>> {
   const [reqs, deals] = await Promise.all([
@@ -201,7 +203,7 @@ export async function getListingRequestState(userId: string, listingId: string):
   const dkey = (l: string, b: string, s: string, c: string) => `${l}|${b}|${s}|${c}`;
   const dmap = new Map(deals.map((d) => [dkey(d.listingId, d.buyerId, d.sellerId, d.component), d]));
   const forComp = (c: Component): RequestState => {
-    const cr = reqs.filter((r) => r.component === c);
+    const cr = reqs.filter((r) => r.component === c && DETAIL_VISIBLE_REQUEST_STATUSES.has(r.status));
     const offer = cr.find((r) => r.type === 'offer') ?? null;
     const visit = cr.find((r) => r.type === 'visit') ?? null;
     const accepted = cr.find((r) => r.status === 'accepted');

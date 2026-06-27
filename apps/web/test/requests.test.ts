@@ -236,4 +236,15 @@ describe('getListingRequestState', () => {
       conjunto: { visit: { id: 'VISIT1', status: 'pending' }, whatsapp: null },
     });
   });
+
+  it('não mostra visita retirada como pedido enviado no detalhe do anúncio', async () => {
+    mockDb.request.findMany.mockResolvedValue([
+      { ...reqMock({ id: 'VISIT1', status: 'withdrawn', type: 'visit', amount: null }), seller: { phone: '+5599999990000' } },
+    ]);
+    mockDb.deal.findMany.mockResolvedValue([]);
+
+    await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
+      conjunto: { visit: null, whatsapp: null },
+    });
+  });
 });
