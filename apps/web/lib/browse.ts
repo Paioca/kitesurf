@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { db } from './db';
 import { getCurrentUser } from './session';
 import { parseFilters, PRICE_RANGES, PRICE_LABELS, SIZE_RANGES, SIZE_LABELS, type SP } from './filters';
-import type { Component } from './components';
+import { sellables, applyReservations, type Component, type ListingLike } from './components';
 
 export const PAGE_SIZE = 24;
 
@@ -489,7 +489,22 @@ export async function getFavorites(userId: string): Promise<Card[]> {
   const favs = await db.favorite.findMany({
     where: { userId, listing: { status: 'active', deletedAt: null, category: { is: { active: true } } } },
     orderBy: { createdAt: 'desc' },
-    include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true } } },
+    include: { listing: { include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, category: true, deals: { where: { status: 'seller_confirmed' }, select: { component: true } } } } },
   });
-  return favs.map((f) => ({ ...toCard(f.listing, 'all'), favorited: true }));
+  return favs.flatMap((f) => {
+    const card = toFavoriteCard(f.listing);
+    return card ? [{ ...card, favorited: true }] : [];
+  });
+}
+
+function toFavoriteCard(l: any): Card | null {
+  const reserved = (l.deals ?? []).map((d: { component: Component }) => d.component);
+  const available = applyReservations(sellables(l as ListingLike), reserved).filter((s) => s.available);
+  if (available.length === 0) return null;
+
+  const kiteAvailable = available.some((s) => s.component === 'conjunto' || s.component === 'kite');
+  const barraAvailable = available.some((s) => s.component === 'barra');
+  if (l.hasBarra === true && !kiteAvailable && barraAvailable) return toCard(l, 'barra');
+
+  return toCard(l, 'all');
 }

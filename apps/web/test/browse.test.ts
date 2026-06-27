@@ -30,6 +30,7 @@ const kitListing = (over: Record<string, unknown> = {}) => ({
   kiteSoldAt: new Date('2026-06-01T00:00:00.000Z'),
   barraSoldAt: null,
   images: [{ component: 'barra', thumbUrl: '/barra.jpg', url: '/barra-full.jpg' }, { component: 'kite', thumbUrl: '/kite.jpg', url: '/kite-full.jpg' }],
+  deals: [],
   ...over,
 });
 
@@ -49,5 +50,32 @@ describe('getFavorites', () => {
     expect(card.photo).toBe('/barra.jpg');
     expect(card.partOfKit).toBe(true);
     expect(card.includesBar).toBe(false);
+  });
+
+  it('kit favorito com kite reservado mostra a barra disponível', async () => {
+    mockDb.favorite.findMany.mockResolvedValue([{
+      listing: kitListing({
+        kiteSoldAt: null,
+        deals: [{ component: 'kite' }],
+      }),
+    }]);
+
+    const [card] = await getFavorites('B');
+
+    expect(card.catSlug).toBe('barra');
+    expect(card.brand).toBe('North');
+    expect(card.priceCents).toBe(180000);
+    expect(card.partOfKit).toBe(true);
+  });
+
+  it('não mostra favorito quando todas as peças estão reservadas', async () => {
+    mockDb.favorite.findMany.mockResolvedValue([{
+      listing: kitListing({
+        kiteSoldAt: null,
+        deals: [{ component: 'conjunto' }],
+      }),
+    }]);
+
+    await expect(getFavorites('B')).resolves.toEqual([]);
   });
 });
