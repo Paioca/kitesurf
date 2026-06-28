@@ -11,34 +11,278 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
+import { storedLocale } from '../../components/LanguageToggle';
 
 // Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
-const CONDITION_LABEL: Record<string, string> = {
-  // condição do kite (tecido)
-  novo_lacrado: 'Novo, lacrado',
-  novo_10x: 'Pouco usado',
-  semi_otimo: 'Seminovo, em ótimo estado',
-  semi_desgaste: 'Seminovo, com sinais de uso',
-  usado_desgaste: 'Usado, com desgaste visível',
-  // condição da barra
-  novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
-  // bladder + mangueiras
-  zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado',
-  original: 'Originais', ja_trocadas: 'Trocadas',
+const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
+  pt: {
+    novo_lacrado: 'Novo, lacrado',
+    novo_10x: 'Pouco usado',
+    semi_otimo: 'Seminovo, em ótimo estado',
+    semi_desgaste: 'Seminovo, com sinais de uso',
+    usado_desgaste: 'Usado, com desgaste visível',
+    novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+    zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado',
+    original: 'Originais', ja_trocadas: 'Trocadas',
+  },
+  en: {
+    novo_lacrado: 'New, sealed',
+    novo_10x: 'Lightly used',
+    semi_otimo: 'Excellent used condition',
+    semi_desgaste: 'Used, with signs of wear',
+    usado_desgaste: 'Used, visible wear',
+    novo: 'New', seminovo: 'Like new', bom: 'Good condition', usado: 'Used',
+    zero: 'No leak', microfuro_adesivado: 'Repaired micro leak',
+    original: 'Original', ja_trocadas: 'Replaced',
+  },
 };
-const FIELD_LABEL: Record<string, string> = {
-  size_m2: 'Tamanho do kite',
-  condition: 'Estado do equipamento',
-  reparos: 'Reparos no tecido',
-  microfuros: 'Microfuros no bladder',
+const FIELD_LABELS: Record<Locale, Record<string, string>> = {
+  pt: {
+    size_m2: 'Tamanho do kite',
+    condition: 'Estado do equipamento',
+    reparos: 'Reparos no tecido',
+    microfuros: 'Microfuros no bladder',
+  },
+  en: {
+    size_m2: 'Kite size',
+    condition: 'Gear condition',
+    reparos: 'Canopy repairs',
+    microfuros: 'Bladder micro leaks',
+  },
 };
 const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
-const KITE_SLOTS = ['Foto geral do equipamento', 'Outro ângulo', 'Marca e modelo', 'Etiqueta e tamanho', 'Válvulas e bordas', 'Reparos ou desgastes'];
-const BARRA_SLOTS = ['Foto geral da barra', 'Detalhe / chicken loop', 'Trim e grip', 'Desgaste (se houver)'];
+const KITE_SLOTS: Record<Locale, string[]> = {
+  pt: ['Foto geral do equipamento', 'Outro ângulo', 'Marca e modelo', 'Etiqueta e tamanho', 'Válvulas e bordas', 'Reparos ou desgastes'],
+  en: ['Full gear photo', 'Another angle', 'Brand and model', 'Label and size', 'Valves and edges', 'Repairs or wear'],
+};
+const BARRA_SLOTS: Record<Locale, string[]> = {
+  pt: ['Foto geral da barra', 'Detalhe / chicken loop', 'Trim e grip', 'Desgaste (se houver)'],
+  en: ['Full bar photo', 'Chicken loop detail', 'Trim and grip', 'Wear, if any'],
+};
 const DRAFT_KEY = 'vaya:anunciar-draft';
 
 type Kind = '' | 'kite' | 'barra' | 'kit';
 type Img = { url: string; thumbUrl?: string; component: 'kite' | 'barra' };
+type Locale = 'pt' | 'en';
+
+const AD_COPY = {
+  pt: {
+    loading: 'Carregando…',
+    preparing: 'Preparando o formulário.',
+    redirecting: 'Redirecionando…',
+    confirmPhone: 'Confirme seu telefone para criar o anúncio.',
+    createdTitle: 'Seu anúncio está no ar',
+    createdBody: 'Quando alguém fizer uma oferta ou pedir uma visita, você acompanha tudo em Minhas negociações.',
+    viewListing: 'Ver anúncio',
+    viewGear: 'Ver outros equipamentos',
+    restored: 'Rascunho recuperado. Continue de onde parou.',
+    clearDraft: 'Começar do zero',
+    sideKicker: 'Compartilhe o vento',
+    sideTitle: 'Mantenha a comunidade voando',
+    step: 'Passo',
+    of: 'de',
+    rail: ['Tipo & ficha', 'Fotos do equipamento', 'Preço & entrega', 'Revisão'],
+    tips: [
+      'As listas padronizadas fazem a busca por tamanho funcionar. Informe furos e reparos para que o comprador saiba exatamente o que está avaliando.',
+      'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo. Mínimo de 3.',
+      'Sem pagamento na plataforma. Marque ao menos uma forma de entrega: retirada no spot ou envio.',
+      'Tudo certo? Revise antes de publicar. Anúncios ativos ou pausados podem ser editados depois.',
+    ],
+    missing: {
+      kind: 'Escolha o tipo',
+      required: 'Preencha os dados obrigatórios',
+      photos: (kit: boolean) => `Faltam fotos (mín. 3${kit ? ', uma do kite e uma da barra' : ''})`,
+      price: 'Defina o preço',
+      spot: 'Escolha o spot',
+      delivery: 'Escolha retirada e/ou envio',
+      minPrice: (min: number) => `O preço mínimo é R$ ${min}.`,
+    },
+    typeTitle: 'O que você está vendendo?',
+    typeLead: 'Escolha o tipo e preencha a ficha principal.',
+    typeLabel: 'Tipo',
+    onlyKite: 'Só o kite',
+    onlyBar: 'Só a barra',
+    kitDesc: 'Conjunto',
+    warningTitle: 'Atenção: descreva fielmente',
+    warningBody: 'Informe estado real e reparos. Informações incorretas podem remover o anúncio e restringir a conta.',
+    brand: 'Marca',
+    model: 'Modelo',
+    selectBrand: 'Selecione a marca',
+    chooseBrandFirst: 'Escolha a marca primeiro',
+    noModels: 'Sem modelos para esta marca',
+    select: 'Selecione',
+    year: 'Ano',
+    kiteYear: 'Ano do kite',
+    barBrand: 'Marca da barra',
+    selectBarBrand: 'Selecione a marca da barra',
+    barModel: 'Modelo da barra',
+    barYear: 'Ano da barra',
+    selectYear: 'Selecione o ano',
+    selectBarYear: 'Selecione o ano da barra',
+    detailsTitle: 'Detalhes do estado',
+    detailsBody: 'Informe os pontos que impactam o uso e a negociação.',
+    listingTitle: 'Título do anúncio',
+    autoGenerated: 'Gerado automaticamente',
+    titleHelper: 'Padronizado a partir da ficha. Todo anúncio segue o mesmo formato, e é isso que faz a busca por tamanho funcionar.',
+    photosTitle: 'Fotos do equipamento',
+    photosLead: 'Adicione pelo menos 3 fotos para mostrar bem o estado do equipamento.',
+    minPhotos: (n: number) => `${n} de 3 fotos mínimas`,
+    kitePhotos: 'Fotos do kite',
+    barPhotos: 'Fotos da barra',
+    priceTitle: 'Preço e entrega',
+    priceLead: 'Defina o preço, o spot e como o comprador pode receber o equipamento.',
+    kitPrice: 'Preço do conjunto (kite + barra)',
+    kitPriceHelper: 'É por esse preço que você vende as duas peças juntas.',
+    sellKiteOnly: 'Também vendo o kite separado',
+    sellKiteOnlyDesc: 'Aparece na busca de kite com o preço de só o kite.',
+    kiteOnlyPrice: 'Preço de só o kite',
+    sellBarOnly: 'Também vendo a barra separada',
+    sellBarOnlyDesc: 'Aí a barra também aparece na busca de barra.',
+    barOnlyPrice: 'Preço de só a barra',
+    price: 'Preço',
+    referencePoint: 'Ponto de referência opcional',
+    referencePlaceholder: 'Ex.: Lagoa do Cauípe',
+    deliveryQuestion: 'Como o comprador pode receber?',
+    pickup: 'Retirada no spot',
+    pickupDesc: 'Vocês combinam pelo WhatsApp o melhor ponto para retirada.',
+    shipping: 'Envio',
+    shippingDesc: 'Frete, transportadora e pagamento são combinados diretamente entre comprador e vendedor.',
+    paymentHelper: 'A Kitetropos não processa pagamentos. Combine pagamento e entrega diretamente com o comprador.',
+    reviewTitle: 'Revisão',
+    reviewLead: 'É assim que seu anúncio vai aparecer na busca.',
+    noPrice: 'Sem preço',
+    back: '‹ Voltar',
+    next: 'Continuar →',
+    publishing: 'Publicando…',
+    publish: 'Publicar anúncio',
+    createListing: 'Criar anúncio',
+    exit: 'Sair',
+    no: 'Não',
+    yes: 'Sim',
+    none: 'Nenhum',
+    numberInvalid: 'Informe um número válido (use ponto, ex.: 8.1).',
+    min: 'Mínimo',
+    max: 'Máximo',
+    decimalPlaceholder: 'Ex.: 9 ou 8.1',
+    between: 'entre',
+    decimalHelper: 'Use ponto para decimais. Ex.: 8.1',
+    decimalRangeHelper: (min: number, max: number) => `Use ponto para decimais (ex.: 8.1). Entre ${min} e ${max}.`,
+    uploading: (done: number, total: number) => `Enviando ${done} de ${total}…`,
+    removePhoto: 'Remover foto',
+    fallbackTitle: 'Seu anúncio',
+    bar: 'Barra',
+    pickupLabel: 'Retirada',
+    shippingLabel: 'Envio',
+  },
+  en: {
+    loading: 'Loading…',
+    preparing: 'Preparing the form.',
+    redirecting: 'Redirecting…',
+    confirmPhone: 'Confirm your phone to create the listing.',
+    createdTitle: 'Your listing is live',
+    createdBody: 'When someone sends an offer or visit request, you follow everything in My deals.',
+    viewListing: 'View listing',
+    viewGear: 'See more gear',
+    restored: 'Draft restored. Continue where you left off.',
+    clearDraft: 'Start over',
+    sideKicker: 'Share the wind',
+    sideTitle: 'Keep the community riding',
+    step: 'Step',
+    of: 'of',
+    rail: ['Type & specs', 'Gear photos', 'Price & delivery', 'Review'],
+    tips: [
+      'Standard lists make size search work. Add leaks and repairs so the buyer knows exactly what they are evaluating.',
+      'Good photos sell. Show the label, valves, and any repair. Minimum of 3.',
+      'No payment on the platform. Select at least one delivery option: local pickup or shipping.',
+      'All good? Review before publishing. Active or paused listings can be edited later.',
+    ],
+    missing: {
+      kind: 'Choose the type',
+      required: 'Fill in the required details',
+      photos: (kit: boolean) => `Missing photos (min. 3${kit ? ', one kite photo and one bar photo' : ''})`,
+      price: 'Set the price',
+      spot: 'Choose the spot',
+      delivery: 'Choose pickup and/or shipping',
+      minPrice: (min: number) => `Minimum price is R$ ${min}.`,
+    },
+    typeTitle: 'What are you selling?',
+    typeLead: 'Choose the type and fill in the main specs.',
+    typeLabel: 'Type',
+    onlyKite: 'Kite only',
+    onlyBar: 'Bar only',
+    kitDesc: 'Bundle',
+    warningTitle: 'Important: describe it accurately',
+    warningBody: 'Add the real condition and repairs. Incorrect information can remove the listing and restrict the account.',
+    brand: 'Brand',
+    model: 'Model',
+    selectBrand: 'Select brand',
+    chooseBrandFirst: 'Choose the brand first',
+    noModels: 'No models for this brand',
+    select: 'Select',
+    year: 'Year',
+    kiteYear: 'Kite year',
+    barBrand: 'Bar brand',
+    selectBarBrand: 'Select bar brand',
+    barModel: 'Bar model',
+    barYear: 'Bar year',
+    selectYear: 'Select year',
+    selectBarYear: 'Select bar year',
+    detailsTitle: 'Condition details',
+    detailsBody: 'Add the points that affect usage and negotiation.',
+    listingTitle: 'Listing title',
+    autoGenerated: 'Auto-generated',
+    titleHelper: 'Standardized from the specs. Every listing follows the same format, which makes size search work.',
+    photosTitle: 'Gear photos',
+    photosLead: 'Add at least 3 photos to show the gear condition clearly.',
+    minPhotos: (n: number) => `${n} of 3 minimum photos`,
+    kitePhotos: 'Kite photos',
+    barPhotos: 'Bar photos',
+    priceTitle: 'Price and delivery',
+    priceLead: 'Set the price, spot, and how the buyer can receive the gear.',
+    kitPrice: 'Bundle price (kite + bar)',
+    kitPriceHelper: 'This is the price for selling both pieces together.',
+    sellKiteOnly: 'I also sell the kite separately',
+    sellKiteOnlyDesc: 'It appears in kite search with the kite-only price.',
+    kiteOnlyPrice: 'Kite-only price',
+    sellBarOnly: 'I also sell the bar separately',
+    sellBarOnlyDesc: 'The bar also appears in bar search.',
+    barOnlyPrice: 'Bar-only price',
+    price: 'Price',
+    referencePoint: 'Optional reference point',
+    referencePlaceholder: 'Ex.: Cauipe Lagoon',
+    deliveryQuestion: 'How can the buyer receive it?',
+    pickup: 'Pickup at the spot',
+    pickupDesc: 'You agree on the best pickup point by WhatsApp.',
+    shipping: 'Shipping',
+    shippingDesc: 'Shipping, carrier, and payment are arranged directly between buyer and seller.',
+    paymentHelper: 'Kitetropos does not process payments. Arrange payment and delivery directly with the buyer.',
+    reviewTitle: 'Review',
+    reviewLead: 'This is how your listing will appear in search.',
+    noPrice: 'No price',
+    back: '‹ Back',
+    next: 'Continue →',
+    publishing: 'Publishing…',
+    publish: 'Publish listing',
+    createListing: 'Create listing',
+    exit: 'Exit',
+    no: 'No',
+    yes: 'Yes',
+    none: 'None',
+    numberInvalid: 'Enter a valid number (use a dot, e.g. 8.1).',
+    min: 'Minimum',
+    max: 'Maximum',
+    decimalPlaceholder: 'Ex.: 9 or 8.1',
+    between: 'between',
+    decimalHelper: 'Use a dot for decimals. Ex.: 8.1',
+    decimalRangeHelper: (min: number, max: number) => `Use a dot for decimals (e.g. 8.1). Between ${min} and ${max}.`,
+    uploading: (done: number, total: number) => `Uploading ${done} of ${total}…`,
+    removePhoto: 'Remove photo',
+    fallbackTitle: 'Your listing',
+    bar: 'Bar',
+    pickupLabel: 'Pickup',
+    shippingLabel: 'Shipping',
+  },
+};
 
 export default function Criar() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -73,14 +317,20 @@ export default function Criar() {
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
   const [restored, setRestored] = useState(false); // rascunho recuperado
   const [detailOpen, setDetailOpen] = useState(true); // seção "Estado detalhado" visível no refresh, ainda colapsável
+  const [lang, setLang] = useState<Locale>('pt');
   const fileRef = useRef<HTMLInputElement>(null);
   const hydrated = useRef(false);
 
   useEffect(() => {
+    setLang(storedLocale());
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => setAuthed(false));
     fetch('/api/catalog/categories').then((r) => r.json()).then(setCategories).catch(() => {});
     fetch('/api/catalog/brands').then((r) => r.json()).then(setBrands).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (authed === false) window.location.replace('/entrar?next=%2Fanunciar');
+  }, [authed]);
 
   // --- rascunho/autosave (localStorage): não perde o anúncio meio-preenchido ---
   useEffect(() => {
@@ -151,15 +401,18 @@ export default function Criar() {
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
   const kitePhotos = images.filter((i) => i.component === 'kite');
   const barraPhotos = images.filter((i) => i.component === 'barra');
+  const t = AD_COPY[lang];
+  const conditionLabels = CONDITION_LABELS[lang];
+  const fieldLabels = FIELD_LABELS[lang];
 
   const autoTitle = useMemo(() => {
     const b = brand?.name;
     const model = brand?.models.find((m) => m.id === modelId)?.name;
     const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name, barraYear].filter(Boolean).join(' ');
     if (kind === 'barra') return ['Barra', b, model, year].filter(Boolean).join(' · ');
-    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? CONDITION_LABEL[attrs.condition] : ''].filter(Boolean).join(' · ');
+    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? conditionLabels[attrs.condition] : ''].filter(Boolean).join(' · ');
     return kind === 'kit' ? (base ? `${base} + ${bmBarra || 'Barra'}` : '') : base;
-  }, [brand, modelId, barraBrand, barraModelId, attrs, year, barraYear, kind]);
+  }, [brand, modelId, barraBrand, barraModelId, attrs, year, barraYear, kind, conditionLabels]);
 
   function selectKind(k: Kind) {
     const prev = kind;
@@ -271,9 +524,9 @@ export default function Criar() {
       if (raw == null || raw === '') continue;
       const n = Number(String(raw).replace(',', '.'));
       const lbl = spec.label ?? k;
-      if (Number.isNaN(n)) return `${lbl}: informe um número válido (use ponto, ex.: 8.1).`;
-      if (spec.min != null && n < spec.min) return `${lbl}: mínimo ${spec.min}.`;
-      if (spec.max != null && n > spec.max) return `${lbl}: máximo ${spec.max}.`;
+      if (Number.isNaN(n)) return `${lbl}: ${t.numberInvalid}`;
+      if (spec.min != null && n < spec.min) return `${lbl}: ${t.min.toLowerCase()} ${spec.min}.`;
+      if (spec.max != null && n > spec.max) return `${lbl}: ${t.max.toLowerCase()} ${spec.max}.`;
     }
     return '';
   };
@@ -285,35 +538,39 @@ export default function Criar() {
   // Preço mínimo R$100 — espelha MIN_LISTING_PRICE_CENTS (servidor). Erro na hora,
   // não só no publish: bloqueia o avanço e mostra inline no campo.
   const MIN_PRICE = 100;
-  const priceErr = (v: string) => (v && Number(v) > 0 && Number(v) < MIN_PRICE ? `O preço mínimo é R$ ${MIN_PRICE}.` : '');
+  const priceErr = (v: string) => (v && Number(v) > 0 && Number(v) < MIN_PRICE ? t.missing.minPrice(MIN_PRICE) : '');
   const priceOk = Number(price) >= MIN_PRICE
     && (!sellKiteAlone || Number(kitePrice) >= MIN_PRICE)
     && (!sellBarraAlone || Number(barraPrice) >= MIN_PRICE);
-  const priceMsg = priceErr(price) || (sellKiteAlone ? priceErr(kitePrice) : '') || (sellBarraAlone ? priceErr(barraPrice) : '') || (!priceOk ? 'Defina o preço' : '');
+  const priceMsg = priceErr(price) || (sellKiteAlone ? priceErr(kitePrice) : '') || (sellBarraAlone ? priceErr(barraPrice) : '') || (!priceOk ? t.missing.price : '');
   const deliveryOk = pickup || shippable;
   const canPublish = !!kind && fichaOk && photosOk && priceOk && deliveryOk && !!city && !uploading && !publishing;
-  const missing = !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Preencha os dados obrigatórios' : !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '';
+  const missing = !kind ? t.missing.kind : attrErr ? attrErr : !fichaOk ? t.missing.required : !photosOk ? t.missing.photos(isKit) : !priceOk ? priceMsg : !city ? t.missing.spot : !deliveryOk ? t.missing.delivery : '';
 
   // wizard: validade e mensagem por passo
-  const RAIL = ['Tipo & ficha', 'Fotos do equipamento', 'Preço & entrega', 'Revisão'];
-  const TIPS = [
-    'As listas padronizadas fazem a busca por tamanho funcionar. Informe furos e reparos para que o comprador saiba exatamente o que está avaliando.',
-    'Fotos boas vendem. Mostre etiqueta, válvulas e qualquer reparo. Mínimo de 3.',
-    'Sem pagamento na plataforma. Marque ao menos uma forma de entrega: retirada no spot ou envio.',
-    'Tudo certo? Revise antes de publicar. Anúncios ativos ou pausados podem ser editados depois.',
-  ];
+  const RAIL = t.rail;
+  const TIPS = t.tips;
   const stepValid = [!!kind && fichaOk, photosOk, priceOk && deliveryOk && !!city, canPublish];
   const stepMissing = [
-    !kind ? 'Escolha o tipo' : attrErr ? attrErr : !fichaOk ? 'Preencha os dados obrigatórios' : '',
-    !photosOk ? `Faltam fotos (mín. 3${isKit ? ', uma do kite e uma da barra' : ''})` : '',
-    !priceOk ? priceMsg : !city ? 'Escolha o spot' : !deliveryOk ? 'Escolha retirada e/ou envio' : '',
+    !kind ? t.missing.kind : attrErr ? attrErr : !fichaOk ? t.missing.required : '',
+    !photosOk ? t.missing.photos(isKit) : '',
+    !priceOk ? priceMsg : !city ? t.missing.spot : !deliveryOk ? t.missing.delivery : '',
     missing,
   ];
+  const scrollToWizardTop = () => {
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+  };
   const goNext = () => {
     if (step === 0 && !stepValid[0] && hasDetail) setDetailOpen(true); // revela os campos detalhados que faltam
-    if (step < 3 && stepValid[step]) setStep(step + 1);
+    if (step < 3 && stepValid[step]) {
+      setStep(step + 1);
+      scrollToWizardTop();
+    }
   };
-  const goBack = () => setStep((s) => Math.max(0, s - 1));
+  const goBack = () => {
+    setStep((s) => Math.max(0, s - 1));
+    scrollToWizardTop();
+  };
 
   async function publish() {
     if (publishing) return; // guarda extra contra duplo-clique / Enter repetido
@@ -338,17 +595,17 @@ export default function Criar() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Erro ao publicar.');
+      if (!res.ok) throw new Error(data.message ?? (lang === 'en' ? 'Error publishing listing.' : 'Erro ao publicar.'));
       setCreatedId(data.id);
     } catch (e: any) { setError(e.message); } finally { setPublishing(false); }
   }
 
   if (authed === null) {
     return (
-      <Shell>
+      <Shell t={t}>
         <div style={{ textAlign: 'center', padding: '70px 0' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>Carregando…</div>
-          <p style={{ fontSize: 14, color: color.inkFaint2, margin: 0 }}>Preparando o formulário.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>{t.loading}</div>
+          <p style={{ fontSize: 14, color: color.inkFaint2, margin: 0 }}>{t.preparing}</p>
         </div>
       </Shell>
     );
@@ -356,20 +613,10 @@ export default function Criar() {
 
   if (authed === false) {
     return (
-      <Shell>
-        <div style={{ maxWidth: 760, margin: '0 auto', padding: '58px 0', textAlign: 'center' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 12 }}>Venda com menos conversa perdida</div>
-          <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(34px,5vw,48px)', fontWeight: 600, lineHeight: 1.05, margin: '0 0 16px', color: color.ink }}>Anuncie seu kite para compradores com interesse real</h1>
-          <p style={{ fontSize: 17, lineHeight: 1.65, color: color.inkMute, margin: '0 auto 28px', maxWidth: 560 }}>Crie um anúncio com fotos, ficha técnica e condições do equipamento. Para deixar a negociação mais confiável, confirme seu telefone antes de publicar.</p>
-          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 10, margin: '0 auto 28px', maxWidth: 680 }}>
-            {['WhatsApp protegido até você aceitar', 'Pedido de visita ou oferta estruturada', 'Perfil com telefone verificado'].map((item) => (
-              <div key={item} style={{ flex: '1 1 190px', background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 12, padding: '14px 12px', fontSize: 13.5, fontWeight: 700, color: color.ink, lineHeight: 1.35 }}>{item}</div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/entrar?next=%2Fanunciar" style={primary}>Começar meu anúncio</Link>
-            <Link href="/entrar?next=%2Fanunciar" style={outline}>Já tenho conta. Entrar</Link>
-          </div>
+      <Shell t={t}>
+        <div style={{ textAlign: 'center', padding: '70px 0' }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 10 }}>{t.redirecting}</div>
+          <p style={{ fontSize: 14, color: color.inkFaint2, margin: 0 }}>{t.confirmPhone}</p>
         </div>
       </Shell>
     );
@@ -377,14 +624,14 @@ export default function Criar() {
 
   if (createdId) {
     return (
-      <Shell>
+      <Shell t={t}>
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
-          <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>Seu anúncio está no ar</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>Quando alguém fizer uma oferta ou pedir uma visita, você acompanha tudo em Minhas negociações.</p>
+          <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>{t.createdTitle}</h1>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>{t.createdBody}</p>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href={`/anuncio/${createdId}`} style={primary}>Ver anúncio</a>
-            <Link href="/" style={outline}>Ver outros equipamentos</Link>
+            <a href={`/anuncio/${createdId}`} style={primary}>{t.viewListing}</a>
+            <Link href="/" style={outline}>{t.viewGear}</Link>
           </div>
         </div>
       </Shell>
@@ -394,22 +641,22 @@ export default function Criar() {
   // ---- preview da revisão (passo 4) ----
   const previewBrand = brand?.name ?? '';
   const previewModel = kind === 'barra'
-    ? (brand?.models.find((m) => m.id === modelId)?.name || `Barra${previewBrand ? ` ${previewBrand}` : ''}`)
-    : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || 'Seu anúncio');
-  const previewCond = attrs.condition ? CONDITION_LABEL[attrs.condition] : null;
-  const previewSize = kind === 'barra' ? 'Barra' : (attrs.size_m2 ? `${attrs.size_m2} m²` : 'Sem tamanho');
-  const previewDelivery = pickup && shippable ? 'Retirada · Envio' : shippable ? 'Envio' : 'Retirada';
+    ? (brand?.models.find((m) => m.id === modelId)?.name || `${t.bar}${previewBrand ? ` ${previewBrand}` : ''}`)
+    : (brand?.models.find((m) => m.id === modelId)?.name || autoTitle || t.fallbackTitle);
+  const previewCond = attrs.condition ? conditionLabels[attrs.condition] : null;
+  const previewSize = kind === 'barra' ? t.bar : (attrs.size_m2 ? `${attrs.size_m2} m²` : (lang === 'en' ? 'No size' : 'Sem tamanho'));
+  const previewDelivery = pickup && shippable ? `${t.pickupLabel} · ${t.shippingLabel}` : shippable ? t.shippingLabel : t.pickupLabel;
   const previewPhoto = images[0]?.thumbUrl ?? images[0]?.url ?? null;
   const tipoLabel = kind === 'barra' ? 'Barra' : kind === 'kit' ? 'Kit' : 'Kite';
 
   return (
-    <Shell>
+    <Shell t={t}>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
       {restored && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#e8f1ec', border: '1px solid #cfe3d9', borderRadius: 12, padding: '11px 15px', marginBottom: 20, fontSize: 13.5, color: color.ink }}>
           <span style={{ width: 7, height: 7, borderRadius: 999, background: color.primary, flex: 'none' }} />
-          <span>Rascunho recuperado. Continue de onde parou.</span>
-          <button onClick={clearDraft} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: color.primary, fontWeight: 700, cursor: 'pointer', fontFamily: font.sans, fontSize: 13.5 }}>Começar do zero</button>
+          <span>{t.restored}</span>
+          <button onClick={clearDraft} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: color.primary, fontWeight: 700, cursor: 'pointer', fontFamily: font.sans, fontSize: 13.5 }}>{t.clearDraft}</button>
         </div>
       )}
       <div className="criar-grid">
@@ -432,8 +679,8 @@ export default function Criar() {
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,37,32,0.35) 0%, rgba(12,37,32,0.92) 100%)' }} />
             <span aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, width: 14, height: 14, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
             <div style={{ position: 'absolute', inset: 0, padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 15, color: color.gold, marginBottom: 8 }}>Compartilhe o vento</div>
-              <div style={{ fontFamily: font.sans, fontSize: 19, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: '#fff', marginBottom: 10 }}>Mantenha a comunidade voando</div>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 15, color: color.gold, marginBottom: 8 }}>{t.sideKicker}</div>
+              <div style={{ fontFamily: font.sans, fontSize: 19, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: '#fff', marginBottom: 10 }}>{t.sideTitle}</div>
               <p style={{ fontSize: 12.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.82)', margin: 0 }}>{TIPS[step]}</p>
             </div>
           </div>
@@ -446,18 +693,18 @@ export default function Criar() {
             <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
               {RAIL.map((t, i) => <div key={t} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= step ? color.primary : '#e6dfd0' }} />)}
             </div>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 14, color: color.primary }}>Passo {step + 1} de 4 · {RAIL[step]}</div>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 14, color: color.primary }}>{t.step} {step + 1} {t.of} 4 · {RAIL[step]}</div>
           </div>
 
           {/* PASSO 1 — TIPO & FICHA */}
           {step === 0 && (
             <>
-              <StepHead n={1} title="O que você está vendendo?" lead="Escolha o tipo e preencha a ficha principal." />
-              <UpLabel>Tipo</UpLabel>
+              <StepHead n={1} title={t.typeTitle} lead={t.typeLead} t={t} />
+              <UpLabel>{t.typeLabel}</UpLabel>
               <div className="criar-tipos" style={{ marginBottom: 28 }}>
-                <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc="Só o kite" icon={IconKite} />
-                <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title="Barra" desc="Só a barra" icon={IconBarra} />
-                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title="Kite + Barra" desc="Conjunto" icon={IconKit} />
+                <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc={t.onlyKite} icon={IconKite} />
+                <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title={t.bar} desc={t.onlyBar} icon={IconBarra} />
+                <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title={`Kite + ${t.bar}`} desc={t.kitDesc} icon={IconKit} />
               </div>
 
               {kind && (
@@ -465,25 +712,25 @@ export default function Criar() {
                   <div style={{ display: 'flex', gap: 13, background: '#fbeae4', border: '1.5px solid #f0c9bd', borderRadius: 14, padding: '16px 18px', margin: '0 0 28px' }}>
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: '#c0492f', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>!</span>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>Atenção: descreva fielmente</div>
-                      <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>Informe estado real e reparos. Informações incorretas podem remover o anúncio e restringir a conta.</p>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#8f3826', marginBottom: 3 }}>{t.warningTitle}</div>
+                      <p style={{ fontSize: 13, lineHeight: 1.55, color: '#9a5040', margin: 0 }}>{t.warningBody}</p>
                     </div>
                   </div>
                   {/* ESSENCIAL — sempre visível */}
                   <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px' }}>
                     {isKit && <SubHead style={{ gridColumn: '1 / -1' }}>Kite</SubHead>}
-                    <Cell><Label>Marca *</Label><SearchSelect value={brandId} options={mainBrandOpts} placeholder="Selecione a marca" onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
-                    <Cell><Label>Modelo{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? 'Escolha a marca primeiro' : kindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
-                    <Cell style={{ gridColumn: '1 / -1' }}><Label>{isKit ? 'Ano do kite *' : 'Ano *'}</Label><CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder="Selecione o ano" /></Cell>
-                    <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
+                    <Cell><Label>{t.brand} *</Label><SearchSelect value={brandId} options={mainBrandOpts} placeholder={t.selectBrand} onChange={(v) => { setBrandId(v); setModelId(''); }} /></Cell>
+                    <Cell><Label>{t.model}{kindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={modelId} options={modelOpts} placeholder={!brandId ? t.chooseBrandFirst : kindModels.length === 0 ? t.noModels : t.select} onChange={setModelId} disabled={!brandId || kindModels.length === 0} /></Cell>
+                    <Cell style={{ gridColumn: '1 / -1' }}><Label>{isKit ? `${t.kiteYear} *` : `${t.year} *`}</Label><CompactSelect options={yearOpts} value={year} onChange={setYear} placeholder={t.selectYear} /></Cell>
+                    <Fields props={mainEss} required={Object.keys(mainEss)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} labels={conditionLabels} fieldLabels={fieldLabels} t={t} />
                   </div>
                   {isKit && (
                     <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 22 }}>
-                      <SubHead style={{ gridColumn: '1 / -1' }}>Barra</SubHead>
-                      <Cell><Label>Marca da barra *</Label><SearchSelect value={barraBrandId} options={barraBrandOpts} placeholder="Selecione a marca da barra" onChange={(v) => { setBarraBrandId(v); setBarraModelId(''); }} /></Cell>
-                      <Cell><Label>Modelo da barra{barraKindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? 'Escolha a marca primeiro' : barraKindModels.length === 0 ? 'Sem modelos para esta marca' : 'Selecione'} onChange={setBarraModelId} disabled={!barraBrandId || barraKindModels.length === 0} /></Cell>
-                      <Cell style={{ gridColumn: '1 / -1' }}><Label>Ano da barra *</Label><CompactSelect options={yearOpts} value={barraYear} onChange={setBarraYear} placeholder="Selecione o ano da barra" /></Cell>
-                      <Fields props={barraEss} required={Object.keys(barraEss)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                      <SubHead style={{ gridColumn: '1 / -1' }}>{t.bar}</SubHead>
+                      <Cell><Label>{t.barBrand} *</Label><SearchSelect value={barraBrandId} options={barraBrandOpts} placeholder={t.selectBarBrand} onChange={(v) => { setBarraBrandId(v); setBarraModelId(''); }} /></Cell>
+                      <Cell><Label>{t.barModel}{barraKindModels.length > 0 ? ' *' : ''}</Label><SearchSelect value={barraModelId} options={barraModelOpts} placeholder={!barraBrandId ? t.chooseBrandFirst : barraKindModels.length === 0 ? t.noModels : t.select} onChange={setBarraModelId} disabled={!barraBrandId || barraKindModels.length === 0} /></Cell>
+                      <Cell style={{ gridColumn: '1 / -1' }}><Label>{t.barYear} *</Label><CompactSelect options={yearOpts} value={barraYear} onChange={setBarraYear} placeholder={t.selectBarYear} /></Cell>
+                      <Fields props={barraEss} required={Object.keys(barraEss)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} labels={conditionLabels} fieldLabels={fieldLabels} t={t} />
                     </div>
                   )}
 
@@ -492,8 +739,8 @@ export default function Criar() {
                     <div style={{ marginTop: 22, border: `1px solid ${color.lineCard}`, borderRadius: 14, overflow: 'hidden' }}>
                       <button type="button" onClick={() => setDetailOpen((o) => !o)} aria-expanded={detailOpen} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: '#faf7f0', border: 'none', padding: '15px 16px', cursor: 'pointer', textAlign: 'left' }}>
                         <span>
-                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>Detalhes do estado</span>
-                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>Informe os pontos que impactam o uso e a negociação.</span>
+                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: color.ink }}>{t.detailsTitle}</span>
+                          <span style={{ display: 'block', fontSize: 12.5, color: color.inkFaint2, marginTop: 2 }}>{t.detailsBody}</span>
                         </span>
                         <span aria-hidden="true" style={{ fontSize: 13, color: color.inkMute, flex: 'none', transform: detailOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
                       </button>
@@ -503,15 +750,15 @@ export default function Criar() {
                             <>
                               {isKit && <SubHead>Kite</SubHead>}
                               <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: isKit ? 12 : 0 }}>
-                                <Fields props={mainDet} required={Object.keys(mainDet)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} />
+                                <Fields props={mainDet} required={Object.keys(mainDet)} values={attrs} onChange={(k, v) => setAttrs((a) => ({ ...a, [k]: v }))} labels={conditionLabels} fieldLabels={fieldLabels} t={t} />
                               </div>
                             </>
                           )}
                           {isKit && Object.keys(barraDet).length > 0 && (
                             <>
-                              <SubHead style={{ marginTop: 18 }}>Barra</SubHead>
+                              <SubHead style={{ marginTop: 18 }}>{t.bar}</SubHead>
                               <div className="criar-fields" style={{ display: 'grid', gap: '16px 18px', marginTop: 12 }}>
-                                <Fields props={barraDet} required={Object.keys(barraDet)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} />
+                                <Fields props={barraDet} required={Object.keys(barraDet)} values={barraAttrs} onChange={(k, v) => setBarraAttrs((a) => ({ ...a, [k]: v }))} labels={conditionLabels} fieldLabels={fieldLabels} t={t} />
                               </div>
                             </>
                           )}
@@ -522,13 +769,13 @@ export default function Criar() {
                   {autoTitle && (
                     <div style={{ marginTop: 22 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 7 }}>
-                        <Label>Título do anúncio</Label>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}><Diamond size={7} c={color.primary} />Gerado automaticamente</span>
+                        <Label>{t.listingTitle}</Label>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 9px', borderRadius: 999 }}><Diamond size={7} c={color.primary} />{t.autoGenerated}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f3f1e9', border: '1.5px dashed #d8d0bd', borderRadius: 11, padding: '14px 15px' }}>
                         <span style={{ fontFamily: font.serif, fontSize: 16, fontWeight: 600, color: color.ink }}>{autoTitle}</span>
                       </div>
-                      <Helper>Padronizado a partir da ficha. Todo anúncio segue o mesmo formato, e é isso que faz a busca por tamanho funcionar.</Helper>
+                      <Helper>{t.titleHelper}</Helper>
                     </div>
                   )}
                 </>
@@ -539,46 +786,46 @@ export default function Criar() {
           {/* PASSO 2 — FOTOS */}
           {step === 1 && (
             <>
-              <StepHead n={2} title="Fotos do equipamento" lead="Adicione pelo menos 3 fotos para mostrar bem o estado do equipamento." />
+              <StepHead n={2} title={t.photosTitle} lead={t.photosLead} t={t} />
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '8px 14px', borderRadius: 999, marginBottom: 22 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{images.length} de 3 fotos mínimas
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: color.primary }} />{t.minPhotos(images.length)}
               </div>
-              {showKitePhotos && <PhotoSection title={isKit ? 'Fotos do kite' : ''} slots={KITE_SLOTS} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} />}
-              {showBarraPhotos && <PhotoSection title={isKit ? 'Fotos da barra' : ''} slots={BARRA_SLOTS} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} />}
+              {showKitePhotos && <PhotoSection title={isKit ? t.kitePhotos : ''} slots={KITE_SLOTS[lang]} photos={kitePhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('kite')} onRemove={removePhoto} t={t} />}
+              {showBarraPhotos && <PhotoSection title={isKit ? t.barPhotos : ''} slots={BARRA_SLOTS[lang]} photos={barraPhotos} uploading={uploading} progress={uploadCount.total ? { ...uploadCount, pct: uploadPct } : null} onPick={() => pickPhotos('barra')} onRemove={removePhoto} t={t} />}
             </>
           )}
 
           {/* PASSO 3 — PREÇO, LOCAL E ENTREGA */}
           {step === 2 && (
             <>
-              <StepHead n={3} title="Preço e entrega" lead="Defina o preço, o spot e como o comprador pode receber o equipamento." />
+              <StepHead n={3} title={t.priceTitle} lead={t.priceLead} t={t} />
               {isKit ? (
                 <div>
-                  <Label>Preço do conjunto (kite + barra) *</Label>
+                  <Label>{t.kitPrice} *</Label>
                   <PriceInput value={price} onChange={setPrice} />
-                  {priceErr(price) ? <ErrorText>{priceErr(price)}</ErrorText> : <Helper>É por esse preço que você vende as duas peças juntas.</Helper>}
+                  {priceErr(price) ? <ErrorText>{priceErr(price)}</ErrorText> : <Helper>{t.kitPriceHelper}</Helper>}
                   <div style={{ marginTop: 18, display: 'grid', gap: 14 }}>
-                    <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title="Também vendo o kite separado" desc="Aparece na busca de kite com o preço de só o kite." />
-                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só o kite *</Label><PriceInput value={kitePrice} onChange={setKitePrice} />{priceErr(kitePrice) && <ErrorText>{priceErr(kitePrice)}</ErrorText>}</div>}
-                    <Toggle on={sellBarraAlone} onClick={() => setSellBarraAlone((v) => !v)} title="Também vendo a barra separada" desc="Aí a barra também aparece na busca de barra." />
-                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>Preço de só a barra *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} />{priceErr(barraPrice) && <ErrorText>{priceErr(barraPrice)}</ErrorText>}</div>}
+                    <Toggle on={sellKiteAlone} onClick={() => setSellKiteAlone((v) => !v)} title={t.sellKiteOnly} desc={t.sellKiteOnlyDesc} />
+                    {sellKiteAlone && <div style={{ paddingLeft: 4 }}><Label>{t.kiteOnlyPrice} *</Label><PriceInput value={kitePrice} onChange={setKitePrice} />{priceErr(kitePrice) && <ErrorText>{priceErr(kitePrice)}</ErrorText>}</div>}
+                    <Toggle on={sellBarraAlone} onClick={() => setSellBarraAlone((v) => !v)} title={t.sellBarOnly} desc={t.sellBarOnlyDesc} />
+                    {sellBarraAlone && <div style={{ paddingLeft: 4 }}><Label>{t.barOnlyPrice} *</Label><PriceInput value={barraPrice} onChange={setBarraPrice} />{priceErr(barraPrice) && <ErrorText>{priceErr(barraPrice)}</ErrorText>}</div>}
                   </div>
                 </div>
               ) : (
-                <><Label>Preço *</Label><PriceInput value={price} onChange={setPrice} />{priceErr(price) && <ErrorText>{priceErr(price)}</ErrorText>}</>
+                <><Label>{t.price} *</Label><PriceInput value={price} onChange={setPrice} />{priceErr(price) && <ErrorText>{priceErr(price)}</ErrorText>}</>
               )}
 
               <div className="criar-loc" style={{ display: 'grid', gap: 16, marginTop: 28 }}>
                 <Cell><Label>Spot *</Label><select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>{SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}</select></Cell>
-                <Cell><Label>Ponto de referência opcional</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder="Ex.: Lagoa do Cauípe" /></Cell>
+                <Cell><Label>{t.referencePoint}</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder={t.referencePlaceholder} /></Cell>
               </div>
               <div style={{ marginTop: 24 }}>
-                <Label>Como o comprador pode receber?</Label>
+                <Label>{t.deliveryQuestion}</Label>
                 <div className="criar-delivery" style={{ display: 'grid', gap: 14, marginTop: 10 }}>
-                  <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title="Retirada no spot" desc="Vocês combinam pelo WhatsApp o melhor ponto para retirada." />
-                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title="Envio" desc="Frete, transportadora e pagamento são combinados diretamente entre comprador e vendedor." />
+                  <Toggle on={pickup} onClick={() => setPickup((v) => !v)} title={t.pickup} desc={t.pickupDesc} />
+                  <Toggle on={shippable} onClick={() => setShippable((v) => !v)} title={t.shipping} desc={t.shippingDesc} />
                 </div>
-                <Helper>A Kitetropos não processa pagamentos. Combine pagamento e entrega diretamente com o comprador.</Helper>
+                <Helper>{t.paymentHelper}</Helper>
               </div>
             </>
           )}
@@ -586,7 +833,7 @@ export default function Criar() {
           {/* PASSO 4 — REVISÃO */}
           {step === 3 && (
             <>
-              <StepHead n={4} title="Revisão" lead="É assim que seu anúncio vai aparecer na busca." />
+              <StepHead n={4} title={t.reviewTitle} lead={t.reviewLead} t={t} />
               <div style={{ maxWidth: 300, background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ position: 'relative', height: 196, backgroundImage: previewPhoto ? `url("${previewPhoto}")` : 'repeating-linear-gradient(135deg,#e3ece5 0px,#e3ece5 13px,#d8e4dc 13px,#d8e4dc 26px)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
                   <div style={{ position: 'absolute', top: 13, left: 13, background: color.primaryDeep, color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999 }}>{previewSize}</div>
@@ -599,7 +846,7 @@ export default function Criar() {
                     <span style={{ fontSize: 11.5, fontWeight: 600, color: color.primary, background: color.chipSoftBg, padding: '4px 10px', borderRadius: 999 }}>{tipoLabel}</span>
                     {previewCond && <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8a7a5c', background: '#f1ebdd', padding: '4px 10px', borderRadius: 999 }}>{previewCond}</span>}
                   </div>
-                  <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>{price ? `R$ ${Number(price).toLocaleString('pt-BR')}` : 'Sem preço'}</div>
+                  <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>{price ? `R$ ${Number(price).toLocaleString('pt-BR')}` : t.noPrice}</div>
                 </div>
               </div>
             </>
@@ -611,12 +858,12 @@ export default function Criar() {
           <div className="criar-nav">
             {!stepValid[step] && stepMissing[step] && <div className="criar-nav-msg">{stepMissing[step]}</div>}
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <button onClick={goBack} disabled={step === 0} style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, borderRadius: 12, padding: '15px 24px', fontFamily: font.sans, fontSize: 15, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', opacity: step === 0 ? 0.4 : 1 }}>‹ Voltar</button>
+              <button onClick={goBack} disabled={step === 0} style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, borderRadius: 12, padding: '15px 24px', fontFamily: font.sans, fontSize: 15, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', opacity: step === 0 ? 0.4 : 1 }}>{t.back}</button>
               {step < 3 ? (
                 // sempre clicável: se o passo está incompleto, abre o detalhado / mostra o que falta (não fica "morto")
-                <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.dark : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar →</button>
+                <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.dark : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>{t.next}</button>
               ) : (
-                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.dark : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>{publishing ? 'Publicando…' : 'Publicar anúncio'}</button>
+                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.dark : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>{publishing ? t.publishing : t.publish}</button>
               )}
             </div>
           </div>
@@ -626,10 +873,10 @@ export default function Criar() {
   );
 }
 
-function StepHead({ n, title, lead }: { n: number; title: string; lead: string }) {
+function StepHead({ n, title, lead, t }: { n: number; title: string; lead: string; t: (typeof AD_COPY)[Locale] }) {
   return (
     <>
-      <div className="only-desktop" style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>Passo {n} de 4</div>
+      <div className="only-desktop" style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 6 }}>{t.step} {n} {t.of} 4</div>
       <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,5vw,38px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, margin: '0 0 10px' }}>{title}</h1>
       <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 0 28px' }}>{lead}</p>
     </>
@@ -646,21 +893,37 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /* ---- campos da ficha (a partir do attributeSchema) ---- */
-function Fields({ props, required, values, onChange }: { props: Record<string, any>; required: string[]; values: Record<string, any>; onChange: (k: string, v: any) => void }) {
+function Fields({
+  props,
+  required,
+  values,
+  onChange,
+  labels,
+  fieldLabels,
+  t,
+}: {
+  props: Record<string, any>;
+  required: string[];
+  values: Record<string, any>;
+  onChange: (k: string, v: any) => void;
+  labels: Record<string, string>;
+  fieldLabels: Record<string, string>;
+  t: (typeof AD_COPY)[Locale];
+}) {
   return (
     <>
       {Object.entries(props).map(([key, spec]: any) => {
         const req = required.includes(key);
         return (
           <Cell key={key}>
-            <Label>{(FIELD_LABEL[key] ?? spec.label ?? key)}{req ? ' *' : ''}</Label>
+            <Label>{(fieldLabels[key] ?? spec.label ?? key)}{req ? ' *' : ''}</Label>
             {spec.enum ? (
               // listas curtas → chips on-brand (sem picker cinza do iOS)
-              <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} labels={CONDITION_LABEL} />
+              <ChipSelect options={spec.enum} value={values[key]} onChange={(v) => onChange(key, v)} labels={labels} />
             ) : spec.type === 'boolean' ? (
-              <ChipSelect options={['false', 'true']} value={String(!!values[key])} onChange={(v) => onChange(key, v === 'true')} labels={{ false: 'Não', true: 'Sim' }} />
+              <ChipSelect options={['false', 'true']} value={String(!!values[key])} onChange={(v) => onChange(key, v === 'true')} labels={{ false: t.no, true: t.yes }} />
             ) : spec.type === 'integer' ? (
-              <ChipSelect options={Array.from({ length: 11 }, (_, i) => i)} value={values[key]} onChange={(v) => onChange(key, Number(v))} labels={{ '0': 'Nenhum' }} />
+              <ChipSelect options={Array.from({ length: 11 }, (_, i) => i)} value={values[key]} onChange={(v) => onChange(key, Number(v))} labels={{ '0': t.none }} />
             ) : spec.type === 'number' ? (() => {
               // erro de faixa na hora (sem esperar o "Continuar")
               const raw = values[key];
@@ -668,9 +931,9 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
               const n = has ? Number(String(raw).replace(',', '.')) : NaN;
               let err = '';
               if (has) {
-                if (Number.isNaN(n)) err = 'Informe um número válido (use ponto, ex.: 8.1).';
-                else if (spec.min != null && n < spec.min) err = `Mínimo ${spec.min}.`;
-                else if (spec.max != null && n > spec.max) err = `Máximo ${spec.max}.`;
+                if (Number.isNaN(n)) err = t.numberInvalid;
+                else if (spec.min != null && n < spec.min) err = `${t.min} ${spec.min}.`;
+                else if (spec.max != null && n > spec.max) err = `${t.max} ${spec.max}.`;
               }
               return (
                 <>
@@ -679,7 +942,7 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
                     type="text"
                     inputMode="decimal"
                     value={values[key] ?? ''}
-                    placeholder={key === 'size_m2' ? 'Ex.: 9 ou 8.1' : spec.min != null && spec.max != null ? `Ex.: 9 ou 8.1 (entre ${spec.min} e ${spec.max})` : 'Ex.: 9 ou 8.1'}
+                    placeholder={key === 'size_m2' ? t.decimalPlaceholder : spec.min != null && spec.max != null ? `${t.decimalPlaceholder} (${t.between} ${spec.min} - ${spec.max})` : t.decimalPlaceholder}
                     onChange={(e) => {
                       // máscara: vírgula→ponto, só dígitos; máx. 2 dígitos inteiros + 1 decimal
                       // (tamanho de kite/barra nunca passa de 2 dígitos) — impede 3º dígito.
@@ -691,9 +954,9 @@ function Fields({ props, required, values, onChange }: { props: Record<string, a
                     }}
                   />
                   {err ? <ErrorText>{err}</ErrorText> : key === 'size_m2' ? (
-                    <Helper>Use ponto para decimais. Ex.: 8.1</Helper>
+                    <Helper>{t.decimalHelper}</Helper>
                   ) : spec.min != null && spec.max != null ? (
-                    <Helper>Use ponto para decimais (ex.: 8.1). Entre {spec.min} e {spec.max}.</Helper>
+                    <Helper>{t.decimalRangeHelper(spec.min, spec.max)}</Helper>
                   ) : null}
                 </>
               );
@@ -730,7 +993,7 @@ function CompactSelect({ options, value, onChange, placeholder }: { options: str
   );
 }
 
-function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRemove }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; progress?: { done: number; total: number; pct: number } | null; onPick: () => void; onRemove: (img: Img) => void }) {
+function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRemove, t }: { title: string; slots: string[]; photos: Img[]; uploading: boolean; progress?: { done: number; total: number; pct: number } | null; onPick: () => void; onRemove: (img: Img) => void; t: (typeof AD_COPY)[Locale] }) {
   return (
     <div style={{ marginBottom: 22 }}>
       {title && <SubHead>{title}</SubHead>}
@@ -738,7 +1001,7 @@ function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRem
         // Barra de progresso real do lote (bytes enviados) — substitui o "…" mudo.
         <div role="status" aria-live="polite" style={{ marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: color.inkFaint, marginBottom: 6 }}>
-            <span>Enviando {Math.min(progress.done + 1, progress.total)} de {progress.total}…</span>
+            <span>{t.uploading(Math.min(progress.done + 1, progress.total), progress.total)}</span>
             <span>{progress.pct}%</span>
           </div>
           <div style={{ height: 6, borderRadius: 999, background: '#e8e2d4', overflow: 'hidden' }}>
@@ -752,7 +1015,7 @@ function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRem
           return (
             <button key={label} onClick={onPick} className={img ? undefined : 'kl-lift'} style={{ position: 'relative', height: 150, borderRadius: radius.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 10, overflow: 'hidden', cursor: 'pointer', border: img ? `1.5px solid ${color.primary}` : `2px dashed ${color.lineInput}`, background: img ? undefined : '#fbfaf6' }}>
               {img && <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${img.thumbUrl ?? img.url}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
-              {img && <span role="button" aria-label="Remover foto" onClick={(e) => { e.stopPropagation(); onRemove(img); }} style={{ position: 'absolute', top: 9, left: 9, width: 26, height: 26, borderRadius: 999, background: 'rgba(20,20,20,0.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 2 }}>✕</span>}
+              {img && <span role="button" aria-label={t.removePhoto} onClick={(e) => { e.stopPropagation(); onRemove(img); }} style={{ position: 'absolute', top: 9, left: 9, width: 26, height: 26, borderRadius: 999, background: 'rgba(20,20,20,0.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 2 }}>✕</span>}
               {img && <div style={{ position: 'absolute', top: 9, right: 9, width: 24, height: 24, borderRadius: 999, background: color.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✓</div>}
               {!img && <div style={{ fontSize: 26, color: '#bcccc4', lineHeight: 1, marginBottom: 8 }}>{uploading ? '…' : '+'}</div>}
               <div style={img ? { position: 'relative', zIndex: 1, background: 'rgba(20,48,42,0.78)', color: '#fff', fontSize: 11.5, fontWeight: 600, padding: '5px 11px', borderRadius: 999 } : { fontSize: 13, fontWeight: 600, color: color.inkFaint }}>{label}</div>
@@ -765,15 +1028,15 @@ function PhotoSection({ title, slots, photos, uploading, progress, onPick, onRem
 }
 
 /* ---- pequenos helpers de layout ---- */
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, t }: { children: React.ReactNode; t: (typeof AD_COPY)[Locale] }) {
   return (
     <>
       <div className="only-mobile"><MobileAppBar /></div>
       <header className="only-desktop" style={{ background: '#fff', borderBottom: `1px solid ${color.line}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 36px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link href="/" style={{ textDecoration: 'none', color: color.ink }}><Logo size={20} /></Link>
-          <span style={{ fontSize: 14, fontWeight: 600, color: color.inkMute }}>Criar anúncio</span>
-          <Link href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>Sair</Link>
+          <span style={{ fontSize: 14, fontWeight: 600, color: color.inkMute }}>{t.createListing}</span>
+          <Link href="/" style={{ fontSize: 13.5, color: color.inkFaint, textDecoration: 'none' }}>{t.exit}</Link>
         </div>
       </header>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 24px 90px' }}>{children}</main>

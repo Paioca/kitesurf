@@ -14,11 +14,244 @@ type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
 type Intent = 'default' | 'sell' | 'favorites' | 'deals' | 'myListings';
 
-const PERKS = [
-  'Telefone verificado para perfis mais confiáveis',
-  'Reputação construída em negociações confirmadas',
-  'Anúncios organizados, com fotos e detalhes do equipamento',
-];
+const LOGIN_COPY = {
+  pt: {
+    perks: [
+      'Telefone verificado para perfis mais confiáveis',
+      'Reputação construída em negociações confirmadas',
+      'Anúncios organizados, com fotos e detalhes do equipamento',
+    ],
+    intent: {
+      default: {
+        eyebrow: 'Entre para a comunidade',
+        sideTitle: 'Um acesso simples para comprar, vender e negociar.',
+        title: 'Entrar ou criar conta',
+        sub: 'Sem senha. Enviamos um código para confirmar seu telefone.',
+        hint: '',
+        doneSub: 'Agora você pode explorar equipamentos ou anunciar seu primeiro item.',
+        donePrimary: 'Explorar equipamentos',
+        donePrimaryHref: '/',
+        doneSecondary: 'Anunciar equipamento',
+        doneSecondaryHref: '/anunciar',
+      },
+      sell: {
+        eyebrow: 'Anuncie com mais confiança',
+        sideTitle: 'Confirme seu telefone e crie um anúncio mais confiável.',
+        title: 'Confirme seu telefone para anunciar',
+        sub: 'Sem senha. O telefone verificado ajuda a proteger seu anúncio e evita contato solto antes de existir interesse real.',
+        hint: 'Já tem conta? Use o mesmo telefone para entrar e continuar o anúncio.',
+        doneSub: 'Agora você pode criar o anúncio com mais contexto para receber pedidos melhores.',
+        donePrimary: 'Criar meu anúncio',
+        donePrimaryHref: '/anunciar',
+        doneSecondary: 'Ver kites à venda',
+        doneSecondaryHref: '/',
+      },
+      favorites: {
+        eyebrow: 'Salve para comparar depois',
+        sideTitle: 'Entre para guardar anúncios e voltar com calma.',
+        title: 'Entre para salvar anúncios',
+        sub: 'Use seu telefone para acessar seus favoritos em qualquer visita.',
+        hint: 'Já tem conta? Use o mesmo telefone e seus anúncios salvos aparecem aqui.',
+        doneSub: 'Agora você pode salvar anúncios e comparar os equipamentos com calma.',
+        donePrimary: 'Ver favoritos',
+        donePrimaryHref: '/favoritos',
+        doneSecondary: 'Ver kites à venda',
+        doneSecondaryHref: '/',
+      },
+      deals: {
+        eyebrow: 'Acompanhe cada conversa',
+        sideTitle: 'Entre para ver visitas, ofertas e contatos liberados.',
+        title: 'Entre para acompanhar suas negociações',
+        sub: 'Aqui ficam pedidos de visita, ofertas e WhatsApp liberado quando o vendedor aceita.',
+        hint: 'Já tem conta? Use o mesmo telefone para voltar às suas negociações.',
+        doneSub: 'Agora você pode acompanhar visitas, ofertas e contatos liberados.',
+        donePrimary: 'Ver minhas negociações',
+        donePrimaryHref: '/pedidos',
+        doneSecondary: 'Ver kites à venda',
+        doneSecondaryHref: '/',
+      },
+      myListings: {
+        eyebrow: 'Seu painel de vendedor',
+        sideTitle: 'Entre para criar, revisar e gerenciar seus anúncios.',
+        title: 'Entre para criar ou gerenciar anúncios',
+        sub: 'Use seu telefone para acessar seus anúncios e acompanhar visitas e ofertas.',
+        hint: 'Já tem conta? Use o mesmo telefone para abrir seu painel de vendedor.',
+        doneSub: 'Agora você pode criar ou gerenciar seus anúncios.',
+        donePrimary: 'Abrir meus anúncios',
+        donePrimaryHref: '/conta/anuncios',
+        doneSecondary: 'Criar novo anúncio',
+        doneSecondaryHref: '/anunciar',
+      },
+    },
+    sellPerks: ['Telefone verificado antes de publicar', 'Seu WhatsApp fica protegido até você aceitar', 'Anúncio com fotos, ficha técnica e contexto'],
+    favoritesPerks: ['Salve anúncios para comparar depois', 'Volte quando quiser sem perder o equipamento', 'Telefone verificado para negociar com mais confiança'],
+    dealsPerks: ['Acompanhe visitas, ofertas e contatos liberados', 'Receba avisos quando alguém responder', 'Histórico organizado das suas negociações'],
+    myListingsPerks: ['Crie e gerencie seus anúncios em um só lugar', 'Veja visitas, ofertas e contatos liberados', 'Telefone verificado para vender com mais confiança'],
+    phone: 'Telefone',
+    country: 'País',
+    accountEmail: 'E-mail da sua conta',
+    emailAlt: 'Acesso alternativo. Pra criar uma conta nova,',
+    usePhone: 'use o telefone',
+    sending: 'Enviando…',
+    receiveCode: 'Receber código',
+    receiveAndContinue: 'Receber código e continuar',
+    tryEmail: 'Tentar por e-mail',
+    backToSms: 'Voltar pra entrar por SMS',
+    noPhoneAccess: 'Não tenho mais acesso a esse telefone',
+    termsPrefix: 'Ao continuar, você concorda com os',
+    terms: 'Termos',
+    privacy: 'Política de Privacidade',
+    termsSuffix: 'da Kitetropos.',
+    back: '‹ Voltar',
+    codeTitle: 'Digite o código',
+    sentTo: 'Enviamos para',
+    didNotReceive: 'Não recebeu?',
+    resendIn: 'Reenviar em',
+    resend: 'Reenviar',
+    verifying: 'Verificando…',
+    verify: 'Verificar',
+    phoneVerified: 'Telefone verificado',
+    sellerProfile: 'Complete seu perfil de vendedor',
+    profileTitle: 'Complete seu perfil',
+    sellerProfileSub: 'Seu nome e sua foto ajudam compradores a confiar em quem está anunciando.',
+    profileSub: 'Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.',
+    profilePhoto: 'Foto de perfil',
+    photoAdded: 'Foto adicionada. Toque para trocar.',
+    photoRequired: 'Obrigatória. Toque para adicionar uma foto sua.',
+    firstName: 'Nome',
+    firstNamePlaceholder: 'Seu nome',
+    lastName: 'Sobrenome',
+    lastNamePlaceholder: 'Seu sobrenome',
+    spot: 'Spot de interesse',
+    selectSpot: 'Selecione um spot',
+    nationality: 'Nacionalidade',
+    emailLater: 'O e-mail você adiciona depois, no seu perfil.',
+    language: 'Idioma',
+    creating: 'Criando…',
+    createAndList: 'Criar conta e anunciar',
+    createAccount: 'Criar conta',
+    completeProfile: 'Complete seu perfil',
+    doneTitle: 'Tudo certo. Sua conta está pronta.',
+  },
+  en: {
+    perks: [
+      'Verified phone for more trustworthy profiles',
+      'Reputation built from confirmed deals',
+      'Organized listings with photos and gear details',
+    ],
+    intent: {
+      default: {
+        eyebrow: 'Join the community',
+        sideTitle: 'One simple access to buy, sell, and negotiate.',
+        title: 'Sign in or create account',
+        sub: 'No password. We send a code to confirm your phone.',
+        hint: '',
+        doneSub: 'Now you can browse gear or list your first item.',
+        donePrimary: 'Browse gear',
+        donePrimaryHref: '/',
+        doneSecondary: 'List gear',
+        doneSecondaryHref: '/anunciar',
+      },
+      sell: {
+        eyebrow: 'List with more confidence',
+        sideTitle: 'Confirm your phone and create a more trustworthy listing.',
+        title: 'Confirm your phone to list',
+        sub: 'No password. A verified phone helps protect your listing and keeps loose contact away until there is real interest.',
+        hint: 'Already have an account? Use the same phone to sign in and continue your listing.',
+        doneSub: 'Now you can create a listing with more context and receive better requests.',
+        donePrimary: 'Create my listing',
+        donePrimaryHref: '/anunciar',
+        doneSecondary: 'See kites for sale',
+        doneSecondaryHref: '/',
+      },
+      favorites: {
+        eyebrow: 'Save to compare later',
+        sideTitle: 'Sign in to save listings and come back calmly.',
+        title: 'Sign in to save listings',
+        sub: 'Use your phone to access your favorites on any visit.',
+        hint: 'Already have an account? Use the same phone and your saved listings appear here.',
+        doneSub: 'Now you can save listings and compare gear calmly.',
+        donePrimary: 'View favorites',
+        donePrimaryHref: '/favoritos',
+        doneSecondary: 'See kites for sale',
+        doneSecondaryHref: '/',
+      },
+      deals: {
+        eyebrow: 'Follow every conversation',
+        sideTitle: 'Sign in to see visits, offers, and shared contacts.',
+        title: 'Sign in to follow your deals',
+        sub: 'This is where visit requests, offers, and WhatsApp contacts appear when the seller accepts.',
+        hint: 'Already have an account? Use the same phone to return to your deals.',
+        doneSub: 'Now you can follow visits, offers, and shared contacts.',
+        donePrimary: 'View my deals',
+        donePrimaryHref: '/pedidos',
+        doneSecondary: 'See kites for sale',
+        doneSecondaryHref: '/',
+      },
+      myListings: {
+        eyebrow: 'Your seller panel',
+        sideTitle: 'Sign in to create, review, and manage your listings.',
+        title: 'Sign in to create or manage listings',
+        sub: 'Use your phone to access your listings and follow visits and offers.',
+        hint: 'Already have an account? Use the same phone to open your seller panel.',
+        doneSub: 'Now you can create or manage your listings.',
+        donePrimary: 'Open my listings',
+        donePrimaryHref: '/conta/anuncios',
+        doneSecondary: 'Create new listing',
+        doneSecondaryHref: '/anunciar',
+      },
+    },
+    sellPerks: ['Verified phone before publishing', 'Your WhatsApp stays protected until you accept', 'Listing with photos, specs, and context'],
+    favoritesPerks: ['Save listings to compare later', 'Come back anytime without losing the gear', 'Verified phone to negotiate with more confidence'],
+    dealsPerks: ['Follow visits, offers, and shared contacts', 'Get notified when someone replies', 'Organized history of your deals'],
+    myListingsPerks: ['Create and manage your listings in one place', 'See visits, offers, and shared contacts', 'Verified phone to sell with more confidence'],
+    phone: 'Phone',
+    country: 'Country',
+    accountEmail: 'Account email',
+    emailAlt: 'Alternative access. To create a new account,',
+    usePhone: 'use your phone',
+    sending: 'Sending…',
+    receiveCode: 'Receive code',
+    receiveAndContinue: 'Receive code and continue',
+    tryEmail: 'Try email',
+    backToSms: 'Back to SMS sign in',
+    noPhoneAccess: 'I no longer have access to this phone',
+    termsPrefix: 'By continuing, you agree to Kitetropos',
+    terms: 'Terms',
+    privacy: 'Privacy Policy',
+    termsSuffix: '',
+    back: '‹ Back',
+    codeTitle: 'Enter the code',
+    sentTo: 'We sent it to',
+    didNotReceive: "Didn't receive it?",
+    resendIn: 'Resend in',
+    resend: 'Resend',
+    verifying: 'Verifying…',
+    verify: 'Verify',
+    phoneVerified: 'Phone verified',
+    sellerProfile: 'Complete your seller profile',
+    profileTitle: 'Complete your profile',
+    sellerProfileSub: 'Your name and photo help buyers trust the person behind the listing.',
+    profileSub: 'Your name and photo help people recognize who they are negotiating with.',
+    profilePhoto: 'Profile photo',
+    photoAdded: 'Photo added. Tap to change it.',
+    photoRequired: 'Required. Tap to add a photo of yourself.',
+    firstName: 'First name',
+    firstNamePlaceholder: 'Your first name',
+    lastName: 'Last name',
+    lastNamePlaceholder: 'Your last name',
+    spot: 'Spot of interest',
+    selectSpot: 'Select a spot',
+    nationality: 'Nationality',
+    emailLater: 'You can add an email later in your profile.',
+    language: 'Language',
+    creating: 'Creating…',
+    createAndList: 'Create account and list',
+    createAccount: 'Create account',
+    completeProfile: 'Complete your profile',
+    doneTitle: 'All set. Your account is ready.',
+  },
+};
 
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
@@ -180,94 +413,18 @@ export default function Entrar() {
     lastName.trim().length >= 1 &&
     !!spot &&
     !!country;
+  const t = LOGIN_COPY[lang];
   const sellIntent = intent === 'sell';
   const perks = sellIntent
-    ? [
-      'Telefone verificado antes de publicar',
-      'Seu WhatsApp fica protegido até você aceitar',
-      'Anúncio com fotos, ficha técnica e contexto',
-    ]
+    ? t.sellPerks
     : intent === 'favorites'
-      ? [
-        'Salve anúncios para comparar depois',
-        'Volte quando quiser sem perder o equipamento',
-        'Telefone verificado para negociar com mais confiança',
-      ]
+      ? t.favoritesPerks
     : intent === 'deals'
-      ? [
-        'Acompanhe visitas, ofertas e contatos liberados',
-        'Receba avisos quando alguém responder',
-        'Histórico organizado das suas negociações',
-      ]
+      ? t.dealsPerks
     : intent === 'myListings'
-      ? [
-        'Crie e gerencie seus anúncios em um só lugar',
-        'Veja visitas, ofertas e contatos liberados',
-        'Telefone verificado para vender com mais confiança',
-      ]
-    : PERKS;
-  const intentCopy: Record<Intent, { eyebrow: string; sideTitle: string; title: string; sub: string; doneSub: string; donePrimary: string; donePrimaryHref: string; doneSecondary: string; doneSecondaryHref: string; hint?: string }> = {
-    default: {
-      eyebrow: 'Entre para a comunidade',
-      sideTitle: 'Um acesso simples para comprar, vender e negociar.',
-      title: 'Entrar ou criar conta',
-      sub: 'Sem senha. Enviamos um código para confirmar seu telefone.',
-      doneSub: 'Agora você pode explorar equipamentos ou anunciar seu primeiro item.',
-      donePrimary: 'Explorar equipamentos',
-      donePrimaryHref: '/',
-      doneSecondary: 'Anunciar equipamento',
-      doneSecondaryHref: '/anunciar',
-    },
-    sell: {
-      eyebrow: 'Anuncie com mais confiança',
-      sideTitle: 'Confirme seu telefone e crie um anúncio mais confiável.',
-      title: 'Confirme seu telefone para anunciar',
-      sub: 'Sem senha. O telefone verificado ajuda a proteger seu anúncio e evita contato solto antes de existir interesse real.',
-      hint: 'Já tem conta? Use o mesmo telefone para entrar e continuar o anúncio.',
-      doneSub: 'Agora você pode criar o anúncio com mais contexto para receber pedidos melhores.',
-      donePrimary: 'Criar meu anúncio',
-      donePrimaryHref: '/anunciar',
-      doneSecondary: 'Ver kites à venda',
-      doneSecondaryHref: '/',
-    },
-    favorites: {
-      eyebrow: 'Salve para comparar depois',
-      sideTitle: 'Entre para guardar anúncios e voltar com calma.',
-      title: 'Entre para salvar anúncios',
-      sub: 'Use seu telefone para acessar seus favoritos em qualquer visita.',
-      hint: 'Já tem conta? Use o mesmo telefone e seus anúncios salvos aparecem aqui.',
-      doneSub: 'Agora você pode salvar anúncios e comparar os equipamentos com calma.',
-      donePrimary: 'Ver favoritos',
-      donePrimaryHref: '/favoritos',
-      doneSecondary: 'Ver kites à venda',
-      doneSecondaryHref: '/',
-    },
-    deals: {
-      eyebrow: 'Acompanhe cada conversa',
-      sideTitle: 'Entre para ver visitas, ofertas e contatos liberados.',
-      title: 'Entre para acompanhar suas negociações',
-      sub: 'Aqui ficam pedidos de visita, ofertas e WhatsApp liberado quando o vendedor aceita.',
-      hint: 'Já tem conta? Use o mesmo telefone para voltar às suas negociações.',
-      doneSub: 'Agora você pode acompanhar visitas, ofertas e contatos liberados.',
-      donePrimary: 'Ver minhas negociações',
-      donePrimaryHref: '/pedidos',
-      doneSecondary: 'Ver kites à venda',
-      doneSecondaryHref: '/',
-    },
-    myListings: {
-      eyebrow: 'Seu painel de vendedor',
-      sideTitle: 'Entre para criar, revisar e gerenciar seus anúncios.',
-      title: 'Entre para criar ou gerenciar anúncios',
-      sub: 'Use seu telefone para acessar seus anúncios e acompanhar visitas e ofertas.',
-      hint: 'Já tem conta? Use o mesmo telefone para abrir seu painel de vendedor.',
-      doneSub: 'Agora você pode criar ou gerenciar seus anúncios.',
-      donePrimary: 'Abrir meus anúncios',
-      donePrimaryHref: '/conta/anuncios',
-      doneSecondary: 'Criar novo anúncio',
-      doneSecondaryHref: '/anunciar',
-    },
-  };
-  const copy = intentCopy[intent];
+      ? t.myListingsPerks
+    : t.perks;
+  const copy = t.intent[intent];
 
   return (
     <div style={shell}>
@@ -312,9 +469,9 @@ export default function Entrar() {
                   principal e não confundir quem chega novo. */}
               {channel === 'sms' ? (
                 <>
-                  <label style={lbl}>Telefone</label>
+                  <label style={lbl}>{t.phone}</label>
                   <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-                    <select value={dial} onChange={(e) => setDial(e.target.value)} style={ddi} aria-label="País">
+                    <select value={dial} onChange={(e) => setDial(e.target.value)} style={ddi} aria-label={t.country}>
                       {COUNTRIES.map((c) => <option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
                     </select>
                     <input value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="(85) 99988-7766" style={{ ...input, flex: 1, minWidth: 0 }} />
@@ -322,10 +479,10 @@ export default function Entrar() {
                 </>
               ) : (
                 <>
-                  <label style={lbl}>E-mail da sua conta</label>
+                  <label style={lbl}>{t.accountEmail}</label>
                   <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="seu@email.com" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 8 }} />
                   <div style={{ fontSize: 12.5, color: '#8a948d', margin: '0 0 18px', lineHeight: 1.4 }}>
-                    Acesso alternativo. Pra criar uma conta nova, <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={linkInline}>use o telefone</button>.
+                    {t.emailAlt} <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={linkInline}>{t.usePhone}</button>.
                   </div>
                 </>
               )}
@@ -340,7 +497,7 @@ export default function Entrar() {
                 }
                 style={primaryBtn}
               >
-                {loading ? 'Enviando…' : (intent === 'default' ? 'Receber código' : 'Receber código e continuar')}
+                {loading ? t.sending : (intent === 'default' ? t.receiveCode : t.receiveAndContinue)}
               </button>
 
               {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
@@ -350,40 +507,47 @@ export default function Entrar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', marginTop: 18 }}>
                 {channel === 'sms' && smsFailed && (
                   <button type="button" onClick={() => { setChannel('email'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
-                    Tentar por e-mail
+                    {t.tryEmail}
                   </button>
                 )}
                 {channel === 'email' && (
                   <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
-                    Voltar pra entrar por SMS
+                    {t.backToSms}
                   </button>
                 )}
-                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>Não tenho mais acesso a esse telefone</Link>
+                <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>{t.noPhoneAccess}</Link>
               </div>
 
-              <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
+              <p style={terms}>
+                {t.termsPrefix}{' '}
+                <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>{t.terms}</Link>
+                {' '}
+                {lang === 'pt' ? 'e a' : 'and'}{' '}
+                <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>{t.privacy}</Link>
+                {t.termsSuffix ? ` ${t.termsSuffix}` : ''}.
+              </p>
               {copy.hint && <p style={{ ...terms, marginTop: 10 }}>{copy.hint}</p>}
             </>
           )}
 
           {step === 'otp' && (
             <>
-              <button onClick={() => setStep('phone')} style={backBtn}>‹ Voltar</button>
-              <h1 style={h1}>Digite o código</h1>
-              <p style={sub}>Enviamos para <strong style={{ color: '#23332e' }}>{channel === 'sms' ? phone : email}</strong>.</p>
+              <button onClick={() => setStep('phone')} style={backBtn}>{t.back}</button>
+              <h1 style={h1}>{t.codeTitle}</h1>
+              <p style={sub}>{t.sentTo} <strong style={{ color: '#23332e' }}>{channel === 'sms' ? phone : email}</strong>.</p>
               <OtpCells value={code} onChange={setCode} />
               <div style={{ fontSize: 13, color: '#8a948d', margin: '6px 0 26px' }}>
-                Não recebeu?{' '}
+                {t.didNotReceive}{' '}
                 <button
                   onClick={requestOtp}
                   disabled={loading || cooldown > 0}
                   style={{ ...linkInline, ...(cooldown > 0 ? { color: '#a8b1aa', cursor: 'default' } : {}) }}
                 >
-                  {cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar'}
+                  {cooldown > 0 ? `${t.resendIn} ${cooldown}s` : t.resend}
                 </button>
               </div>
               <button onClick={() => verify(false)} disabled={loading || code.length !== 6} style={primaryBtn}>
-                {loading ? 'Verificando…' : 'Verificar'}
+                {loading ? t.verifying : t.verify}
               </button>
             </>
           )}
@@ -391,10 +555,10 @@ export default function Entrar() {
           {step === 'profile' && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: '#1f6b5c', marginBottom: 14 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />Telefone verificado
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />{t.phoneVerified}
               </div>
-              <h1 style={h1}>{sellIntent ? 'Complete seu perfil de vendedor' : 'Complete seu perfil'}</h1>
-              <p style={sub}>{sellIntent ? 'Seu nome e sua foto ajudam compradores a confiar em quem está anunciando.' : 'Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.'}</p>
+              <h1 style={h1}>{sellIntent ? t.sellerProfile : t.profileTitle}</h1>
+              <p style={sub}>{sellIntent ? t.sellerProfileSub : t.profileSub}</p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
                 <button onClick={() => fileRef.current?.click()} style={{ ...avatarBtn, ...(avatarUrl ? { border: 'none', backgroundImage: `url("${avatarUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}>
@@ -402,42 +566,42 @@ export default function Entrar() {
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => uploadAvatar(e.target.files?.[0])} />
                 <div>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 2 }}>Foto de perfil <span style={{ color: '#c0492f' }}>*</span></div>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 2 }}>{t.profilePhoto} <span style={{ color: '#c0492f' }}>*</span></div>
                   <div style={{ fontSize: 12.5, color: '#8a948d', lineHeight: 1.4, maxWidth: 200 }}>
-                    {avatarUrl ? 'Foto adicionada. Toque para trocar.' : 'Obrigatória. Toque para adicionar uma foto sua.'}
+                    {avatarUrl ? t.photoAdded : t.photoRequired}
                   </div>
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <label style={lbl}>Nome</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" placeholder="Seu nome" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+                  <label style={lbl}>{t.firstName}</label>
+                  <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" placeholder={t.firstNamePlaceholder} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <label style={lbl}>Sobrenome</label>
-                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" placeholder="Seu sobrenome" style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+                  <label style={lbl}>{t.lastName}</label>
+                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" placeholder={t.lastNamePlaceholder} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
                 </div>
               </div>
 
-              <label style={lbl}>Spot de interesse</label>
-              <select value={spot} onChange={(e) => setSpot(e.target.value)} aria-label="Spot de interesse" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
-                <option value="">Selecione um spot</option>
+              <label style={lbl}>{t.spot}</label>
+              <select value={spot} onChange={(e) => setSpot(e.target.value)} aria-label={t.spot} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
+                <option value="">{t.selectSpot}</option>
                 {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
 
-              <label style={lbl}>Nacionalidade</label>
-              <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Nacionalidade" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
+              <label style={lbl}>{t.nationality}</label>
+              <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label={t.nationality} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
                 {COUNTRY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
 
               <div style={{ fontSize: 12.5, color: '#9aa49d', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{ width: 13, height: 13, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none', marginTop: 2 }} />
-                O e-mail você adiciona depois, no seu perfil.
+                {t.emailLater}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 26 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: '#48564f' }}>Idioma</span>
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: '#48564f' }}>{t.language}</span>
                 <div style={{ display: 'flex', border: '1px solid #d3ccbd', borderRadius: 999, overflow: 'hidden', fontSize: 12.5, fontWeight: 600 }}>
                   <button onClick={() => setLang('pt')} style={lang === 'pt' ? segOn : segOff}>Português</button>
                   <button onClick={() => setLang('en')} style={lang === 'en' ? segOn : segOff}>English</button>
@@ -445,7 +609,7 @@ export default function Entrar() {
               </div>
 
               <button onClick={() => verify(true)} disabled={!canFinish || loading} style={canFinish ? primaryBtn : disabledBtn}>
-                {loading ? 'Criando…' : canFinish ? (sellIntent ? 'Criar conta e anunciar' : 'Criar conta') : 'Complete seu perfil'}
+                {loading ? t.creating : canFinish ? (sellIntent ? t.createAndList : t.createAccount) : t.completeProfile}
               </button>
             </>
           )}
@@ -453,7 +617,7 @@ export default function Entrar() {
           {step === 'done' && (
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
-              <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Tudo certo. Sua conta está pronta.</h1>
+              <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>{t.doneTitle}</h1>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>{copy.doneSub}</p>
               <Link href={copy.donePrimaryHref} style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>{copy.donePrimary}</Link>
               <Link href={copy.doneSecondaryHref} style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>{copy.doneSecondary}</Link>
