@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { Diamond, Logo } from './ui';
 import { AccountNav } from './AccountNav';
 import { RequestBadge } from './RequestBadge';
+import { LanguageToggle } from './LanguageToggle';
 
 export function MobileAppBar() {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(246,243,236,0.94)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${color.line}`, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <Link href="/" style={{ textDecoration: 'none' }}><Logo size={18} /></Link>
-      <AccountNav mobile />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <LanguageToggle compact />
+        <AccountNav mobile />
+      </div>
     </header>
   );
 }

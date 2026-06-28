@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
+import { storedLocale } from '../../components/LanguageToggle';
 import { COUNTRY_NAMES } from '../../lib/geo';
 import { SPOTS } from '../../lib/filters';
 
@@ -46,6 +47,10 @@ export default function Entrar() {
   const [smsFailed, setSmsFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const submittedRef = useRef('');
+
+  useEffect(() => {
+    setLang(storedLocale());
+  }, []);
 
   // Auto-submete o OTP quando as 6 células completam (no mock o devCode já preenche).
   // Cada código único é submetido uma vez só (evita loop em código errado).
@@ -101,6 +106,7 @@ export default function Entrar() {
     setLoading(true);
     try {
       const body: any = channel === 'sms' ? { phone, code } : { email: email.trim().toLowerCase(), code };
+      body.locale = lang;
       if (withProfile) Object.assign(body, { name, lastName, spot, country, avatarUrl, locale: lang });
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Logo } from './ui';
 import { AccountNav } from './AccountNav';
 import { HeaderNav } from './HeaderNav';
+import { LanguageToggle } from './LanguageToggle';
 
 export function SiteHeader() {
   return (
@@ -12,6 +13,7 @@ export function SiteHeader() {
         <Link href="/" style={{ textDecoration: 'none' }}><Logo size={21} /></Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <HeaderNav />
+          <LanguageToggle />
           <AccountNav />
           <Link href="/anunciar" className="kl-lift" style={{ display: 'inline-block', fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar</Link>
         </div>

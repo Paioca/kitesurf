@@ -29,7 +29,7 @@ const schema = z.object({
   spot: z.string().max(80).optional(),
   country: z.string().max(80).optional(),
   avatarUrl: z.string().optional(),
-  locale: z.string().optional(),
+  locale: z.enum(['pt', 'en']).optional(),
 }).refine((d) => Boolean(d.phone) !== Boolean(d.email), {
   message: 'Forneça telefone OU e-mail.',
 });
@@ -76,6 +76,9 @@ async function verifyByEmail(dto: z.infer<typeof schema>) {
   const ok = await verifyOtp({ email }, dto.code, true);
   if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
 
+  if (dto.locale && dto.locale !== user.locale) {
+    await db.user.update({ where: { id: user.id }, data: { locale: dto.locale } });
+  }
   await setSession(user.id, user.sessionVersion);
   return NextResponse.json({
     ok: true,
@@ -139,8 +142,8 @@ async function verifyByPhone(dto: z.infer<typeof schema>) {
     // Login de conta existente: valida e queima o código.
     const ok = await verifyOtp({ phone }, dto.code, true);
     if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
-    if (!existing.phoneVerified) {
-      user = await db.user.update({ where: { id: existing.id }, data: { phoneVerified: true } });
+    if (!existing.phoneVerified || (dto.locale && dto.locale !== existing.locale)) {
+      user = await db.user.update({ where: { id: existing.id }, data: { phoneVerified: true, locale: dto.locale ?? existing.locale } });
     }
   }
 
