@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { prismaRuntimeDatabaseUrl } from '../lib/db-url';
+import { databaseUrlInfo, prismaRuntimeDatabaseUrl } from '../lib/db-url';
 
 describe('prismaRuntimeDatabaseUrl', () => {
   afterEach(() => {
@@ -33,8 +33,24 @@ describe('prismaRuntimeDatabaseUrl', () => {
   });
 
   it('não altera a URL fora de produção', () => {
-    const raw = 'postgresql://kite:kite@localhost:5432/kite?schema=public';
+    const raw = '"postgresql://kite:kite@localhost:5432/kite?schema=public"';
 
-    expect(prismaRuntimeDatabaseUrl(raw, 'test')).toBe(raw);
+    expect(prismaRuntimeDatabaseUrl(raw, 'test')).toBe('postgresql://kite:kite@localhost:5432/kite?schema=public');
+  });
+
+  it('expõe apenas metadados não sensíveis para diagnóstico', () => {
+    expect(
+      databaseUrlInfo(
+        'postgresql://postgres.proj:secret@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1',
+      ),
+    ).toEqual({
+      configured: true,
+      hostname: 'aws-0-sa-east-1.pooler.supabase.com',
+      port: '6543',
+      isSupabasePooler: true,
+      pgbouncer: true,
+      hasConnectionLimit: true,
+      hasPoolTimeout: false,
+    });
   });
 });

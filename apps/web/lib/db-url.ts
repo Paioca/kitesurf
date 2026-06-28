@@ -1,9 +1,35 @@
-export function prismaRuntimeDatabaseUrl(raw = process.env.DATABASE_URL, nodeEnv = process.env.NODE_ENV) {
+function cleanDatabaseUrl(raw?: string) {
   if (!raw) return raw;
-  if (nodeEnv !== 'production') return raw;
+  return raw.trim().replace(/^['"]|['"]$/g, '');
+}
+
+export function databaseUrlInfo(raw = process.env.DATABASE_URL) {
+  const cleaned = cleanDatabaseUrl(raw);
+  if (!cleaned) return { configured: false as const };
 
   try {
-    const url = new URL(raw);
+    const url = new URL(cleaned);
+    return {
+      configured: true as const,
+      hostname: url.hostname,
+      port: url.port || '(default)',
+      isSupabasePooler: url.hostname.endsWith('.pooler.supabase.com'),
+      pgbouncer: url.searchParams.get('pgbouncer') === 'true',
+      hasConnectionLimit: url.searchParams.has('connection_limit'),
+      hasPoolTimeout: url.searchParams.has('pool_timeout'),
+    };
+  } catch {
+    return { configured: true as const, invalid: true as const };
+  }
+}
+
+export function prismaRuntimeDatabaseUrl(raw = process.env.DATABASE_URL, nodeEnv = process.env.NODE_ENV) {
+  const cleaned = cleanDatabaseUrl(raw);
+  if (!cleaned) return cleaned;
+  if (nodeEnv !== 'production') return cleaned;
+
+  try {
+    const url = new URL(cleaned);
     const isSupabasePooler = url.hostname.endsWith('.pooler.supabase.com');
 
     if (isSupabasePooler && url.port === '5432') {
@@ -21,6 +47,6 @@ export function prismaRuntimeDatabaseUrl(raw = process.env.DATABASE_URL, nodeEnv
 
     return url.toString();
   } catch {
-    return raw;
+    return cleaned;
   }
 }
