@@ -17,6 +17,7 @@ export const SPOT_LOCATIONS: SpotLocation[] = [
   { value: 'Ilha do Guajiru', city: 'Itarema', uf: 'CE', state: 'Ceará' },
   { value: 'Preá', city: 'Cruz', uf: 'CE', state: 'Ceará' },
   { value: 'Lagoa da Conceição', city: 'Florianópolis', uf: 'SC', state: 'Santa Catarina' },
+  { value: 'Ibiraquera', city: 'Imbituba', uf: 'SC', state: 'Santa Catarina' },
 ];
 
 export const SPOTS = SPOT_LOCATIONS.map((s) => s.value);
