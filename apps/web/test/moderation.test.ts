@@ -7,6 +7,7 @@ const { mockDb } = vi.hoisted(() => ({
     request: { findMany: vi.fn(), updateMany: vi.fn() },
     deal: { updateMany: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
+    favorite: { findMany: vi.fn() },
     moderationAction: { create: vi.fn() },
     report: { update: vi.fn() },
     $transaction: vi.fn(),
@@ -23,6 +24,7 @@ beforeEach(() => {
   mockDb.user.update.mockResolvedValue({});
   mockDb.listing.findMany.mockResolvedValue([{ id: 'L1', title: 'Kite X' }, { id: 'L2', title: 'Barra Y' }]);
   mockDb.request.findMany.mockResolvedValue([{ buyerId: 'B1', listingId: 'L1' }, { buyerId: 'B2', listingId: 'L2' }]);
+  mockDb.favorite.findMany.mockResolvedValue([]);
   mockDb.request.updateMany.mockResolvedValue({ count: 2 });
   mockDb.deal.updateMany.mockResolvedValue({ count: 1 });
   mockDb.listing.updateMany.mockResolvedValue({ count: 2 });

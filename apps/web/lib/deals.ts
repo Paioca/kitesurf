@@ -3,7 +3,7 @@ import type { DealStatus, DisputeReason } from '@prisma/client';
 import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
-import { emit, emitMany, affectedBuyerIds } from './notifications';
+import { emit, emitMany, affectedBuyerIds, favoriterIds } from './notifications';
 import { invalidateSellerRating } from './browse';
 import { recordAudit } from './audit';
 import { childLogger } from './logger';
@@ -179,6 +179,12 @@ async function applyPieceSale(tx: any, deal: { id: string; listingId: string; bu
   await tx.request.updateMany({ where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter }, data: { status: 'sold_elsewhere' } });
   await tx.deal.updateMany({ where: { listingId: deal.listingId, id: { not: deal.id }, buyerId: { not: deal.buyerId }, status: 'seller_confirmed', ...compFilter }, data: { status: 'voided', confirmationDeadlineAt: null } });
   await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'sold_elsewhere' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
+  // Avisa quem FAVORITOU (e não foi notificado como comprador) que o anúncio fechou — só
+  // quando a venda fecha o anúncio inteiro (close); senão a peça segue à venda.
+  if (close) {
+    const favs = await favoriterIds(tx, deal.listingId, [deal.buyerId, ...affected]);
+    await emitMany(tx, favs.map((uid) => ({ userId: uid, type: 'listing_sold' as const, listingId: deal.listingId, actorId: deal.buyerId, data: { title: listing.title } })));
+  }
 }
 
 // Reabre a peça vendida (reversão/correção): o anúncio volta a ANUNCIADO (active),

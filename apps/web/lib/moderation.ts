@@ -1,7 +1,7 @@
 import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
-import { emitMany, affectedBuyerIds } from './notifications';
+import { emitMany, affectedBuyerIds, favoriterIds } from './notifications';
 
 export class ModerationError extends PublicError {}
 
@@ -54,6 +54,9 @@ export async function moderate(
       await tx.deal.updateMany({ where: { listingId: targetId, status: 'seller_confirmed' }, data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null } });
       await tx.listing.update({ where: { id: targetId }, data: { deletedAt: new Date(), status: 'archived' } });
       await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'listing_removed' as const, listingId: targetId, actorId: moderatorId, data: { title: l.title } })));
+      // quem favoritou (e não tinha pedido) também é avisado da remoção por moderação
+      const favs = await favoriterIds(tx, targetId, affected);
+      await emitMany(tx, favs.map((uid) => ({ userId: uid, type: 'listing_removed' as const, listingId: targetId, actorId: moderatorId, data: { title: l.title } })));
     } else if (action === 'restore_listing') {
       const l = await tx.listing.findUnique({ where: { id: targetId }, select: { id: true } });
       if (!l) throw new ModerationError('Anúncio não encontrado.', 404);

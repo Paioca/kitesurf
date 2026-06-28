@@ -8,7 +8,7 @@ const { mockDb } = vi.hoisted(() => ({
 }));
 vi.mock('../lib/db', () => ({ db: mockDb }));
 
-import { unreadCount, listNotifications, listUnreadNotifications, markRead, emit, emitMany, affectedBuyerIds } from '../lib/notifications';
+import { unreadCount, listNotifications, listUnreadNotifications, markRead, emit, emitMany, affectedBuyerIds, favoriterIds } from '../lib/notifications';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -61,5 +61,10 @@ describe('emissão (tx-aware)', () => {
     const tx: any = { request: { findMany: vi.fn().mockResolvedValue([{ buyerId: 'b1' }, { buyerId: 'b2' }]) } };
     expect(await affectedBuyerIds(tx, 'L', { excludeBuyerId: 'b9' })).toEqual(['b1', 'b2']);
     expect(tx.request.findMany.mock.calls[0][0].where.buyerId).toEqual({ not: 'b9' });
+  });
+  it('favoriterIds retorna favoritantes distintos, excluindo os já notificados', async () => {
+    const tx: any = { favorite: { findMany: vi.fn().mockResolvedValue([{ userId: 'f1' }, { userId: 'f2' }]) } };
+    expect(await favoriterIds(tx, 'L', ['f0'])).toEqual(['f1', 'f2']);
+    expect(tx.favorite.findMany.mock.calls[0][0].where.userId).toEqual({ notIn: ['f0'] });
   });
 });
