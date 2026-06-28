@@ -10,7 +10,7 @@ export function RequestBadge() {
     let alive = true;
     const refresh = () => {
       if (document.visibilityState === 'hidden') return; // não buscar em aba oculta
-      fetch('/api/requests/count').then((r) => r.json()).then((d) => { if (alive) setN(d.unread ?? 0); }).catch(() => {});
+      fetch('/api/requests/count', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((d) => { if (alive) setN(d.unread ?? 0); }).catch(() => {});
     };
     refresh();
     // Zera na hora quando /pedidos marca tudo lido (evento de MarkNotificationsRead),
