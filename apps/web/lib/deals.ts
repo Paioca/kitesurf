@@ -4,6 +4,7 @@ import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
 import { emit, emitMany, affectedBuyerIds } from './notifications';
+import { invalidateSellerRating } from './browse';
 import { recordAudit } from './audit';
 import { childLogger } from './logger';
 
@@ -305,6 +306,10 @@ export async function requestReversal(userId: string, dealId: string, reason: Di
     await tx.dealDispute.create({ data: { dealId, openedByUserId: userId, counterpartyId, reason, description: description ?? null, status: 'open' } });
     await emit(tx, { userId: counterpartyId, type: 'reversal_requested', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
   });
+  // A venda saiu de 'completed' → as reviews dela deixam de contar na nota pública.
+  // Invalida o cache dos dois lados na hora (senão a nota some só após o TTL de 60s).
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // A contraparte responde à correção. Aceita → reversed (peça volta a paused, deixa de
@@ -343,6 +348,9 @@ export async function cancelReversal(userId: string, dealId: string) {
     await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', reversalRequestedAt: null } });
     await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'closed', resolvedAt: new Date() } });
   });
+  // Voltou a 'completed' → as reviews voltam a contar; reflete a nota na hora.
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // MODERAÇÃO (§11) — o admin decide uma disputa em under_review (a contraparte recusou
@@ -372,6 +380,10 @@ export async function resolveDispute(adminId: string, disputeId: string, action:
       await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_rejected' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '', byModerator: true } })));
     }
   });
+  // uphold volta a 'completed' (reviews voltam) / reverse mantém oculto — invalida nos dois
+  // casos pra a nota não ficar stale pelo TTL.
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA

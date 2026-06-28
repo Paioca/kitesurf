@@ -77,6 +77,7 @@ export function RecoveryForm({ token }: { token: string }) {
             <TextInput type="tel" inputMode="tel" autoComplete="tel" value={rawPhone} onChange={(e) => setRawPhone(e.target.value)} placeholder="(85) 99988-7766" style={{ flex: 1, minWidth: 0 }} />
           </div>
           <Button onClick={requestSms} disabled={loading || rawPhone.replace(/\D/g, '').length < 8} full style={{ marginTop: 18 }}>{loading ? 'Enviando…' : 'Enviar código por SMS'}</Button>
+          <button onClick={() => { setStep('email'); setError(''); setMessage(''); }} style={{ ...back, width: '100%', textAlign: 'center', marginTop: 14, marginBottom: 0 }}>Recomeçar com outro e-mail</button>
         </>}
         {step === 'otp' && <>
           <button onClick={() => setStep('phone')} style={back}>‹ Alterar telefone</button>
