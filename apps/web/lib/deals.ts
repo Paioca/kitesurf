@@ -72,9 +72,14 @@ export async function confirmSaleFromRequest(userId: string, requestId: string) 
       create: { listingId: r.listingId, buyerId: r.buyerId, sellerId: r.sellerId, status: 'open' },
       select: { id: true },
     });
+    const conversationDeal = await tx.deal.findFirst({
+      where: { conversationId: conversation.id, ...(existing ? { id: { not: existing.id } } : {}) },
+      select: { id: true },
+    });
+    const conversationData = conversationDeal ? {} : { conversationId: existing?.conversationId ?? conversation.id };
     const deal = existing
-      ? await tx.deal.update({ where: { id: existing.id }, data: { status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt, conversationId: existing.conversationId ?? conversation.id } })
-      : await tx.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt, conversationId: conversation.id } });
+      ? await tx.deal.update({ where: { id: existing.id }, data: { status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt, ...conversationData } })
+      : await tx.deal.create({ data: { listingId: r.listingId, sellerId: r.sellerId, buyerId: r.buyerId, component: r.component, status: 'seller_confirmed', sellerConfirmedAt, confirmationDeadlineAt, ...conversationData } });
     await emit(tx, { userId: r.buyerId, type: 'sale_marked', listingId: r.listingId, requestId: r.id, dealId: deal.id, actorId: r.sellerId, data: { title: listing.title } });
     return deal.id;
   });
