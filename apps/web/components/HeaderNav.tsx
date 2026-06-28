@@ -9,7 +9,7 @@ import { RequestBadge } from './RequestBadge';
 export function HeaderNav() {
   const [authed, setAuthed] = useState(false);
   useEffect(() => {
-    fetch('/api/auth/me').then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => {});
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => {});
   }, []);
   if (!authed) return null;
 

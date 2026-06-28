@@ -9,10 +9,14 @@ import { SPOTS } from '../../../../lib/filters';
 import { recordAuditNoTx } from '../../../../lib/audit';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const NO_STORE = { 'cache-control': 'no-store, must-revalidate' };
 
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json(null, { status: 200 });
+  if (!user) return NextResponse.json(null, { status: 200, headers: NO_STORE });
   return NextResponse.json({
     id: user.id,
     name: user.name,
@@ -25,7 +29,7 @@ export async function GET() {
     phoneVerified: user.phoneVerified,
     locale: user.locale,
     role: user.role,
-  });
+  }, { headers: NO_STORE });
 }
 
 const patchSchema = z.object({
@@ -76,7 +80,7 @@ export async function PATCH(req: Request) {
         after: { email: updated.email, emailVerified: updated.emailVerified },
       });
     }
-    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, locale: updated.locale });
+    return NextResponse.json({ id: updated.id, name: updated.name, lastName: updated.lastName, spot: updated.spot, country: updated.country, email: updated.email, emailVerified: updated.emailVerified, avatarUrl: updated.avatarUrl, locale: updated.locale }, { headers: NO_STORE });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if ((e as { code?: string }).code === 'P2002') return NextResponse.json({ message: 'Esse e-mail já está em uso por outra conta.' }, { status: 409 });
@@ -92,7 +96,7 @@ export async function DELETE() {
     const user = await requireUser();
     await deleteAccount(user.id);
     await clearSession();
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { headers: NO_STORE });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
     if (e instanceof LifecycleError) return NextResponse.json({ message: e.message }, { status: e.status });

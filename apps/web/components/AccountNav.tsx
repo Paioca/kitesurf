@@ -11,7 +11,7 @@ type Me = { id: string; name?: string; avatarUrl?: string } | null;
 export function AccountNav({ mobile = false }: { mobile?: boolean }) {
   const [me, setMe] = useState<Me | undefined>(undefined);
   useEffect(() => {
-    fetch('/api/auth/me').then((r) => r.json()).then((u) => setMe(u && u.id ? u : null)).catch(() => setMe(null));
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setMe(u && u.id ? u : null)).catch(() => setMe(null));
   }, []);
 
   if (me === undefined) return <span style={{ width: mobile ? 54 : 64 }} />; // reserva espaço enquanto carrega
