@@ -6,7 +6,7 @@ const { mockDb } = vi.hoisted(() => ({
     deal: { count: vi.fn() },
     request: { updateMany: vi.fn(), findMany: vi.fn() },
     user: { update: vi.fn(), findUnique: vi.fn() },
-    notification: { create: vi.fn(), createMany: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
     auditEvent: { create: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -25,6 +25,8 @@ beforeEach(() => {
   mockDb.user.update.mockResolvedValue({});
   mockDb.user.findUnique.mockResolvedValue({ name: 'Old', email: 'old@x.com', phone: '+5511', emailVerified: true, phoneVerified: true, status: 'active' });
   mockDb.notification.createMany.mockResolvedValue({ count: 0 });
+  mockDb.notification.create.mockResolvedValue({});
+  mockDb.notification.findFirst.mockResolvedValue(null);
   mockDb.auditEvent.create.mockResolvedValue({});
 });
 

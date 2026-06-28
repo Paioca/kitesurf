@@ -6,7 +6,7 @@ const { mockDb } = vi.hoisted(() => ({
     user: { findUnique: vi.fn() },
     request: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn() },
     deal: { count: vi.fn(), findMany: vi.fn() },
-    notification: { create: vi.fn(), createMany: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -35,6 +35,7 @@ beforeEach(() => {
   mockDb.user.findUnique.mockResolvedValue({ name: 'Bruno', phone: '+5588' });
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.notification.create.mockResolvedValue({});
+  mockDb.notification.findFirst.mockResolvedValue(null);
   mockDb.listing.findUnique.mockResolvedValue({ title: 't' });
   mockDb.request.findMany.mockResolvedValue([]);
   mockDb.request.updateMany.mockResolvedValue({ count: 0 });

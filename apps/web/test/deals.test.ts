@@ -7,7 +7,7 @@ const { mockDb } = vi.hoisted(() => ({
     listing: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     review: { upsert: vi.fn() },
     dealDispute: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
-    notification: { create: vi.fn(), createMany: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
     auditEvent: { create: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
@@ -41,6 +41,7 @@ beforeEach(() => {
   mockDb.dealDispute.update.mockResolvedValue({});
   mockDb.notification.create.mockResolvedValue({});
   mockDb.notification.createMany.mockResolvedValue({ count: 0 });
+  mockDb.notification.findFirst.mockResolvedValue(null);
   mockDb.auditEvent.create.mockResolvedValue({});
 });
 
@@ -340,8 +341,8 @@ describe('resolveDispute — admin (§11)', () => {
     await resolveDispute('ADM', 'DISP', 'uphold', 'sem evidência de devolução');
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }));
     expect(mockDb.dealDispute.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'resolved_upheld', resolvedByAdminId: 'ADM' }) }));
-    expect(mockDb.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.arrayContaining([expect.objectContaining({ type: 'reversal_rejected', data: expect.objectContaining({ byModerator: true }) })]),
+    expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ type: 'reversal_rejected', data: expect.objectContaining({ byModerator: true }) }),
     }));
   });
   it('reverse → Deal reversed + anúncio active + pedido withdrawn; dispute resolved_reversed', async () => {

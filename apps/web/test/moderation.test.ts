@@ -6,7 +6,7 @@ const { mockDb } = vi.hoisted(() => ({
     listing: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     request: { findMany: vi.fn(), updateMany: vi.fn() },
     deal: { updateMany: vi.fn() },
-    notification: { createMany: vi.fn() },
+    notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
     moderationAction: { create: vi.fn() },
     report: { update: vi.fn() },
     $transaction: vi.fn(),
@@ -29,6 +29,8 @@ beforeEach(() => {
   mockDb.listing.update.mockResolvedValue({});
   mockDb.listing.findFirst.mockResolvedValue({ id: 'L1', title: 'Kite X' });
   mockDb.notification.createMany.mockResolvedValue({ count: 2 });
+  mockDb.notification.create.mockResolvedValue({});
+  mockDb.notification.findFirst.mockResolvedValue(null);
   mockDb.moderationAction.create.mockResolvedValue({});
 });
 
@@ -51,10 +53,8 @@ describe('moderate', () => {
       where: { sellerId: 'S', status: 'seller_confirmed' },
       data: { status: 'cancelled', sellerConfirmedAt: null, confirmationDeadlineAt: null },
     });
-    expect(mockDb.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.arrayContaining([
-        expect.objectContaining({ userId: 'B1', type: 'listing_removed', listingId: 'L1', data: { title: 'Kite X' } }),
-      ]),
+    expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: 'B1', type: 'listing_removed', listingId: 'L1', data: { title: 'Kite X' } }),
     }));
   });
 

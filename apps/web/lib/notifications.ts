@@ -26,12 +26,25 @@ const toRow = (n: NotifInput) => ({
   data: n.data ?? undefined,
 });
 
+function duplicateWhere(n: NotifInput): Prisma.NotificationWhereInput {
+  return {
+    userId: n.userId,
+    type: n.type,
+    listingId: n.listingId ?? null,
+    requestId: n.requestId ?? null,
+    dealId: n.dealId ?? null,
+    actorId: n.actorId ?? null,
+  };
+}
+
 export async function emit(tx: Tx, n: NotifInput) {
+  const existing = await tx.notification.findFirst({ where: duplicateWhere(n), select: { id: true } });
+  if (existing) return;
   await tx.notification.create({ data: toRow(n) });
 }
 
 export async function emitMany(tx: Tx, ns: NotifInput[]) {
-  if (ns.length) await tx.notification.createMany({ data: ns.map(toRow) });
+  for (const n of ns) await emit(tx, n);
 }
 
 // Compradores afetados (ids distintos) de pedidos abertos de um anúncio — usado pra
@@ -58,6 +71,10 @@ export async function unreadCount(userId: string): Promise<number> {
 
 export async function listNotifications(userId: string, take = 30) {
   return db.notification.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take });
+}
+
+export async function listUnreadNotifications(userId: string, take = 12) {
+  return db.notification.findMany({ where: { userId, readAt: null }, orderBy: { createdAt: 'desc' }, take });
 }
 
 // Marca lidas: todas (sem ids) ou um subconjunto do próprio usuário.
