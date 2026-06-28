@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { db } from './db';
@@ -126,7 +127,9 @@ export async function getUserId(): Promise<string | null> {
 }
 
 // Usuário logado (ou null). Usar em Server Components e Route Handlers.
-export async function getCurrentUser() {
+// Memoizado por request (React cache): chamar no header E no guard da página não
+// duplica a query — o que torna a hidratação de auth no SSR do header grátis.
+export const getCurrentUser = cache(async () => {
   const sessions = await getSessionPayloads();
   if (sessions.length === 0) return null;
   for (const session of sessions) {
@@ -139,7 +142,7 @@ export async function getCurrentUser() {
     return user;
   }
   return null;
-}
+});
 
 // Exige login; lança se não houver — para mutations.
 export async function requireUser() {

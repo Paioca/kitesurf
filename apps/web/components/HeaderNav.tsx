@@ -8,11 +8,12 @@ import { RequestBadge } from './RequestBadge';
 
 type HeaderLabels = { myAds?: string; deals?: string; favorites?: string };
 
-export function HeaderNav({ labels }: { labels?: HeaderLabels }) {
-  const [authed, setAuthed] = useState(false);
+export function HeaderNav({ labels, initialAuthed }: { labels?: HeaderLabels; initialAuthed?: boolean }) {
+  const [authed, setAuthed] = useState(initialAuthed ?? false);
   useEffect(() => {
+    if (initialAuthed !== undefined) return; // servidor já resolveu o estado de login
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => {});
-  }, []);
+  }, [initialAuthed]);
   if (!authed) return null;
 
   const link: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, color: color.ink, textDecoration: 'none' };
