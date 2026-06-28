@@ -206,12 +206,13 @@ function listingShape(l: any) {
 const PEDIDOS_TAKE = 50; // teto de payload: os 50 mais recentes por aba (vendedor com muitos anúncios não baixa tudo)
 
 export async function getRequestsForUser(userId: string) {
-  const [incomingRaw, outgoingRaw, deals, currentUser] = await Promise.all([
-    db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } }),
-    db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } }),
-    db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } }, disputes: { where: { status: { in: ['open', 'under_review'] } }, orderBy: { createdAt: 'desc' }, take: 1, select: { openedByUserId: true, reason: true } } } }),
-    db.user.findUnique({ where: { id: userId }, select: { name: true } }),
-  ]);
+  // connection_limit=1: Promise.all destas queries só ENFILEIRA na conexão única (risco de
+  // "Timed out fetching a connection from the pool" sob latência), sem paralelizar de fato.
+  // Em série: mesmo custo total, sem o risco de timeout de fila.
+  const incomingRaw = await db.request.findMany({ where: { sellerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, buyer: { select: { name: true, avatarUrl: true, phone: true } } } });
+  const outgoingRaw = await db.request.findMany({ where: { buyerId: userId }, orderBy: { updatedAt: 'desc' }, take: PEDIDOS_TAKE + 1, include: { listing: { select: listingSel }, seller: { select: { name: true, avatarUrl: true, phone: true } } } });
+  const deals = await db.deal.findMany({ where: { OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { reviews: { select: { reviewerId: true } }, disputes: { where: { status: { in: ['open', 'under_review'] } }, orderBy: { createdAt: 'desc' }, take: 1, select: { openedByUserId: true, reason: true } } } });
+  const currentUser = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
   // teto + flag "há mais" (sem count extra): pede 51, mostra 50.
   const moreIncoming = incomingRaw.length > PEDIDOS_TAKE;
   const moreOutgoing = outgoingRaw.length > PEDIDOS_TAKE;
@@ -262,12 +263,12 @@ const DETAIL_VISIBLE_REQUEST_STATUSES = new Set(['pending', 'accepted', 'decline
 
 // Estado dos pedidos do comprador num anúncio, POR COMPONENTE (pro detalhe).
 export async function getListingRequestState(userId: string, listingId: string): Promise<Record<Component, RequestState>> {
-  const [reqs, deals, buyer, listing] = await Promise.all([
-    db.request.findMany({ where: { listingId, buyerId: userId }, include: { seller: { select: { phone: true } } } }),
-    db.deal.findMany({ where: { listingId, buyerId: userId }, select: { listingId: true, buyerId: true, sellerId: true, component: true, status: true } }),
-    db.user.findUnique({ where: { id: userId }, select: { name: true } }),
-    db.listing.findUnique({ where: { id: listingId }, select: { title: true, hasBarra: true, category: { select: { slug: true } } } }),
-  ]);
+  // connection_limit=1: serializa (Promise.all só enfileira na conexão única + risco de timeout
+  // de fila sob latência — sem ganho real de paralelismo).
+  const reqs = await db.request.findMany({ where: { listingId, buyerId: userId }, include: { seller: { select: { phone: true } } } });
+  const deals = await db.deal.findMany({ where: { listingId, buyerId: userId }, select: { listingId: true, buyerId: true, sellerId: true, component: true, status: true } });
+  const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
+  const listing = await db.listing.findUnique({ where: { id: listingId }, select: { title: true, hasBarra: true, category: { select: { slug: true } } } });
   const dkey = (l: string, b: string, s: string, c: string) => `${l}|${b}|${s}|${c}`;
   const dmap = new Map(deals.map((d) => [dkey(d.listingId, d.buyerId, d.sellerId, d.component), d]));
   const forComp = (c: Component): RequestState => {

@@ -454,14 +454,14 @@ export async function getBrowseData(sp: SP) {
       ]
     : [{ createdAt: 'desc' }];
 
-  let raw: any[];
-  let total: number;
-  let rows: ActiveRow[];
-  [raw, total, rows] = await Promise.all([
-    db.listing.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, relationLoadStrategy: 'join', include }),
-    db.listing.count({ where }),
-    loadActiveRows(),
-  ]);
+  // connection_limit=1 (pgbouncer/serverless): queries em Promise.all NÃO rodam em paralelo —
+  // enfileiram na ÚNICA conexão e cada uma arma o timer de ~10s de "esperando conexão da pool".
+  // Sob latência do Supabase as enfileiradas estouram ("Timed out fetching a new connection from
+  // the connection pool"). Em SÉRIE o tempo total é o mesmo (já serializam na conexão), sem o
+  // risco de timeout de fila. loadActiveRows() é cacheado (TTL) → quase sempre 0 query.
+  const raw = await db.listing.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, relationLoadStrategy: 'join', include });
+  const total = await db.listing.count({ where });
+  const rows = await loadActiveRows();
   const fac = computeFacets(rows, f, persp);
 
   const items = raw.map((l) => toCard(l, persp));

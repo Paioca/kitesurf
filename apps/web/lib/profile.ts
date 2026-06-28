@@ -27,26 +27,28 @@ export const getProfile = cache(async (id: string) => {
   const saleStatusWhere = { status: { in: COUNTS_AS_SALE_STATUSES } };
   // Mesma regra do browse: ativo, não-excluído e em categoria ainda ativa (fora do MVP some).
   const publicListingWhere = { userId: id, status: 'active' as const, deletedAt: null, category: { is: { active: true } } };
-  const [reviewsRaw, ratingAgg, salesCount, purchasesCount, listingsRaw, activeCount] = await Promise.all([
-    // só reviews de negócios concluídos (os dois confirmaram) ficam públicas.
-    // take: 30 é SÓ pra exibição — a nota/contagem agregam sobre TODAS (ratingAgg).
-    db.review.findMany({
-      where: reviewWhere,
-      orderBy: { createdAt: 'desc' },
-      take: 30,
-      include: { reviewer: { select: { name: true, avatarUrl: true } }, deal: { include: { listing: { select: { title: true } } } } },
-    }),
-    db.review.aggregate({ where: reviewWhere, _avg: { rating: true }, _count: { rating: true } }),
-    db.deal.count({ where: { sellerId: id, ...saleStatusWhere } }),
-    db.deal.count({ where: { buyerId: id, ...saleStatusWhere } }),
-    db.listing.findMany({
-      where: publicListingWhere,
-      orderBy: { createdAt: 'desc' },
-      take: 12, // só exibição; o total é activeCount
-      include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
-    }),
-    db.listing.count({ where: publicListingWhere }),
-  ]);
+  // connection_limit=1 (serverless): queries em Promise.all NÃO paralelizam — enfileiram na
+  // conexão única e cada uma arma o timer de ~10s de "esperando conexão da pool"; sob latência
+  // do Supabase, as do fim estouram ("Timed out fetching a connection from the pool"). Em SÉRIE
+  // o tempo é o mesmo (já serializam na conexão), sem o risco de timeout de fila. (6 queries era
+  // o ponto de maior contenção do app.)
+  // só reviews de negócios concluídos (os dois confirmaram) ficam públicas; take:30 é só exibição.
+  const reviewsRaw = await db.review.findMany({
+    where: reviewWhere,
+    orderBy: { createdAt: 'desc' },
+    take: 30,
+    include: { reviewer: { select: { name: true, avatarUrl: true } }, deal: { include: { listing: { select: { title: true } } } } },
+  });
+  const ratingAgg = await db.review.aggregate({ where: reviewWhere, _avg: { rating: true }, _count: { rating: true } });
+  const salesCount = await db.deal.count({ where: { sellerId: id, ...saleStatusWhere } });
+  const purchasesCount = await db.deal.count({ where: { buyerId: id, ...saleStatusWhere } });
+  const listingsRaw = await db.listing.findMany({
+    where: publicListingWhere,
+    orderBy: { createdAt: 'desc' },
+    take: 12, // só exibição; o total é activeCount
+    include: { images: { orderBy: { position: 'asc' }, take: 8 }, brand: true, model: true, barraBrand: true, barraModel: true, category: true },
+  });
+  const activeCount = await db.listing.count({ where: publicListingWhere });
 
   const ratingCount = ratingAgg._count.rating;
   const ratingAvg = ratingAgg._avg.rating ?? null;
