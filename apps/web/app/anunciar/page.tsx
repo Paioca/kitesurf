@@ -605,9 +605,9 @@ export default function Criar() {
               <button onClick={goBack} disabled={step === 0} style={{ background: '#fff', border: `1.5px solid ${color.lineChip}`, color: color.ink, borderRadius: 12, padding: '15px 24px', fontFamily: font.sans, fontSize: 15, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', opacity: step === 0 ? 0.4 : 1 }}>‹ Voltar</button>
               {step < 3 ? (
                 // sempre clicável: se o passo está incompleto, abre o detalhado / mostra o que falta (não fica "morto")
-                <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.primary : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar ›</button>
+                <button onClick={goNext} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', background: stepValid[step] ? color.dark : '#dfe3df', color: stepValid[step] ? '#fff' : color.inkFaint2 }}>Continuar →</button>
               ) : (
-                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.primary : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>{publishing ? 'Publicando…' : 'Publicar anúncio'}</button>
+                <button onClick={publish} disabled={!canPublish} style={{ border: 'none', borderRadius: 12, padding: '15px 30px', flex: 1, maxWidth: 280, fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: canPublish ? 'pointer' : 'not-allowed', background: canPublish ? color.dark : '#dfe3df', color: canPublish ? '#fff' : color.inkFaint2 }}>{publishing ? 'Publicando…' : 'Publicar anúncio'}</button>
               )}
             </div>
           </div>
