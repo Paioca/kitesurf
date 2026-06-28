@@ -40,6 +40,7 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
   if (!locked) {
     Sentry.captureCheckIn({ checkInId, monitorSlug: `job-${job}`, status: 'ok' });
     log.warn({ event: 'skipped', job, reason: 'already_running' }, 'job skipped — another instance is running');
+    await Sentry.flush(2000); // serverless: entrega o check-in antes de a função congelar
     return { skipped: true };
   }
 
@@ -71,5 +72,9 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
     // Solta o advisory lock SEMPRE (mesmo em erro). Em serverless isso libera pro
     // próximo schedule sem depender do reciclo da conexão.
     await db.$executeRaw`SELECT pg_advisory_unlock(hashtext(${job}))`.catch(() => undefined);
+    // Sentry em serverless: a função pode CONGELAR logo após retornar, antes do envio
+    // assíncrono dos check-ins. Sem flush, o Sentry recebe o `in_progress` mas não o `ok`
+    // → marca "Timed Out"/"Missed" (alarme falso). flush garante a entrega antes de retornar.
+    await Sentry.flush(2000);
   }
 }
