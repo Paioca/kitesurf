@@ -1,10 +1,17 @@
 import { PrismaClient } from '@prisma/client';
+import { prismaRuntimeDatabaseUrl } from './db-url';
 
 // Singleton do Prisma — evita esgotar conexões em serverless/hot-reload.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({ log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'] });
+function createPrismaClient() {
+  const url = prismaRuntimeDatabaseUrl();
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    ...(url ? { datasources: { db: { url } } } : {}),
+  });
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+export const db = globalForPrisma.prisma ?? createPrismaClient();
+
+globalForPrisma.prisma = db;
