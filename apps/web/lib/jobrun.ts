@@ -13,8 +13,23 @@ const log = childLogger('jobrun');
 // Lock contra execução concorrente: usa pg_try_advisory_lock(hashtext(job)). Se outra
 // execução do MESMO job estiver em curso, ESTA aborta com status=skipped (não esperamos
 // na fila — o cron é diário, perder uma janela é melhor que pendurar).
+// Schedules dos crons (espelham apps/web/vercel.json). Necessários pro Sentry CRIAR/casar o
+// monitor via upsert na 1ª check-in — sem o monitorConfig o Sentry responde "monitor not found"
+// e REJEITA o check-in (era o caso: nenhum monitor job-* existia e o alerta de cron-parado não
+// funcionava). Mantenha em sincronia com vercel.json. UTC: o Vercel Cron dispara em UTC.
+const JOB_SCHEDULES: Record<string, string> = {
+  'close-unconfirmed': '0 3 * * *',
+  cleanup: '0 4 * * *',
+  'drain-notifications': '*/5 * * * *',
+};
+
 export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ skipped: true } | { skipped: false; result: T }> {
-  const checkInId = Sentry.captureCheckIn({ monitorSlug: `job-${job}`, status: 'in_progress' });
+  const schedule = JOB_SCHEDULES[job];
+  // monitorConfig só na 1ª check-in (in_progress) faz o upsert do monitor no Sentry.
+  const monitorConfig = schedule
+    ? { schedule: { type: 'crontab' as const, value: schedule }, timezone: 'Etc/UTC', checkinMargin: 5, maxRuntime: 10 }
+    : undefined;
+  const checkInId = Sentry.captureCheckIn({ monitorSlug: `job-${job}`, status: 'in_progress' }, monitorConfig);
 
   // Tenta um advisory lock por job. Mesmo nome de job → mesmo lock id (hashtext).
   // pg_try_advisory_lock devolve true se pegou, false se já estava com outro processo.

@@ -43,8 +43,10 @@ Sentry.init({
   dsn,
   // Liga no runtime da Vercel; local só com SENTRY_DEV=true (evita ruído de `next start`).
   enabled,
-  // VERCEL_ENV separa preview vs production (NODE_ENV é 'production' nos dois).
-  environment: process.env.VERCEL_ENV ?? (sentryDev ? process.env.NODE_ENV : 'local'),
+  // VERCEL_ENV (só existe na Vercel) separa preview vs production; FORA da Vercel é sempre
+  // 'local' — assim um `next start` local (NODE_ENV=production) não se passa por produção
+  // nem polui o painel de produção.
+  environment: process.env.VERCEL_ENV ?? 'local',
   release: process.env.VERCEL_GIT_COMMIT_SHA,
   // 10% de traces em prod (custo), 100% em dev pra inspecionar.
   tracesSampleRate: isProd ? 0.1 : 1.0,
