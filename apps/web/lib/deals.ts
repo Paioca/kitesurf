@@ -4,6 +4,7 @@ import { db } from './db';
 import { PublicError } from './http';
 import { sellables, shouldCloseListing, reservationConflict, type ListingLike, type Component } from './components';
 import { emit, emitMany, affectedBuyerIds } from './notifications';
+import { invalidateSellerRating } from './browse';
 import { recordAudit } from './audit';
 import { childLogger } from './logger';
 
@@ -101,7 +102,7 @@ export async function confirmPurchase(userId: string, dealId: string) {
   // Marca a peça vendida + encerra concorrentes (helper compartilhado com o
   // encerramento-sem-confirmação), e notifica o vendedor.
   await db.$transaction(async (tx) => {
-    await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'completed');
+    await applyPieceSale(tx, deal, listing as ListingLike & { title: string });
     await emit(tx, { userId: deal.sellerId, type: 'purchase_confirmed', listingId: deal.listingId, dealId, actorId: deal.buyerId, data: { title: listing.title } });
     // Audit: deal vira completed — registro financeiro/contratual. Indispensável pra
     // disputa (reversal/dispute olham pra cá pra reconstituir o estado anterior).
@@ -158,10 +159,10 @@ export async function denyPurchase(userId: string, dealId: string) {
   });
 }
 
-// Marca a peça do deal como VENDIDA (mesma mutação do confirmPurchase) e encerra os
-// concorrentes incompatíveis. Parametrizado pelo status final do deal: 'completed'
-// (comprador confirmou) ou 'closed_unconfirmed' (vendedor encerrou após 72h).
-async function applyPieceSale(tx: any, deal: { id: string; listingId: string; buyerId: string; component: Component }, listing: ListingLike & { title: string }, finalStatus: 'completed' | 'closed_unconfirmed') {
+// Marca a peça do deal como VENDIDA (comprador confirmou → deal 'completed') e encerra os
+// concorrentes incompatíveis (sold_elsewhere/voided). SÓ o confirmPurchase chama — o
+// encerramento por 72h (closeUnconfirmedExpired) NÃO é venda e não passa por aqui (N5).
+async function applyPieceSale(tx: any, deal: { id: string; listingId: string; buyerId: string; component: Component }, listing: ListingLike & { title: string }) {
   const comp = deal.component;
   const close = shouldCloseListing(listing, comp);
   const where: Record<string, unknown> = { id: deal.listingId, status: { in: ['active', 'paused'] } };
@@ -172,7 +173,7 @@ async function applyPieceSale(tx: any, deal: { id: string; listingId: string; bu
   if (close) { data.status = 'sold'; data.soldToUserId = deal.buyerId; }
   const updated = await tx.listing.updateMany({ where, data });
   if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
-  await tx.deal.update({ where: { id: deal.id }, data: finalStatus === 'completed' ? { status: 'completed', buyerConfirmedAt: new Date() } : { status: 'closed_unconfirmed', closedUnconfirmedAt: new Date() } });
+  await tx.deal.update({ where: { id: deal.id }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
   const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
   const affected = await affectedBuyerIds(tx, deal.listingId, { excludeBuyerId: deal.buyerId, components: close ? undefined : ['conjunto', comp] });
   await tx.request.updateMany({ where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter }, data: { status: 'sold_elsewhere' } });
@@ -257,7 +258,12 @@ export async function closeUnconfirmedExpired(now = new Date()): Promise<number>
           if (!deal || deal.status !== 'seller_confirmed') return false; // corrida: alguém já mexeu
           const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
           if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return false; }
-          await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
+          // N5 — encerramento por 72h sem confirmação NÃO é venda: não marca a peça vendida
+          // nem atribui o comprador (que nunca confirmou), e não fecha concorrentes. Reserva o
+          // anúncio (paused → oculto do público) até o vendedor corrigir (correctUnconfirmed)
+          // ou reativar. Só vira 'Vendido' público quando o comprador confirma (confirmPurchase).
+          await tx.deal.update({ where: { id }, data: { status: 'closed_unconfirmed', closedUnconfirmedAt: new Date() } });
+          await tx.listing.updateMany({ where: { id: deal.listingId, status: 'active' }, data: { status: 'paused' } });
           await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
           return true;
         });
@@ -305,6 +311,10 @@ export async function requestReversal(userId: string, dealId: string, reason: Di
     await tx.dealDispute.create({ data: { dealId, openedByUserId: userId, counterpartyId, reason, description: description ?? null, status: 'open' } });
     await emit(tx, { userId: counterpartyId, type: 'reversal_requested', listingId: deal.listingId, dealId, actorId: userId, data: { title: lst?.title ?? '' } });
   });
+  // A venda saiu de 'completed' → as reviews dela deixam de contar na nota pública.
+  // Invalida o cache dos dois lados na hora (senão a nota some só após o TTL de 60s).
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // A contraparte responde à correção. Aceita → reversed (peça volta a paused, deixa de
@@ -343,6 +353,9 @@ export async function cancelReversal(userId: string, dealId: string) {
     await tx.deal.update({ where: { id: dealId }, data: { status: 'completed', reversalRequestedAt: null } });
     await tx.dealDispute.update({ where: { id: dispute.id }, data: { status: 'closed', resolvedAt: new Date() } });
   });
+  // Voltou a 'completed' → as reviews voltam a contar; reflete a nota na hora.
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // MODERAÇÃO (§11) — o admin decide uma disputa em under_review (a contraparte recusou
@@ -372,6 +385,10 @@ export async function resolveDispute(adminId: string, disputeId: string, action:
       await emitMany(tx, parties.map((uid) => ({ userId: uid, type: 'reversal_rejected' as const, listingId: deal.listingId, dealId: deal.id, actorId: adminId, data: { title: lst?.title ?? '', byModerator: true } })));
     }
   });
+  // uphold volta a 'completed' (reviews voltam) / reverse mantém oculto — invalida nos dois
+  // casos pra a nota não ficar stale pelo TTL.
+  invalidateSellerRating(deal.sellerId);
+  invalidateSellerRating(deal.buyerId);
 }
 
 // Avaliação liberada assim que o negócio existe (não trava no aceite); fica PÚBLICA

@@ -388,6 +388,10 @@ describe('closeUnconfirmedExpired', () => {
     mockDb.listing.findFirst.mockResolvedValue(kit());
     expect(await closeUnconfirmedExpired()).toBe(1);
     expect(mockDb.deal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'closed_unconfirmed' }) }));
+    // N5: reserva (pausa) o anúncio em vez de marcar vendido — sem atribuir o comprador.
+    expect(mockDb.listing.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'paused' } }));
+    const soldCalls = mockDb.listing.updateMany.mock.calls.filter((c: any[]) => c[0]?.data?.status === 'sold' || c[0]?.data?.soldToUserId);
+    expect(soldCalls).toHaveLength(0);
     expect(mockDb.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ type: 'sale_closed_unconfirmed' }) }));
   });
   it('§15 #18 idempotente: deal já não-seller_confirmed dentro da tx → não reprocessa (0)', async () => {
