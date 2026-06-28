@@ -126,10 +126,14 @@ export async function getUserId(): Promise<string | null> {
   return (await getSessionPayload())?.sub ?? null;
 }
 
+// React cache() só existe no bundle server (condição react-server); em teste/node o
+// named import vem undefined → degrada para identidade (a memo é irrelevante em unit test).
+const reqCache = (typeof cache === 'function' ? cache : <T>(fn: T) => fn) as typeof cache;
+
 // Usuário logado (ou null). Usar em Server Components e Route Handlers.
-// Memoizado por request (React cache): chamar no header E no guard da página não
-// duplica a query — o que torna a hidratação de auth no SSR do header grátis.
-export const getCurrentUser = cache(async () => {
+// Memoizado por request: chamar no header E no guard da página não duplica a query —
+// o que torna a hidratação de auth no SSR do header grátis.
+export const getCurrentUser = reqCache(async () => {
   const sessions = await getSessionPayloads();
   if (sessions.length === 0) return null;
   for (const session of sessions) {
@@ -142,6 +146,15 @@ export const getCurrentUser = cache(async () => {
     return user;
   }
   return null;
+});
+
+// Versão enxuta da sessão para o chrome de navegação (header/tab bar): só o que a UI
+// precisa, serializável para passar de Server Component a Client Component. Memoizada
+// (compartilha a query de getCurrentUser no mesmo request).
+export type NavUser = { id: string; name?: string; avatarUrl?: string };
+export const getNavUser = reqCache(async (): Promise<NavUser | null> => {
+  const u = await getCurrentUser();
+  return u ? { id: u.id, name: u.name ?? undefined, avatarUrl: u.avatarUrl ?? undefined } : null;
 });
 
 // Exige login; lança se não houver — para mutations.

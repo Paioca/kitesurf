@@ -1,7 +1,7 @@
 // Favoritos do usuário logado.
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '../../lib/session';
+import { getCurrentUser, getNavUser } from '../../lib/session';
 import { getFavorites } from '../../lib/browse';
 import { color, font } from '../../lib/tokens';
 import { ListingCard } from '../../components/ListingCard';
@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Favoritos() {
   const user = await getCurrentUser();
+  const navMe = await getNavUser();
   if (!user) redirect('/entrar?next=%2Ffavoritos');
   const items = await getFavorites(user.id);
 
@@ -70,7 +71,7 @@ export default async function Favoritos() {
     <>
       {/* MOBILE */}
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
-        <MobileAppBar />
+        <MobileAppBar initialMe={navMe} />
         <div style={{ padding: '20px 18px 96px' }}>
           {head}
           {items.length === 0 ? (
@@ -85,7 +86,7 @@ export default async function Favoritos() {
             </div>
           )}
         </div>
-        <MobileTabBar active="fav" />
+        <MobileTabBar active="fav" initialAuthed={!!navMe} />
       </div>
 
       {/* DESKTOP */}

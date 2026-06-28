@@ -7,6 +7,7 @@ import { color, font } from '../../../lib/tokens';
 import { SiteHeader } from '../../../components/SiteHeader';
 import { Footer } from '../../../components/Footer';
 import { MobileAppBar, MobileTabBar } from '../../../components/MobileChrome';
+import { getNavUser } from '../../../lib/session';
 import { ListingCard } from '../../../components/ListingCard';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
   const data = await getProfile(params.id);
   if (!data) notFound();
   const { user, stats, listings, reviews } = data;
+  const navMe = await getNavUser();
   const initials = user.name.slice(0, 2).toUpperCase();
   const since = new Date(user.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
   const sinceFull = new Date(user.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -49,7 +51,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
 
   return (
     <>
-      <div className="only-mobile"><MobileAppBar /></div>
+      <div className="only-mobile"><MobileAppBar initialMe={navMe} /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: '#0c2520' }}>
         <img src="/perfil-cover.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
@@ -144,7 +146,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
         )}
       </main>
       <div className="only-desktop"><Footer /></div>
-      <div className="only-mobile"><MobileTabBar /></div>
+      <div className="only-mobile"><MobileTabBar initialAuthed={!!navMe} /></div>
     </>
   );
 }

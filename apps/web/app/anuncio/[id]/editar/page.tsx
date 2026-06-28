@@ -2,7 +2,7 @@
 // categoria pro EditForm (client).
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../../lib/queries';
-import { getCurrentUser } from '../../../../lib/session';
+import { getCurrentUser, getNavUser } from '../../../../lib/session';
 import { db } from '../../../../lib/db';
 import { color } from '../../../../lib/tokens';
 import { SiteHeader } from '../../../../components/SiteHeader';
@@ -21,6 +21,7 @@ function conditionOnlySchema(schema: any) {
 export default async function EditarAnuncio(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const [l, me] = await Promise.all([getListing(params.id), getCurrentUser()]);
+  const navMe = await getNavUser();
   if (!l || !me || me.id !== l.userId) notFound();
   // Anúncio vendido/arquivado não é editável (preserva o histórico de venda).
   if (!isEditable(l.status as ListingStatus)) notFound();
@@ -55,7 +56,7 @@ export default async function EditarAnuncio(props: { params: Promise<{ id: strin
   return (
     <>
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
-        <MobileAppBar />
+        <MobileAppBar initialMe={navMe} />
         <div style={{ padding: '22px 18px 96px' }}>{form}</div>
       </div>
       <div className="only-desktop">
