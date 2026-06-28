@@ -11,6 +11,7 @@ import { canTransition, isEditable, isPubliclyVisible, type ListingStatus, ACTIV
 import { openNegotiationExists } from '../../../../lib/deals';
 import { removeListing, LifecycleError } from '../../../../lib/lifecycle';
 import { type Component } from '../../../../lib/components';
+import { isKnownSpot } from '../../../../lib/locations';
 
 export const runtime = 'nodejs';
 
@@ -37,7 +38,7 @@ const patchSchema = z.object({
   price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: 'O preço mínimo de um anúncio é R$100.' }).optional(),
   year: z.number().int().min(1990).max(2100).nullable().optional(),
   barraYear: z.number().int().min(1990).max(2100).nullable().optional(),
-  city: z.string().min(1).optional(),
+  city: z.string().refine(isKnownSpot, { message: 'Spot inválido. Escolha um da lista oficial.' }).optional(),
   spot: z.string().nullable().optional(),
   shippable: z.boolean().optional(),
   images: z.array(z.object({ url: z.string(), thumbUrl: z.string().optional(), component: z.enum(['kite', 'barra']).optional() })).min(3).max(40).optional(),

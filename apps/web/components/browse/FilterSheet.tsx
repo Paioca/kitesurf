@@ -9,7 +9,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { color, font, radius } from '../../lib/tokens';
 
-export function FilterSheet({ activeCount, total, applyHref, initialOpen, children }: { activeCount: number; total: number; applyHref: string; initialOpen: boolean; children: React.ReactNode }) {
+type Labels = { trigger: string; apply: string; adSingular: string; adPlural: string };
+const defaultLabels: Labels = { trigger: 'Filtros', apply: 'Ver anúncios', adSingular: 'anúncio', adPlural: 'anúncios' };
+
+export function FilterSheet({ activeCount, total, applyHref, initialOpen, labels = defaultLabels, children }: { activeCount: number; total: number; applyHref: string; initialOpen: boolean; labels?: Labels; children: React.ReactNode }) {
   const [open, setOpen] = useState(initialOpen);
   const router = useRouter();
 
@@ -27,7 +30,7 @@ export function FilterSheet({ activeCount, total, applyHref, initialOpen, childr
           <line x1="3" y1="8" x2="21" y2="8" /><line x1="3" y1="16" x2="21" y2="16" />
           <circle cx="9" cy="8" r="2.6" fill="#fff" /><circle cx="15" cy="16" r="2.6" fill="#fff" />
         </svg>
-        Filtros
+        {labels.trigger}
         {activeCount > 0 && <span style={badge}>{activeCount}</span>}
       </button>
 
@@ -40,7 +43,7 @@ export function FilterSheet({ activeCount, total, applyHref, initialOpen, childr
             </div>
             <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }}>{children}</div>
             <div style={footer}>
-              <button onClick={close} style={applyBtn}>Ver {total} {total === 1 ? 'anúncio' : 'anúncios'}</button>
+              <button onClick={close} style={applyBtn}>{labels.apply} · {total} {total === 1 ? labels.adSingular : labels.adPlural}</button>
             </div>
           </div>
         </>

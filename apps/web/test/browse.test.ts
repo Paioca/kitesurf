@@ -86,6 +86,26 @@ describe('getBrowseData', () => {
     }));
   });
 
+  it('filtra estado expandindo para os spots oficiais da UF', async () => {
+    await getBrowseData({ uf: 'CE' });
+
+    const call = mockDb.listing.findMany.mock.calls[0][0];
+    const cityFilter = call.where.AND.find((part: any) => part.city);
+
+    expect(cityFilter.city.in).toContain('Cumbuco');
+    expect(cityFilter.city.in).toContain('Ilha do Guajiru');
+    expect(cityFilter.city.in).not.toContain('Lagoa da Conceição');
+  });
+
+  it('intersecta estado e spot quando os dois filtros estão ativos', async () => {
+    await getBrowseData({ uf: 'SC', city: 'Cumbuco,Lagoa da Conceição' });
+
+    const call = mockDb.listing.findMany.mock.calls[0][0];
+    const cityFilter = call.where.AND.find((part: any) => part.city);
+
+    expect(cityFilter.city.in).toEqual(['Lagoa da Conceição']);
+  });
+
   it('ordena por preço usando campo existente no schema Prisma', async () => {
     await getBrowseData({ cat: 'kite', sort: 'price_asc' });
 

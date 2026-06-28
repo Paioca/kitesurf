@@ -4,8 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { color, font } from '../lib/tokens';
-import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, clearFiltersHref, pageHref, hasAnyFilter, currentHref, type SP } from '../lib/filters';
+import { getBrowseData, type Facets } from '../lib/browse';
+import { setHref, toggleHref, clearHref, clearFiltersHref, pageHref, hasAnyFilter, currentHref, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -15,7 +15,7 @@ import { HowItWorks } from '../components/HowItWorks';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
 import { ActiveChips } from '../components/browse/ActiveChips';
-import { SearchBox } from '../components/browse/SearchBox';
+import { stateLabel, statePhrasePt } from '../lib/locations';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +30,14 @@ const HOME_COPY = {
     mobileEyebrow: 'Venda com mais confiança',
     mobileSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.',
     browseIntro: 'Quer ver equipamentos à venda?',
+    loggedBrowseEyebrow: 'Equipamentos à venda',
+    loggedBrowseTitle: 'Escolha pelo que importa',
+    quickFilterIntro: 'Filtre por tipo, tamanho, estado e spot.',
+    quickSize: 'Tamanho',
+    quickState: 'Estado',
+    quickCity: 'Spot',
+    filters: 'Filtros',
+    applyFilters: 'Ver anúncios',
     onWind: 'No vento agora',
     browseTitle: 'Equipamentos rodando pela comunidade',
     publicCount: 'Curadoria inicial',
@@ -40,8 +48,6 @@ const HOME_COPY = {
     sortRecent: 'Mais recentes',
     sortPriceAsc: 'Menor preço',
     sortPriceDesc: 'Maior preço',
-    searchPlaceholder: 'Buscar por marca ou modelo',
-    searchSubmit: 'Buscar',
     proofVisit: 'Pedido de visita ou oferta estruturada',
     proofWhats: 'WhatsApp liberado só com aceite',
     proofPhone: 'Telefone verificado antes de anunciar',
@@ -64,6 +70,7 @@ const HOME_COPY = {
     availableSingular: 'disponível',
     availablePlural: 'disponíveis',
     selectedSpots: 'nos spots selecionados',
+    selectedStates: 'nos estados selecionados',
     emptyAll: 'Ainda não há anúncios por aqui.',
     emptyFiltered: 'Nada com esses filtros.',
     firstListing: 'Anunciar o primeiro',
@@ -82,6 +89,14 @@ const HOME_COPY = {
     mobileEyebrow: 'Sell with more confidence',
     mobileSub: 'Create a listing with photos, specs, and verified phone. Your WhatsApp is shared only when you accept.',
     browseIntro: 'Want to browse gear for sale?',
+    loggedBrowseEyebrow: 'Gear for sale',
+    loggedBrowseTitle: 'Choose by what matters',
+    quickFilterIntro: 'Filter by type, size, state, and spot.',
+    quickSize: 'Size',
+    quickState: 'State',
+    quickCity: 'Spot',
+    filters: 'Filters',
+    applyFilters: 'See listings',
     onWind: 'On the wind now',
     browseTitle: 'Gear moving through the community',
     publicCount: 'Initial curation',
@@ -92,8 +107,6 @@ const HOME_COPY = {
     sortRecent: 'Newest',
     sortPriceAsc: 'Lowest price',
     sortPriceDesc: 'Highest price',
-    searchPlaceholder: 'Search by brand or model',
-    searchSubmit: 'Search',
     proofVisit: 'Visit request or structured offer',
     proofWhats: 'WhatsApp shared only after you accept',
     proofPhone: 'Verified phone before listing',
@@ -116,6 +129,7 @@ const HOME_COPY = {
     availableSingular: 'available',
     availablePlural: 'available',
     selectedSpots: 'in selected spots',
+    selectedStates: 'in selected states',
     emptyAll: 'No listings here yet.',
     emptyFiltered: 'Nothing matches these filters.',
     firstListing: 'Create the first listing',
@@ -151,12 +165,17 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   // LCP no 4G). Heurística por user-agent dá o priority só ao herói do layout provável;
   // é só uma dica de preload (sem risco de correção se a heurística errar).
   const isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test((await headers()).get('user-agent') ?? '');
-  const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
-  const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
+  const { items, facets, total, totalAll, filters, page, totalPages, viewer } = await getBrowseData(sp);
+  const authed = !!viewer;
+  const activeCount = filters.size.length + filters.brand.length + filters.uf.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
   const countLocation = filters.city.length === 1
     ? locale === 'en' ? ` in ${filters.city[0]}` : ` em ${filters.city[0]}`
     : filters.city.length > 1
       ? ` ${t.selectedSpots}`
+      : filters.uf.length === 1
+        ? locale === 'en' ? ` in ${stateLabel(filters.uf[0])}` : ` ${statePhrasePt(filters.uf[0])}`
+      : filters.uf.length > 1
+        ? ` ${t.selectedStates}`
       : ` ${total === 1 ? t.availableSingular : t.availablePlural}`;
   const countLabel = `${total} ${total === 1 ? t.adSingular : t.adPlural}${countLocation}`;
   const empty = totalAll === 0;
@@ -164,7 +183,8 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
   const sheetOpen = (Array.isArray(sp.fs) ? sp.fs[0] : sp.fs) === '1'; // bottom sheet persistido
   const landing = !hasAnyFilter(sp) && !browseFlag;
-  const publicCountLabel = landing && total > 0 && total < 5 ? t.publicCount : `${total} ${total === 1 ? t.adSingular : t.adPlural}`;
+  const sellerLanding = landing && !authed;
+  const publicCountLabel = sellerLanding && total > 0 && total < 5 ? t.publicCount : `${total} ${total === 1 ? t.adSingular : t.adPlural}`;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
     { value: 'kite', label: t.typeKites, count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
@@ -186,55 +206,50 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
-          {/* Hero imersivo: primeira visita orientada para anunciar. */}
-          <div style={{ position: 'relative', height: 'min(76vh, 520px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-            <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
-            <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>{t.mobileEyebrow}</div>
-              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>{t.heroTitle}</h1>
-              <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>{t.mobileSub}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>{t.primaryCta}</Link>
+          {sellerLanding && (
+            <>
+              {/* Hero imersivo: primeira visita orientada para anunciar. */}
+              <div style={{ position: 'relative', height: 'min(76vh, 520px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
+                <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
+                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>{t.mobileEyebrow}</div>
+                  <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>{t.heroTitle}</h1>
+                  <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>{t.mobileSub}</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>{t.primaryCta}</Link>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <SellerProofs mobile t={t} />
-
-          {/* Busca abaixo do CTA principal: quem quer comprar ainda encontra o caminho. */}
-          <div id="browse" style={{ padding: '18px 18px 0', position: 'relative', zIndex: 3 }}>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 10 }}>{t.browseIntro}</div>
-            <div style={{ borderRadius: 14, boxShadow: '0 10px 28px rgba(12,37,32,0.16)' }}>
-              <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
-            </div>
-          </div>
-
-          {/* chips de categoria — linha única limpa (minimalista, igual ao mock) */}
-          {typeChips.length > 0 && (
-            <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 18px 8px' }}>
-              <Link href={clearHref(sp)} style={catChip(!filters.cat)}>{t.all}</Link>
-              {typeChips.map((t) => (
-                <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
-              ))}
-            </div>
+              <SellerProofs mobile t={t} />
+            </>
           )}
 
-          {/* Filtros (pill discreto) + contagem · ordenação — uma barra leve. Tamanho mora no sheet. */}
-          <div style={{ padding: '4px 18px 6px', display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 'none' }}>
-              <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen}>
-                <FilterContent sp={sp} facets={facets} filters={filters} inSheet />
+          {/* Browse estruturado: sem busca solta por texto na home. */}
+          <div id="browse" style={{ padding: sellerLanding ? '18px 18px 0' : '24px 18px 0', position: 'relative', zIndex: 3 }}>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 6 }}>{authed ? t.loggedBrowseEyebrow : t.browseIntro}</div>
+            <h1 style={{ fontFamily: font.sans, fontSize: 28, lineHeight: 1, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: color.ink, margin: '0 0 8px' }}>{authed ? t.loggedBrowseTitle : t.browseTitle}</h1>
+            <div style={{ fontSize: 13.5, color: color.inkMute, lineHeight: 1.45 }}>{t.quickFilterIntro}</div>
+          </div>
+
+          <QuickFilters sp={sp} facets={facets} filters={filters} typeChips={typeChips} t={t} mobile />
+
+          {/* Filtros (pill discreto) + contagem em linha própria; ordenação sem sobrepor. */}
+          <div style={{ padding: '6px 18px 8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
+              <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen} labels={{ trigger: t.filters, apply: t.applyFilters, adSingular: t.adSingular, adPlural: t.adPlural }}>
+                <FilterContent sp={sp} facets={facets} filters={filters} inSheet locale={locale} />
               </FilterSheet>
               <span style={{ fontSize: 12.5, color: color.inkFaint, whiteSpace: 'nowrap' }}>{publicCountLabel}</span>
             </div>
-            <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
+            <div className="kl-scroll" style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingTop: 12 }}>
               {sorts.map(([key, label]) => sortControl(key, label, true))}
             </div>
           </div>
 
           <div style={{ padding: '4px 18px 0' }}>
-            <ActiveChips sp={sp} facets={facets} filters={filters} />
+            <ActiveChips sp={sp} facets={facets} filters={filters} locale={locale} />
           </div>
 
           <div style={{ padding: '6px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -249,7 +264,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
       {/* ---------- DESKTOP ---------- */}
       <div className="only-desktop">
         <SiteHeader />
-        {landing ? (
+        {sellerLanding ? (
           <>
             <Hero priority={!isMobileUA} t={t} />
             <Community t={t} />
@@ -264,18 +279,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                 </div>
               </div>
 
-              <div style={{ maxWidth: 760, marginBottom: 26 }}>
-                <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
-              </div>
-
-              {typeChips.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 36 }}>
-                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>{t.all}</Link>
-                  {typeChips.map((t) => (
-                    <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
-                  ))}
-                </div>
-              )}
+              <QuickFilters sp={sp} facets={facets} filters={filters} typeChips={typeChips} t={t} />
 
               {total === 0 ? (
                 <EmptyState empty={empty} sp={sp} t={t} big />
@@ -292,15 +296,13 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
         ) : (
           <main style={{ maxWidth: 1320, margin: '0 auto', padding: '34px 32px 80px', display: 'grid', gridTemplateColumns: '262px 1fr', gap: 36, alignItems: 'start' }}>
             <aside style={{ position: 'sticky', top: 96 }}>
-              <FilterContent sp={sp} facets={facets} filters={filters} />
+              <FilterContent sp={sp} facets={facets} filters={filters} locale={locale} />
             </aside>
             <div>
-              <div style={{ marginBottom: 18 }}>
-                <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
-              </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
                 <div>
-                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>{t.filteredTitle}</h1>
+                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 17, color: color.primary, marginBottom: 8 }}>{authed ? t.loggedBrowseEyebrow : t.browseIntro}</div>
+                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>{authed && landing ? t.loggedBrowseTitle : t.filteredTitle}</h1>
                   <div style={{ fontSize: 14, color: color.inkMute }}>{countLabel}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -308,7 +310,8 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                 </div>
               </div>
 
-              <ActiveChips sp={sp} facets={facets} filters={filters} />
+              <QuickFilters sp={sp} facets={facets} filters={filters} typeChips={typeChips} t={t} compact />
+              <ActiveChips sp={sp} facets={facets} filters={filters} locale={locale} />
 
               {total === 0 ? (
                 <EmptyState empty={empty} sp={sp} t={t} big />
@@ -384,6 +387,73 @@ function SellerProofs({ mobile = false, t }: { mobile?: boolean; t: HomeCopy }) 
       ))}
     </div>
   );
+}
+
+function QuickFilters({ sp, facets, filters, typeChips, t, mobile = false, compact = false }: { sp: SP; facets: Facets; filters: ReturnType<typeof import('../lib/filters').parseFilters>; typeChips: { value: string; label: string; count: number }[]; t: HomeCopy; mobile?: boolean; compact?: boolean }) {
+  const sizeOptions = facets.size.slice(0, mobile ? 5 : 6);
+  const stateOptions = facets.uf.slice(0, mobile ? 3 : 4);
+  const cityOptions = facets.city.slice(0, mobile ? 4 : 5);
+  const href = (value: string) => `${value}${value.includes('#') ? '' : '#browse'}`;
+  const groupStyle: React.CSSProperties = compact ? { marginBottom: 18 } : { padding: mobile ? '14px 18px 2px' : '0 0 28px' };
+  const scrollStyle: React.CSSProperties = { display: 'flex', gap: 8, overflowX: mobile ? 'auto' : undefined, flexWrap: mobile ? 'nowrap' : 'wrap', paddingBottom: mobile ? 6 : 0 };
+
+  return (
+    <div style={groupStyle}>
+      {typeChips.length > 0 && (
+        <div className={mobile ? 'kl-scroll' : undefined} style={{ ...scrollStyle, marginBottom: sizeOptions.length || stateOptions.length || cityOptions.length ? 10 : 0 }}>
+          <Link href={href(clearHref(sp))} style={catChip(!filters.cat)}>{t.all}</Link>
+          {typeChips.map((type) => (
+            <Link key={type.value} href={href(setHref(sp, 'cat', type.value, true))} style={catChip(filters.cat === type.value)}>{type.label}</Link>
+          ))}
+        </div>
+      )}
+
+      {stateOptions.length > 0 && (
+        <div style={{ marginTop: compact ? 12 : 0 }}>
+          <div style={quickLabel}>{t.quickState}</div>
+          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+            {stateOptions.map((o) => (
+              <Link key={o.value} href={href(toggleHref(sp, 'uf', o.value))} style={filterChip(filters.uf.includes(o.value))}>{o.label}</Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sizeOptions.length > 0 && (
+        <div style={{ marginTop: compact || stateOptions.length ? 12 : 0 }}>
+          <div style={quickLabel}>{t.quickSize}</div>
+          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+            {sizeOptions.map((o) => (
+              <Link key={o.value} href={href(toggleHref(sp, 'size', o.value))} style={filterChip(filters.size.includes(o.value))}>{localizedFacetLabel(o.value, o.label, t)}</Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {cityOptions.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={quickLabel}>{t.quickCity}</div>
+          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+            {cityOptions.map((o) => (
+              <Link key={o.value} href={href(toggleHref(sp, 'city', o.value))} style={filterChip(filters.city.includes(o.value))}>{o.label}</Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function localizedFacetLabel(value: string, label: string, t: HomeCopy) {
+  if (t !== HOME_COPY.en) return label;
+  const map: Record<string, string> = {
+    s1: 'up to 7 m²',
+    s2: '7 to 9 m²',
+    s3: '9 to 11 m²',
+    s4: '11 to 13 m²',
+    s5: '13 m²+',
+  };
+  return map[value] ?? label;
 }
 
 // ---------- COMUNIDADE (editorial: foto + manifesto) ----------
@@ -522,6 +592,10 @@ function Pager({ page, totalPages, sp, t }: { page: number; totalPages: number; 
 
 function catChip(on: boolean): React.CSSProperties {
   return { flex: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44, boxSizing: 'border-box', fontFamily: font.sans, fontSize: 13.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap', background: on ? color.primary : color.surface, color: on ? '#fff' : color.ink, border: `1px solid ${on ? color.primary : color.lineChip}` };
+}
+const quickLabel: React.CSSProperties = { fontFamily: font.sans, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: color.inkFaint, margin: '0 0 7px' };
+function filterChip(on: boolean): React.CSSProperties {
+  return { flex: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 38, boxSizing: 'border-box', fontFamily: font.sans, fontSize: 12.5, fontWeight: 650, padding: '7px 13px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap', background: on ? color.ink : color.surface, color: on ? '#fff' : '#5a6b65', border: `1px solid ${on ? color.ink : color.lineChip}` };
 }
 function sortBtn(on: boolean): React.CSSProperties {
   return { display: 'inline-flex', alignItems: 'center', minHeight: 44, boxSizing: 'border-box', fontFamily: font.sans, fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999, textDecoration: 'none', background: on ? color.ink : color.surface, color: on ? '#fff' : '#5a6b65', border: `1px solid ${on ? color.ink : color.lineChip}` };

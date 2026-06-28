@@ -3,7 +3,7 @@ import { errorResponse } from '../../../lib/http';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
-import { SPOTS } from '../../../lib/filters';
+import { isKnownSpot } from '../../../lib/locations';
 import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../lib/storage';
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   const num = (k: string) => (sp.get(k) != null ? Number(sp.get(k)) : undefined);
   const result = await searchListings({
     category: sp.get('category') ?? undefined,
+    uf: sp.get('uf') ?? undefined,
     city: sp.get('city') ?? undefined,
     brandId: sp.get('brandId') ?? undefined,
     q: sp.get('q') ?? undefined,
@@ -47,7 +48,7 @@ const createSchema = z.object({
   title: z.string().min(4).max(120),
   description: z.string().max(4000).optional(),
   price: z.number().int().min(MIN_LISTING_PRICE_CENTS, { message: PRICE_MIN_MSG }), // conjunto (kit) ou peça única
-  city: z.string().refine((c) => SPOTS.includes(c), { message: 'Spot inválido. Escolha um da lista oficial.' }),
+  city: z.string().refine(isKnownSpot, { message: 'Spot inválido. Escolha um da lista oficial.' }),
   spot: z.string().optional(),
   pickup: z.boolean().optional(),
   shippable: z.boolean(),

@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { Prisma } from '@prisma/client';
 import { db } from './db';
+import { spotsForStates } from './locations';
 
 const PAGE_SIZE = 48;
 
@@ -22,6 +23,7 @@ export function getBrands() {
 
 export interface SearchParams {
   category?: string;
+  uf?: string;
   city?: string;
   brandId?: string;
   q?: string;
@@ -37,7 +39,19 @@ export interface SearchParams {
 export async function searchListings(p: SearchParams) {
   const where: Prisma.ListingWhereInput = { status: 'active', deletedAt: null };
   if (p.category) where.category = { slug: p.category };
-  if (p.city) where.city = { contains: p.city, mode: 'insensitive' };
+  const cityValues = p.city?.split(',').filter(Boolean) ?? [];
+  const stateValues = p.uf?.split(',').filter(Boolean) ?? [];
+  const stateSpots = spotsForStates(stateValues);
+  if (cityValues.length && stateValues.length) {
+    const allowed = new Set(stateSpots);
+    where.city = { in: cityValues.filter((city) => allowed.has(city)) };
+  } else if (cityValues.length > 1) {
+    where.city = { in: cityValues };
+  } else if (cityValues.length === 1) {
+    where.city = { contains: cityValues[0], mode: 'insensitive' };
+  } else if (stateValues.length) {
+    where.city = { in: stateSpots };
+  }
   if (p.brandId) where.brandId = p.brandId;
   if (p.q) where.title = { contains: p.q, mode: 'insensitive' };
   if (p.shippable === 'true') where.shippable = true;

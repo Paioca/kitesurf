@@ -13,6 +13,14 @@ function readLocale(): Locale {
     return 'pt';
   }
 }
+function readStoredLocale(): Locale | null {
+  try {
+    const value = localStorage.getItem(KEY);
+    return value === 'en' || value === 'pt' ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 function saveLocale(locale: Locale) {
   try {
@@ -25,11 +33,25 @@ export function LanguageToggle({ compact = false }: { compact?: boolean }) {
   const [locale, setLocale] = useState<Locale>('pt');
 
   useEffect(() => {
-    setLocale(readLocale());
+    const stored = readStoredLocale();
+    const current = stored ?? readLocale();
+    setLocale(current);
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' })
       .then((r) => r.json())
       .then((u) => {
-        if (u?.locale === 'pt' || u?.locale === 'en') {
+        if (!u?.id) return;
+        if (stored) {
+          if (u.locale !== stored) {
+            fetch('/api/auth/me', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ locale: stored }),
+            }).catch(() => undefined);
+          }
+          return;
+        }
+        if (u.locale === 'pt' || u.locale === 'en') {
           setLocale(u.locale);
           saveLocale(u.locale);
         }

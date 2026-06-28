@@ -11,12 +11,70 @@ import { ListingCard } from '../../components/ListingCard';
 import { getMyListings } from '../../lib/browse';
 import { LogoutButton } from '../../components/LogoutButton';
 import { DeleteAccountButton } from '../../components/DeleteAccountButton';
+import { getServerLocale } from '../../lib/locale';
 
 export const dynamic = 'force-dynamic';
+
+const ACCOUNT_COPY = {
+  pt: {
+    notInformed: 'não informado',
+    phone: 'Telefone / WhatsApp',
+    spot: 'Spot de interesse',
+    nationality: 'Nacionalidade',
+    email: 'E-mail',
+    editProfile: 'Editar perfil',
+    editProfileDesc: 'Foto, nome, spot, e-mail, idioma',
+    myListings: 'Meus anúncios',
+    myListingsDesc: 'Gerenciar, editar, pausar e excluir (inclui pausados)',
+    deals: 'Minhas negociações',
+    dealsDesc: 'Ofertas, pedidos de visita e negócios enviados ou recebidos',
+    publicProfile: 'Meu perfil público',
+    publicProfileDesc: 'Como os outros te veem: anúncios e avaliações',
+    welcome: 'Bem-vindo de volta,',
+    memberSince: 'membro desde',
+    accountData: 'Dados da conta',
+    verified: 'verificado',
+    phoneHelp: 'O telefone é seu login. Confirme um e-mail de segurança para recuperar a conta se perder acesso ao número.',
+    account: 'Conta',
+    nextWind: 'Próximo Vento',
+    season: 'Temporada',
+    showcase: 'Sua vitrine',
+    recentListings: 'Anúncios recentes',
+    seeAll: 'Ver todos ›',
+  },
+  en: {
+    notInformed: 'not informed',
+    phone: 'Phone / WhatsApp',
+    spot: 'Spot of interest',
+    nationality: 'Nationality',
+    email: 'Email',
+    editProfile: 'Edit profile',
+    editProfileDesc: 'Photo, name, spot, email, language',
+    myListings: 'My listings',
+    myListingsDesc: 'Manage, edit, pause and delete listings, including paused ones',
+    deals: 'My deals',
+    dealsDesc: 'Offers, visit requests, and deals sent or received',
+    publicProfile: 'My public profile',
+    publicProfileDesc: 'How others see you: listings and reviews',
+    welcome: 'Welcome back,',
+    memberSince: 'member since',
+    accountData: 'Account data',
+    verified: 'verified',
+    phoneHelp: 'Your phone is your login. Confirm a security email to recover the account if you lose access to your number.',
+    account: 'Account',
+    nextWind: 'Next wind',
+    season: 'Season',
+    showcase: 'Your showcase',
+    recentListings: 'Recent listings',
+    seeAll: 'See all ›',
+  },
+};
 
 export default async function Conta() {
   const user = await getCurrentUser();
   if (!user) redirect('/entrar?next=%2Fconta');
+  const locale = await getServerLocale(user.locale);
+  const t = ACCOUNT_COPY[locale];
 
   const memberSince = user.createdAt ? new Date(user.createdAt).getFullYear() : null;
   const initials = (user.name ?? '?').slice(0, 2).toUpperCase();
@@ -25,16 +83,16 @@ export default async function Conta() {
 
   // Conta = administrativo. Marketplace (Negociações, Anúncios, Favoritos) fica no header/abas.
   const contact: { k: string; v: string; verified?: boolean; muted?: boolean }[] = [
-    { k: 'Telefone / WhatsApp', v: user.phone, verified: user.phoneVerified },
-    { k: 'Spot de interesse', v: user.spot || 'não informado', muted: !user.spot },
-    { k: 'Nacionalidade', v: user.country || 'não informado', muted: !user.country },
-    { k: 'E-mail', v: user.email || 'não informado', verified: user.emailVerified, muted: !user.email },
+    { k: t.phone, v: user.phone, verified: user.phoneVerified },
+    { k: t.spot, v: user.spot || t.notInformed, muted: !user.spot },
+    { k: t.nationality, v: user.country || t.notInformed, muted: !user.country },
+    { k: t.email, v: user.email || t.notInformed, verified: user.emailVerified, muted: !user.email },
   ];
   const links: { href: string; label: string; desc: string }[] = [
-    { href: '/conta/editar', label: 'Editar perfil', desc: 'Foto, nome, spot, e-mail, idioma' },
-    { href: '/conta/anuncios', label: 'Meus anúncios', desc: 'Gerenciar, editar, pausar e excluir (inclui pausados)' },
-    { href: '/pedidos', label: 'Minhas negociações', desc: 'Ofertas, pedidos de visita e negócios enviados ou recebidos' },
-    { href: `/perfil/${user.id}`, label: 'Meu perfil público', desc: 'Como os outros te veem: anúncios e avaliações' },
+    { href: '/conta/editar', label: t.editProfile, desc: t.editProfileDesc },
+    { href: '/conta/anuncios', label: t.myListings, desc: t.myListingsDesc },
+    { href: '/pedidos', label: t.deals, desc: t.dealsDesc },
+    { href: `/perfil/${user.id}`, label: t.publicProfile, desc: t.publicProfileDesc },
   ];
 
   // Peças reaproveitadas por mobile (coluna única) e desktop (bento). Mesmos dados/rotas.
@@ -44,11 +102,11 @@ export default async function Conta() {
         {!user.avatarUrl && initials}
       </div>
       <div style={{ minWidth: 0 }}>
-        <Kicker>Bem-vindo de volta,</Kicker>
+        <Kicker>{t.welcome}</Kicker>
         <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,6vw,40px)', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.0, margin: '4px 0 0', color: color.primary }}>{user.name}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13, color: color.inkMute }}>
           <Diamond size={8} c={color.primary} r={1} />
-          membro desde {memberSince}
+          {t.memberSince} {memberSince}
         </div>
       </div>
     </header>
@@ -56,7 +114,7 @@ export default async function Conta() {
 
   const dadosCard = (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>Dados da conta</div>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '6px 2px 8px' }}>{t.accountData}</div>
       <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, overflow: 'hidden' }}>
         {/* Campos em grade 2-col (Lifestyle): label-caps uppercase + valor bold, separados por hairline. */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: color.line }}>
@@ -65,12 +123,12 @@ export default async function Conta() {
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.inkMute, marginBottom: 5 }}>{c.k}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', fontSize: 14.5, fontWeight: 700, color: c.muted ? color.inkFaint2 : color.ink }}>
                 {c.v}
-                {c.verified && <span style={{ fontSize: 10.5, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 8px', borderRadius: 999 }}>verificado</span>}
+                {c.verified && <span style={{ fontSize: 10.5, fontWeight: 700, color: color.primary, background: '#e8f1ec', padding: '3px 8px', borderRadius: 999 }}>{t.verified}</span>}
               </div>
             </div>
           ))}
         </div>
-        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>O telefone é seu login. Confirme um e-mail de segurança para recuperar a conta se perder acesso ao número.</div>
+        <div style={{ borderTop: `1px solid ${color.line}`, padding: '11px 18px', fontSize: 12, color: color.inkFaint2 }}>{t.phoneHelp}</div>
       </div>
     </div>
   );
@@ -98,8 +156,8 @@ export default async function Conta() {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,37,32,0.95), rgba(12,37,32,0.1))' }} />
       <span aria-hidden="true" style={{ position: 'absolute', top: 16, right: 16, width: 16, height: 16, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
       <div style={{ position: 'absolute', inset: 0, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <span style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua }}>Próximo Vento</span>
-        <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 24, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', marginTop: 2 }}>Temporada {new Date().getFullYear()}</div>
+        <span style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua }}>{t.nextWind}</span>
+        <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 24, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', marginTop: 2 }}>{t.season} {new Date().getFullYear()}</div>
       </div>
     </div>
   );
@@ -108,10 +166,10 @@ export default async function Conta() {
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, margin: '0 2px 14px' }}>
         <div>
-          <Kicker>Sua vitrine</Kicker>
-          <h2 style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1, margin: '4px 0 0', color: color.primary }}>Anúncios recentes</h2>
+          <Kicker>{t.showcase}</Kicker>
+          <h2 style={{ fontFamily: font.sans, fontSize: 22, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1, margin: '4px 0 0', color: color.primary }}>{t.recentListings}</h2>
         </div>
-        <a href="/conta/anuncios" style={{ fontSize: 12.5, fontWeight: 700, color: color.primary, textDecoration: 'none', whiteSpace: 'nowrap' }}>Ver todos ›</a>
+        <a href="/conta/anuncios" style={{ fontSize: 12.5, fontWeight: 700, color: color.primary, textDecoration: 'none', whiteSpace: 'nowrap' }}>{t.seeAll}</a>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 }}>
         {recent.map((it) => <ListingCard key={it.id} item={it} imgHeight={170} />)}
@@ -121,9 +179,9 @@ export default async function Conta() {
 
   const adminActions = (
     <div style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 16, padding: 18 }}>
-      <LogoutButton />
+      <LogoutButton locale={locale} />
       <div style={{ marginTop: 8, textAlign: 'center' }}>
-        <DeleteAccountButton />
+        <DeleteAccountButton locale={locale} />
       </div>
     </div>
   );
@@ -134,7 +192,7 @@ export default async function Conta() {
       {profileHeader}
       {dadosCard}
       <div>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '0 2px 8px' }}>Conta</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', color: color.inkFaint2, margin: '0 2px 8px' }}>{t.account}</div>
         {navRail}
       </div>
       {adminActions}

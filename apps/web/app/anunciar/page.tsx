@@ -12,6 +12,7 @@ import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
 import { storedLocale } from '../../components/LanguageToggle';
+import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
 // Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
 const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
@@ -50,7 +51,6 @@ const FIELD_LABELS: Record<Locale, Record<string, string>> = {
     microfuros: 'Bladder micro leaks',
   },
 };
-const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
 const KITE_SLOTS: Record<Locale, string[]> = {
   pt: ['Foto geral do equipamento', 'Outro ângulo', 'Marca e modelo', 'Etiqueta e tamanho', 'Válvulas e bordas', 'Reparos ou desgastes'],
   en: ['Full gear photo', 'Another angle', 'Brand and model', 'Label and size', 'Valves and edges', 'Repairs or wear'],
@@ -816,7 +816,18 @@ export default function Criar() {
               )}
 
               <div className="criar-loc" style={{ display: 'grid', gap: 16, marginTop: 28 }}>
-                <Cell><Label>Spot *</Label><select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>{SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}</select></Cell>
+                <Cell>
+                  <Label>Spot *</Label>
+                  <select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>
+                    {STATE_OPTIONS.map((state) => (
+                      <optgroup key={state.value} label={`${state.label} (${state.value})`}>
+                        {SPOT_LOCATIONS.filter((spotOption) => spotOption.uf === state.value).map((spotOption) => (
+                          <option key={spotOption.value} value={spotOption.value}>{spotOption.value}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </Cell>
                 <Cell><Label>{t.referencePoint}</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder={t.referencePlaceholder} /></Cell>
               </div>
               <div style={{ marginTop: 24 }}>

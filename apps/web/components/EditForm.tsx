@@ -7,6 +7,7 @@ import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
 import { SearchSelect } from './SearchSelect';
 import type { Brand } from '../lib/api';
+import { SPOT_LOCATIONS, STATE_OPTIONS } from '../lib/locations';
 
 type Img = { url: string; thumbUrl?: string | null; component?: 'kite' | 'barra' | null };
 type Spec = { type: string; enum?: (string | number)[]; label?: string };
@@ -112,7 +113,7 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
   const priceOk = Number(price) >= MIN_PRICE && (!sellKite || Number(kitePrice) >= MIN_PRICE) && (!sellBarra || Number(barraPrice) >= MIN_PRICE);
   const fichaOk = fichaComplete(mainSchema, attrs) && (!isKit || !barraSchema || fichaComplete(barraSchema, barraAttrs));
   const barraCatalogOk = !isKit || !barraBrandId || (barraModels.length === 0 || !!barraModelId);
-  const canSave = title.trim().length >= 4 && images.length >= 3 && priceOk && fichaOk && barraCatalogOk && !saving && !uploading;
+  const canSave = title.trim().length >= 4 && !!city && images.length >= 3 && priceOk && fichaOk && barraCatalogOk && !saving && !uploading;
 
   return (
     <div style={{ maxWidth: 620, margin: '0 auto' }}>
@@ -184,7 +185,18 @@ export function EditForm({ data, mainSchema, barraSchema }: { data: any; mainSch
           <Toggle on={shippable} onClick={() => setShippable(true)} label="Enviável" />
         </div>
         <div style={{ display: 'grid', gap: 14, marginTop: 14 }}>
-          <div><Label>Cidade</Label><input className="kl-input" value={city} onChange={(e) => setCity(e.target.value)} /></div>
+          <div>
+            <Label>Spot</Label>
+            <select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>
+              {STATE_OPTIONS.map((state) => (
+                <optgroup key={state.value} label={`${state.label} (${state.value})`}>
+                  {SPOT_LOCATIONS.filter((spotOption) => spotOption.uf === state.value).map((spotOption) => (
+                    <option key={spotOption.value} value={spotOption.value}>{spotOption.value}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           <div><Label>Spot (opcional)</Label><input className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)} /></div>
         </div>
       </Section>

@@ -4,6 +4,7 @@ import { db } from './db';
 import { getCurrentUser } from './session';
 import { parseFilters, PRICE_RANGES, PRICE_LABELS, SIZE_RANGES, SIZE_LABELS, type SP } from './filters';
 import { sellables, applyReservations, type Component, type ListingLike } from './components';
+import { spotsForStates, stateForSpot, stateLabel } from './locations';
 
 export const PAGE_SIZE = 24;
 
@@ -39,6 +40,7 @@ export type Facets = {
   category: Facet[]; // chips (primário)
   size: Facet[]; // chips (o "aha")
   brand: Facet[];
+  uf: Facet[];
   city: Facet[];
   price: Facet[];
   repair: Facet[];
@@ -176,15 +178,27 @@ function textWhere(q: string): Prisma.ListingWhereInput | null {
   ] };
 }
 
+function locationSpotValues(f: Filters): string[] | null {
+  const stateSpots = spotsForStates(f.uf);
+  if (f.city.length && f.uf.length) {
+    const allowed = new Set(stateSpots);
+    return f.city.filter((spot) => allowed.has(spot));
+  }
+  if (f.city.length) return f.city;
+  if (f.uf.length) return stateSpots;
+  return null;
+}
+
 function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   const and: Prisma.ListingWhereInput[] = [];
   const qw = textWhere(f.q);
+  const locationSpots = locationSpotValues(f);
   if (qw) and.push(qw);
   if (persp === 'barra') {
     and.push({ OR: [{ category: { is: { slug: 'barra' } } }, { hasBarra: true, barraPrice: { not: null } }] });
     and.push({ barraSoldAt: null }); // esconde a barra do kit já vendida (anúncio fica na busca de kite)
     and.push(noReservation('barra', 'conjunto')); // barra reservada (ou conjunto) sai da busca de barra
-    if (f.city.length) and.push({ city: { in: f.city } });
+    if (locationSpots) and.push({ city: { in: locationSpots } });
     if (f.delivery.length) {
       const opts: Prisma.ListingWhereInput[] = [];
       if (f.delivery.includes('local')) opts.push({ pickup: true });
@@ -208,7 +222,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
   }
   if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
-  if (f.city.length) and.push({ city: { in: f.city } });
+  if (locationSpots) and.push({ city: { in: locationSpots } });
   // tamanho por FAIXA: cada chave de faixa vira [lo, hi) sobre attributes.size_m2 (JSON).
   if (f.size.length) {
     and.push({
@@ -247,7 +261,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
 // Dataset cru (leve) de TODOS os ativos — cacheável. As facetas são calculadas
 // a partir daqui em JS, de forma CONTEXTUAL (refletindo os filtros ativos).
 type ActiveRow = {
-  price: number; city: string; hasBarra: boolean; barraPrice: number | null;
+  price: number; city: string; uf: string | null; hasBarra: boolean; barraPrice: number | null;
   pickup: boolean; shippable: boolean; catSlug: string;
   brandName: string | null; size: string | null; cond: string | null;
   bladder: string | null; mang: string | null; repair: boolean;
@@ -263,7 +277,7 @@ async function fetchActiveRows(): Promise<ActiveRow[]> {
   return rows.map((r) => {
     const a = (r.attributes ?? {}) as Record<string, any>;
     return {
-      price: r.price, city: r.city, hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
+      price: r.price, city: r.city, uf: stateForSpot(r.city), hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
       pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
       size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
       bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
@@ -371,6 +385,7 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
     bladder: (r: ActiveRow) => !f.bladder.length || (r.bladder != null && f.bladder.includes(r.bladder)),
     mang: (r: ActiveRow) => !f.mang.length || (r.mang != null && f.mang.includes(r.mang)),
     brand: (r: ActiveRow) => !f.brand.length || (r.brandName != null && f.brand.includes(r.brandName)),
+    uf: (r: ActiveRow) => !f.uf.length || (r.uf != null && f.uf.includes(r.uf)),
     city: (r: ActiveRow) => !f.city.length || f.city.includes(r.city),
     price: (r: ActiveRow) => !f.price.length || f.price.includes(priceBucket(r.price)),
     repair: (r: ActiveRow) => !f.repair.length || f.repair.includes(r.repair ? 'rep' : 'norep'),
@@ -390,7 +405,7 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
   const dM = setExcept('delivery');
   const wM = setExcept('withbar');
   // categoria conta sobre filtros cross-categoria (city/price/delivery/brand), sem restrição de perspectiva
-  const catSet = rows.filter((r) => P.city(r) && P.price(r) && P.delivery(r) && P.brand(r));
+  const catSet = rows.filter((r) => P.uf(r) && P.city(r) && P.price(r) && P.delivery(r) && P.brand(r));
   const kiteCount = catSet.filter((r) => r.catSlug === 'kite' && !r.kiteSold).length;
   const barraCount = catSet.filter((r) => r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null && !r.barraSold)).length;
   const withbarCount = wM.filter((r) => r.hasBarra).length;
@@ -404,6 +419,7 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
     ],
     size: list(tally(setExcept('size'), (r) => (r.size != null ? sizeBucket(Number(r.size)) : null)), (v) => SIZE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
     brand: list(tally(setExcept('brand'), (r) => r.brandName), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
+    uf: list(tally(setExcept('uf'), (r) => r.uf), stateLabel).sort((a, b) => a.label.localeCompare(b.label)),
     city: list(tally(setExcept('city'), (r) => r.city), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
     price: list(tally(setExcept('price'), (r) => priceBucket(r.price)), (v) => PRICE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
     repair: list(tally(setExcept('repair'), (r) => (r.repair ? 'rep' : 'norep')), (v) => (v === 'rep' ? 'Com reparo' : 'Sem reparo')),
@@ -467,7 +483,7 @@ export async function getBrowseData(sp: SP) {
   const facets: Facets =
     persp === 'barra' ? { ...fac.facets, size: [], brand: [], price: [], repair: [], withbar: [], cond: [], bladder: [], mang: [] } : fac.facets;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages };
+  return { items, facets, total, totalAll: fac.totalAll, filters: f, page, pageSize: PAGE_SIZE, totalPages, viewer: me ? { id: me.id } : null };
 }
 
 // Anúncios do próprio usuário (todos os status, menos excluídos) — cards + status.

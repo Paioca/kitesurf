@@ -1,11 +1,11 @@
 // Helpers de filtro por URL (server-safe). Filtros viram querystring →
 // busca server-rendered, compartilhável e indexável.
 export type SP = Record<string, string | string[] | undefined>;
+export { SPOTS } from './locations';
 
 // Taxonomia controlada (lista fechada) — usada na busca-builder do hero, onde se
 // oferece o vocabulário completo, não só os valores presentes no banco (facetas).
 export const SIZES = ['5', '6', '7', '8', '9', '10', '11', '12', '14', '17'];
-export const SPOTS = ['Cumbuco', 'Taíba', 'Fortaleza', 'Praia do Futuro', 'Paracuru', 'Ilha do Guajiru', 'Preá'];
 // Tipos de anúncio. 'kit' = kite com barra (hasBarra) — não é uma categoria, é o combo.
 export const CAT_LABEL: Record<string, string> = { kite: 'Kite', barra: 'Barra', kit: 'Kite + Barra' };
 
@@ -57,6 +57,7 @@ export function parseFilters(sp: SP) {
     cat: one(sp, 'cat'),
     size: list(sp, 'size'),
     brand: list(sp, 'brand'),
+    uf: list(sp, 'uf'),
     city: list(sp, 'city'),
     price: list(sp, 'price'),
     repair: list(sp, 'repair'),
@@ -78,7 +79,7 @@ function toQuery(sp: Record<string, string>): string {
 
 function current(sp: SP): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const k of ['q', 'cat', 'size', 'brand', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort', 'b']) {
+  for (const k of ['q', 'cat', 'size', 'brand', 'uf', 'city', 'price', 'repair', 'withbar', 'cond', 'bladder', 'mang', 'delivery', 'sort', 'b']) {
     const v = one(sp, k);
     if (v) out[k] = v;
   }
@@ -132,5 +133,5 @@ export function currentHref(sp: SP): string {
 
 export function hasAnyFilter(sp: SP): boolean {
   const f = parseFilters(sp);
-  return !!(f.q || f.cat || f.size.length || f.brand.length || f.city.length || f.price.length || f.repair.length || f.withbar.length || f.cond.length || f.bladder.length || f.mang.length || f.delivery.length);
+  return !!(f.q || f.cat || f.size.length || f.brand.length || f.uf.length || f.city.length || f.price.length || f.repair.length || f.withbar.length || f.cond.length || f.bladder.length || f.mang.length || f.delivery.length);
 }
