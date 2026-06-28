@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { db } from '../../../../lib/db';
-import { databaseUrlInfo } from '../../../../lib/db-url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,7 +70,7 @@ async function checkTwilio(): Promise<ComponentStatus> {
 export async function GET() {
   // Roda os dois em paralelo: se um trava no timeout, o outro não espera.
   const [dbStatus, twilioStatus] = await Promise.all([checkDb(), checkTwilio()]);
-  const components = { db: { ...dbStatus, url: databaseUrlInfo() }, twilio: twilioStatus };
+  const components = { db: dbStatus, twilio: twilioStatus };
   const downs = Object.entries(components).filter(([, c]) => !c.ok).map(([k]) => k);
   const ok = downs.length === 0;
   const body = ok ? { ok, components } : { ok, components, downs };
