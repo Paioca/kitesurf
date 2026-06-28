@@ -40,7 +40,7 @@ function isLocalUrl(rawUrl: string | undefined): boolean {
 Sentry.init({
   dsn,
   enabled,
-  environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? (sentryDev ? process.env.NODE_ENV : 'local'),
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? 'local',
   release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
   tracesSampleRate: isProd ? 0.1 : 1.0,
   // Session Replay: 5% das sessões em prod + 100% das que tiveram erro.

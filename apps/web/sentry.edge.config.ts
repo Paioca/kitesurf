@@ -38,7 +38,7 @@ function isLocalUrl(rawUrl: string | undefined): boolean {
 Sentry.init({
   dsn,
   enabled,
-  environment: process.env.VERCEL_ENV ?? (sentryDev ? process.env.NODE_ENV : 'local'),
+  environment: process.env.VERCEL_ENV ?? 'local',
   release: process.env.VERCEL_GIT_COMMIT_SHA,
   tracesSampleRate: isProd ? 0.1 : 1.0,
   beforeSend(event) {
