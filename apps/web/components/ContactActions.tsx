@@ -128,8 +128,8 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
             Seu WhatsApp será compartilhado com o vendedor para vocês combinarem a visita. {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
           </div>
-          <WarnBox>Combine só se for comparecer. Pedir pra ver só pra perguntar o que já está no anúncio, no-show ou spam levam a bloqueio.</WarnBox>
-          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e pretendo comparecer à visita." />
+          <WarnBox>Envie o pedido quando houver interesse real em ver o equipamento. Isso mantém a comunidade objetiva e evita conversas soltas para o vendedor.</WarnBox>
+          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Tenho interesse real e quero combinar a visita." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
             <button onClick={() => { setConfirmVisit(false); setCiente(false); }} disabled={busy === 'visit'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
             <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Enviar pedido e compartilhar WhatsApp'}</button>
@@ -154,8 +154,8 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: color.ink }}>
             {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} é: <strong>{visitSummary}</strong>.
           </div>
-          <WarnBox>Oferta é compromisso real. Proposta falsa, spam ou no-show levam a bloqueio na plataforma.</WarnBox>
-          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Estou ciente e quero enviar minha oferta de verdade." />
+          <WarnBox>Envie uma oferta que você toparia negociar. Propostas com contexto ajudam o vendedor responder melhor.</WarnBox>
+          <CienteCheck on={ciente} onToggle={() => setCiente((v) => !v)} label="Tenho interesse real e quero enviar esta oferta." />
           <div style={{ display: 'flex', gap: 10, marginTop: 13 }}>
             <button onClick={() => { setShowOffer(false); setAmount(''); setCiente(false); }} disabled={busy === 'offer'} style={{ ...btnOutline, marginTop: 0, width: 'auto', padding: '13px 18px' }}>Voltar</button>
             <button onClick={() => ciente && Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !ciente || !(Number(amount) > 0)} style={{ ...btnPrimary, flex: 1, ...((!ciente || !(Number(amount) > 0)) ? disabledBtn : {}) }}>{busy === 'offer' ? '…' : 'Confirmar oferta'}</button>

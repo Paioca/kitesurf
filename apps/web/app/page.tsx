@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
-import { setHref, clearHref, clearFiltersHref, pageHref, toggleHref, hasAnyFilter, currentHref, SIZE_RANGES, SIZE_LABELS, SPOTS, type SP } from '../lib/filters';
+import { setHref, clearHref, clearFiltersHref, pageHref, hasAnyFilter, currentHref, type SP } from '../lib/filters';
 import { ListingCard } from '../components/ListingCard';
 import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
@@ -53,6 +53,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
   const sheetOpen = (Array.isArray(sp.fs) ? sp.fs[0] : sp.fs) === '1'; // bottom sheet persistido
   const landing = !hasAnyFilter(sp) && !browseFlag;
+  const publicCountLabel = landing && total > 0 && total < 5 ? 'Curadoria inicial' : `${total} ${total === 1 ? 'anúncio' : 'anúncios'}`;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
     { value: 'kite', label: 'Kites', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
@@ -68,22 +69,26 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar />
         <div style={{ paddingBottom: 84 }}>
-          {/* Hero imersivo (Lifestyle mobile): foto full-bleed, headline gigante, selo gold. */}
+          {/* Hero imersivo: primeira visita orientada para anunciar. */}
           <div style={{ position: 'relative', height: 'min(76vh, 520px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
             <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
-            <div style={{ position: 'relative', padding: '0 20px 60px', animation: 'kl-up 0.7s ease both' }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Nascido em Cumbuco. Aberto para o mundo.</div>
-              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>O jeito mais leve de comprar e vender kite</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
-                <span style={{ width: 26, height: 3, background: color.accent, borderRadius: 2, flex: 'none' }} />
-                <span style={{ fontFamily: font.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: color.gold }}>Premium Marketplace</span>
+            <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Venda com mais confiança</div>
+              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>Anuncie seu kite com menos conversa perdida</h1>
+              <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>Anunciar meu kite</Link>
+                <Link href="/entrar" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.42)', borderRadius: 12, padding: '13px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 14.5, fontWeight: 700 }}>Já tenho conta. Entrar</Link>
               </div>
             </div>
           </div>
 
-          {/* Busca flutuando sobre a borda do hero (mantém SearchBox e sua lógica). */}
-          <div style={{ padding: '0 18px', marginTop: -30, position: 'relative', zIndex: 3 }}>
+          <SellerProofs mobile />
+
+          {/* Busca abaixo do CTA principal: quem quer comprar ainda encontra o caminho. */}
+          <div id="browse" style={{ padding: '18px 18px 0', position: 'relative', zIndex: 3 }}>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 10 }}>Quer ver equipamentos à venda?</div>
             <div style={{ borderRadius: 14, boxShadow: '0 10px 28px rgba(12,37,32,0.16)' }}>
               <SearchBox />
             </div>
@@ -105,7 +110,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
               <FilterSheet activeCount={activeCount} total={total} applyHref={currentHref(sp)} initialOpen={sheetOpen}>
                 <FilterContent sp={sp} facets={facets} filters={filters} inSheet />
               </FilterSheet>
-              <span style={{ fontSize: 12.5, color: color.inkFaint, whiteSpace: 'nowrap' }}>{total} {total === 1 ? 'anúncio' : 'anúncios'}</span>
+              <span style={{ fontSize: 12.5, color: color.inkFaint, whiteSpace: 'nowrap' }}>{publicCountLabel}</span>
             </div>
             <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
               {sorts.map(([key, label]) => (
@@ -145,6 +150,10 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                     <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
                   ))}
                 </div>
+              </div>
+
+              <div style={{ maxWidth: 760, marginBottom: 26 }}>
+                <SearchBox />
               </div>
 
               {typeChips.length > 0 && (
@@ -208,12 +217,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   );
 }
 
-// ---------- HERO (landing) — busca estruturada (form GET → filtra "/") ----------
-// Busca-builder: oferece a taxonomia COMPLETA (não só o que existe no banco).
-const TYPE_OPTS = [{ value: 'kite', label: 'Kite' }, { value: 'kit', label: 'Kite + Barra' }, { value: 'barra', label: 'Barra' }];
-const SIZE_OPTS = Object.keys(SIZE_RANGES).map((k) => ({ value: k, label: SIZE_LABELS[k] }));
-const SPOT_OPTS = SPOTS.map((s) => ({ value: s, label: s }));
-
+// ---------- HERO (landing) — vendedor-first ----------
 function Hero({ priority = true }: { priority?: boolean }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
@@ -223,21 +227,16 @@ function Hero({ priority = true }: { priority?: boolean }) {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,rgba(12,37,32,0.45) 0%,rgba(12,37,32,0) 40%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Nascido em Cumbuco. Aberto para o mundo.</div>
-          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>O jeito mais leve de comprar e vender kite</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 38px', maxWidth: 610 }}>Equipamentos de kitesurf anunciados por quem vive o esporte. Busque por marca, tamanho, cidade e fale direto com o vendedor pelo WhatsApp.</p>
-          <form method="get" action="/" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: 14, padding: 9, boxShadow: '0 18px 50px rgba(0,0,0,0.28)', maxWidth: 690, gap: 4 }}>
-            <input type="hidden" name="b" value="1" />{/* mantém na visão de busca mesmo sem filtro */}
-            <div style={{ flex: 1.4, minWidth: 0, padding: '8px 14px', borderRight: '1px solid #efeadd' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#9aa49d', marginBottom: 3 }}>Busca</div>
-              <input name="q" type="search" placeholder="Busque por marca ou modelo" style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: font.sans, fontSize: 15, fontWeight: 600, color: color.ink, outline: 'none' }} />
-            </div>
-            <HeroSelect name="cat" label="Tipo" placeholder="Kite, barra ou todos" options={TYPE_OPTS} />
-            <HeroSelect name="size" label="Tamanho" placeholder="Qualquer tamanho" options={SIZE_OPTS} accent />
-            <HeroSelect name="city" label="Cidade" placeholder="Todas as cidades" options={SPOT_OPTS} last />
-            <button type="submit" className="kl-lift" style={{ background: color.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '0 30px', fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>Buscar equipamentos</button>
-          </form>
-          <div style={{ marginTop: 22 }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Venda com mais contexto</div>
+          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Anuncie seu kite com menos conversa perdida</h1>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 30px', maxWidth: 640 }}>Crie um anúncio com fotos, ficha técnica e telefone verificado. O comprador envia pedido de visita ou oferta estruturada, e seu WhatsApp só é liberado quando você aceita.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+            <Link href="/anunciar" className="kl-lift" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '16px 28px', textDecoration: 'none', fontSize: 16, fontWeight: 800 }}>Anunciar meu kite</Link>
+            <Link href="#browse" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.42)', borderRadius: 12, padding: '15px 24px', textDecoration: 'none', fontSize: 15, fontWeight: 700 }}>Ver kites à venda</Link>
+            <Link href="/entrar" style={{ color: '#dce8e1', textDecoration: 'none', fontSize: 15, fontWeight: 700 }}>Já tenho conta. Entrar</Link>
+          </div>
+          <SellerProofs />
+          <div style={{ marginTop: 26 }}>
             <HowItWorks />
           </div>
         </div>
@@ -246,17 +245,34 @@ function Hero({ priority = true }: { priority?: boolean }) {
   );
 }
 
-function HeroSelect({ name, label, placeholder, options, accent, last }: { name: string; label: string; placeholder: string; options: { value: string; label: string }[]; accent?: boolean; last?: boolean }) {
+function SellerProofs({ mobile = false }: { mobile?: boolean }) {
+  const proofs = [
+    'Pedido de visita ou oferta estruturada',
+    'WhatsApp liberado só com aceite',
+    'Telefone verificado antes de anunciar',
+    'Reputação após negociação confirmada',
+  ];
+  if (mobile) {
+    return (
+      <section style={{ padding: '18px 18px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
+          {proofs.map((p) => (
+            <div key={p} style={{ background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 12, padding: '12px 11px', fontSize: 12.5, fontWeight: 700, lineHeight: 1.35, color: color.ink }}>
+              {p}
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
   return (
-    <div style={{ flex: 1, minWidth: 0, position: 'relative', padding: '8px 14px', borderRight: last ? 'none' : '1px solid #efeadd', background: accent ? color.chipSoftBg : undefined, borderRadius: accent ? 8 : undefined }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-        {accent && <Diamond size={7} c={color.primary} />}
-        <span style={{ fontSize: 11, fontWeight: accent ? 700 : 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: accent ? color.primary : '#9aa49d' }}>{label}</span>
-      </div>
-      <select name={name} defaultValue="" className="hero-select" style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: font.sans, fontSize: 15, fontWeight: accent ? 700 : 600, color: color.ink, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}>
-        <option value="">{placeholder}</option>
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10, maxWidth: 650 }}>
+      {proofs.map((p) => (
+        <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 9, color: '#dce8e1', fontSize: 14.5, fontWeight: 700 }}>
+          <Diamond size={9} c={color.aqua} r={2} />
+          <span>{p}</span>
+        </div>
+      ))}
     </div>
   );
 }

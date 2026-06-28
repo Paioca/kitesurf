@@ -37,8 +37,9 @@ export default async function MeusAnuncios() {
 
       {items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '50px 20px', border: '1px dashed #d3ccbd', borderRadius: 16 }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.inkFaint2, marginBottom: 14 }}>Você ainda não tem anúncios.</div>
-          <Link href="/anunciar" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700 }}>Anunciar o primeiro</Link>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.inkFaint2, marginBottom: 10 }}>Seu primeiro anúncio começa aqui.</div>
+          <p style={{ fontSize: 14.5, color: color.inkMute, lineHeight: 1.55, margin: '0 auto 18px', maxWidth: 420 }}>Monte uma ficha com fotos, estado real e detalhes do equipamento para receber pedidos com mais contexto.</p>
+          <Link href="/anunciar" style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700 }}>Criar meu primeiro anúncio</Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -357,10 +357,19 @@ export default function Criar() {
   if (authed === false) {
     return (
       <Shell>
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Entre pra anunciar</h1>
-          <p style={{ fontSize: 15, color: color.inkMute, margin: '0 0 24px' }}>Anunciar exige conta com telefone verificado.</p>
-          <Link href="/entrar?next=%2Fanunciar" style={primary}>Entrar ou criar conta</Link>
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: '58px 0', textAlign: 'center' }}>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 12 }}>Venda com menos conversa perdida</div>
+          <h1 style={{ fontFamily: font.serif, fontSize: 'clamp(34px,5vw,48px)', fontWeight: 600, lineHeight: 1.05, margin: '0 0 16px', color: color.ink }}>Anuncie seu kite para compradores com interesse real</h1>
+          <p style={{ fontSize: 17, lineHeight: 1.65, color: color.inkMute, margin: '0 auto 28px', maxWidth: 560 }}>Crie um anúncio com fotos, ficha técnica e condições do equipamento. Para deixar a negociação mais confiável, confirme seu telefone antes de publicar.</p>
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 10, margin: '0 auto 28px', maxWidth: 680 }}>
+            {['WhatsApp protegido até você aceitar', 'Pedido de visita ou oferta estruturada', 'Perfil com telefone verificado'].map((item) => (
+              <div key={item} style={{ flex: '1 1 190px', background: '#fff', border: `1px solid ${color.lineCard}`, borderRadius: 12, padding: '14px 12px', fontSize: 13.5, fontWeight: 700, color: color.ink, lineHeight: 1.35 }}>{item}</div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Link href="/entrar?next=%2Fanunciar" style={primary}>Começar meu anúncio</Link>
+            <Link href="/entrar?next=%2Fanunciar" style={outline}>Já tenho conta. Entrar</Link>
+          </div>
         </div>
       </Shell>
     );

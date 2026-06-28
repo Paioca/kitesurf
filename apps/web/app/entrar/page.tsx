@@ -12,6 +12,7 @@ import { SPOTS } from '../../lib/filters';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
+type Intent = 'default' | 'sell' | 'favorites' | 'deals' | 'myListings';
 
 const PERKS = [
   'Telefone verificado para perfis mais confiáveis',
@@ -21,6 +22,7 @@ const PERKS = [
 
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
+  const [intent, setIntent] = useState<Intent>('default');
   // Canal: SMS é o padrão (todo cadastro novo passa por aqui). E-mail é fallback do
   // SPOF do Twilio — só funciona pra usuário JÁ EXISTENTE com email verificado, e
   // nunca cria conta nova (schema exige telefone).
@@ -50,6 +52,16 @@ export default function Entrar() {
 
   useEffect(() => {
     setLang(storedLocale());
+    const rawNext = new URLSearchParams(window.location.search).get('next');
+    if (rawNext) {
+      try {
+        const u = new URL(rawNext, window.location.origin);
+        if (u.origin === window.location.origin && u.pathname === '/anunciar') setIntent('sell');
+        if (u.origin === window.location.origin && u.pathname === '/favoritos') setIntent('favorites');
+        if (u.origin === window.location.origin && u.pathname === '/pedidos') setIntent('deals');
+        if (u.origin === window.location.origin && u.pathname === '/conta/anuncios') setIntent('myListings');
+      } catch {}
+    }
   }, []);
 
   // Auto-submete o OTP quando as 6 células completam (no mock o devCode já preenche).
@@ -168,6 +180,94 @@ export default function Entrar() {
     lastName.trim().length >= 1 &&
     !!spot &&
     !!country;
+  const sellIntent = intent === 'sell';
+  const perks = sellIntent
+    ? [
+      'Telefone verificado antes de publicar',
+      'Seu WhatsApp fica protegido até você aceitar',
+      'Anúncio com fotos, ficha técnica e contexto',
+    ]
+    : intent === 'favorites'
+      ? [
+        'Salve anúncios para comparar depois',
+        'Volte quando quiser sem perder o equipamento',
+        'Telefone verificado para negociar com mais confiança',
+      ]
+    : intent === 'deals'
+      ? [
+        'Acompanhe visitas, ofertas e contatos liberados',
+        'Receba avisos quando alguém responder',
+        'Histórico organizado das suas negociações',
+      ]
+    : intent === 'myListings'
+      ? [
+        'Crie e gerencie seus anúncios em um só lugar',
+        'Veja visitas, ofertas e contatos liberados',
+        'Telefone verificado para vender com mais confiança',
+      ]
+    : PERKS;
+  const intentCopy: Record<Intent, { eyebrow: string; sideTitle: string; title: string; sub: string; doneSub: string; donePrimary: string; donePrimaryHref: string; doneSecondary: string; doneSecondaryHref: string; hint?: string }> = {
+    default: {
+      eyebrow: 'Entre para a comunidade',
+      sideTitle: 'Um acesso simples para comprar, vender e negociar.',
+      title: 'Entrar ou criar conta',
+      sub: 'Sem senha. Enviamos um código para confirmar seu telefone.',
+      doneSub: 'Agora você pode explorar equipamentos ou anunciar seu primeiro item.',
+      donePrimary: 'Explorar equipamentos',
+      donePrimaryHref: '/',
+      doneSecondary: 'Anunciar equipamento',
+      doneSecondaryHref: '/anunciar',
+    },
+    sell: {
+      eyebrow: 'Anuncie com mais confiança',
+      sideTitle: 'Confirme seu telefone e crie um anúncio mais confiável.',
+      title: 'Confirme seu telefone para anunciar',
+      sub: 'Sem senha. O telefone verificado ajuda a proteger seu anúncio e evita contato solto antes de existir interesse real.',
+      hint: 'Já tem conta? Use o mesmo telefone para entrar e continuar o anúncio.',
+      doneSub: 'Agora você pode criar o anúncio com mais contexto para receber pedidos melhores.',
+      donePrimary: 'Criar meu anúncio',
+      donePrimaryHref: '/anunciar',
+      doneSecondary: 'Ver kites à venda',
+      doneSecondaryHref: '/',
+    },
+    favorites: {
+      eyebrow: 'Salve para comparar depois',
+      sideTitle: 'Entre para guardar anúncios e voltar com calma.',
+      title: 'Entre para salvar anúncios',
+      sub: 'Use seu telefone para acessar seus favoritos em qualquer visita.',
+      hint: 'Já tem conta? Use o mesmo telefone e seus anúncios salvos aparecem aqui.',
+      doneSub: 'Agora você pode salvar anúncios e comparar os equipamentos com calma.',
+      donePrimary: 'Ver favoritos',
+      donePrimaryHref: '/favoritos',
+      doneSecondary: 'Ver kites à venda',
+      doneSecondaryHref: '/',
+    },
+    deals: {
+      eyebrow: 'Acompanhe cada conversa',
+      sideTitle: 'Entre para ver visitas, ofertas e contatos liberados.',
+      title: 'Entre para acompanhar suas negociações',
+      sub: 'Aqui ficam pedidos de visita, ofertas e WhatsApp liberado quando o vendedor aceita.',
+      hint: 'Já tem conta? Use o mesmo telefone para voltar às suas negociações.',
+      doneSub: 'Agora você pode acompanhar visitas, ofertas e contatos liberados.',
+      donePrimary: 'Ver minhas negociações',
+      donePrimaryHref: '/pedidos',
+      doneSecondary: 'Ver kites à venda',
+      doneSecondaryHref: '/',
+    },
+    myListings: {
+      eyebrow: 'Seu painel de vendedor',
+      sideTitle: 'Entre para criar, revisar e gerenciar seus anúncios.',
+      title: 'Entre para criar ou gerenciar anúncios',
+      sub: 'Use seu telefone para acessar seus anúncios e acompanhar visitas e ofertas.',
+      hint: 'Já tem conta? Use o mesmo telefone para abrir seu painel de vendedor.',
+      doneSub: 'Agora você pode criar ou gerenciar seus anúncios.',
+      donePrimary: 'Abrir meus anúncios',
+      donePrimaryHref: '/conta/anuncios',
+      doneSecondary: 'Criar novo anúncio',
+      doneSecondaryHref: '/anunciar',
+    },
+  };
+  const copy = intentCopy[intent];
 
   return (
     <div style={shell}>
@@ -178,12 +278,12 @@ export default function Entrar() {
         <div style={imageryInner}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo onDark size={22} /></Link>
           <div>
-            <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>Entre para a comunidade</div>
+            <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 19, color: '#e7c79a', marginBottom: 14 }}>{copy.eyebrow}</div>
             <h2 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 38, fontWeight: 600, color: '#fff', lineHeight: 1.1, margin: '0 0 22px', maxWidth: 420 }}>
-              Um acesso simples para comprar, vender e negociar.
+              {copy.sideTitle}
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13, maxWidth: 380 }}>
-              {PERKS.map((p) => (
+              {perks.map((p) => (
                 <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                   <span style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(231,199,154,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                     <span style={{ width: 9, height: 9, background: '#e7c79a', transform: 'rotate(45deg)', borderRadius: 2 }} />
@@ -203,8 +303,8 @@ export default function Entrar() {
 
           {step === 'phone' && (
             <>
-              <h1 style={h1}>Entrar ou criar conta</h1>
-              <p style={sub}>Sem senha. Enviamos um código para confirmar seu telefone.</p>
+              <h1 style={h1}>{copy.title}</h1>
+              <p style={sub}>{copy.sub}</p>
 
               {/* Canal SMS é A interface — é por onde TODO cadastro novo passa. E-mail
                   é canal alternativo só pra quem JÁ TEM conta + email verificado, e
@@ -240,7 +340,7 @@ export default function Entrar() {
                 }
                 style={primaryBtn}
               >
-                {loading ? 'Enviando…' : 'Receber código'}
+                {loading ? 'Enviando…' : (intent === 'default' ? 'Receber código' : 'Receber código e continuar')}
               </button>
 
               {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
@@ -262,6 +362,7 @@ export default function Entrar() {
               </div>
 
               <p style={terms}>Ao continuar, você concorda com os <Link href="/termos" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Termos</Link> e a <Link href="/privacidade" target="_blank" style={{ color: '#1f6b5c', fontWeight: 600 }}>Política de Privacidade</Link> da Kitetropos.</p>
+              {copy.hint && <p style={{ ...terms, marginTop: 10 }}>{copy.hint}</p>}
             </>
           )}
 
@@ -292,8 +393,8 @@ export default function Entrar() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: '#1f6b5c', marginBottom: 14 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />Telefone verificado
               </div>
-              <h1 style={h1}>Complete seu perfil</h1>
-              <p style={sub}>Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.</p>
+              <h1 style={h1}>{sellIntent ? 'Complete seu perfil de vendedor' : 'Complete seu perfil'}</h1>
+              <p style={sub}>{sellIntent ? 'Seu nome e sua foto ajudam compradores a confiar em quem está anunciando.' : 'Seu nome e sua foto ajudam outras pessoas a reconhecer com quem estão negociando.'}</p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
                 <button onClick={() => fileRef.current?.click()} style={{ ...avatarBtn, ...(avatarUrl ? { border: 'none', backgroundImage: `url("${avatarUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}>
@@ -344,7 +445,7 @@ export default function Entrar() {
               </div>
 
               <button onClick={() => verify(true)} disabled={!canFinish || loading} style={canFinish ? primaryBtn : disabledBtn}>
-                {loading ? 'Criando…' : canFinish ? 'Criar conta' : 'Complete seu perfil'}
+                {loading ? 'Criando…' : canFinish ? (sellIntent ? 'Criar conta e anunciar' : 'Criar conta') : 'Complete seu perfil'}
               </button>
             </>
           )}
@@ -353,9 +454,9 @@ export default function Entrar() {
             <div style={{ textAlign: 'center' }}>
               <div style={doneAvatar(avatarUrl)}>{!avatarUrl && 'VC'}</div>
               <h1 style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 30, fontWeight: 600, margin: '0 0 10px' }}>Tudo certo. Sua conta está pronta.</h1>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>Agora você pode explorar equipamentos ou anunciar seu primeiro item.</p>
-              <Link href="/" style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>Explorar equipamentos</Link>
-              <Link href="/anunciar" style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>Anunciar equipamento</Link>
+              <p style={{ fontSize: 15, lineHeight: 1.6, color: '#6b7a73', margin: '0 0 28px' }}>{copy.doneSub}</p>
+              <Link href={copy.donePrimaryHref} style={{ ...primaryBtn, display: 'block', textDecoration: 'none', textAlign: 'center', marginBottom: 11 }}>{copy.donePrimary}</Link>
+              <Link href={copy.doneSecondaryHref} style={{ color: '#6b7a73', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>{copy.doneSecondary}</Link>
             </div>
           )}
         </div>

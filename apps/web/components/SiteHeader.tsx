@@ -15,7 +15,7 @@ export function SiteHeader() {
           <HeaderNav />
           <LanguageToggle />
           <AccountNav />
-          <Link href="/anunciar" className="kl-lift" style={{ display: 'inline-block', fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar</Link>
+          <Link href="/anunciar" className="kl-lift" style={{ display: 'inline-block', fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>Anunciar meu kite</Link>
         </div>
       </div>
     </header>

@@ -76,7 +76,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
   ) : null;
 
   const cardsList = tab === 'received' ? (
-    incoming.length === 0 ? <Empty>Nenhuma oferta ou visita recebida ainda.</Empty> : <>{incoming.map((r) => (
+    incoming.length === 0 ? <Empty>Aqui aparecem visitas e ofertas recebidas nos seus anúncios.</Empty> : <>{incoming.map((r) => (
       <Row key={r.id}>
         <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -95,7 +95,7 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
       </Row>
     ))}{moreIncoming && <MoreNote />}</>
   ) : (
-    outgoing.length === 0 ? <Empty>Você ainda não fez ofertas nem agendou visitas.</Empty> : <>{outgoing.map((r) => (
+    outgoing.length === 0 ? <Empty>Quando você pedir uma visita ou fizer uma oferta, o acompanhamento aparece aqui.</Empty> : <>{outgoing.map((r) => (
       <Row key={r.id}>
         <a href={`/anuncio/${r.listing.id}`} style={rowLink}><Thumb src={r.listing.thumb} />
           <div style={{ minWidth: 0, flex: 1 }}>
