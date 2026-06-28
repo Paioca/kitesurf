@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import { color, font } from '../lib/tokens';
 import { ComoFunciona } from './ComoFunciona';
 
-export function HowItWorks({ src, label = 'Veja como funciona' }: { src?: string; label?: string }) {
+export function HowItWorks({ src, label = 'Veja como funciona', variant = 'pill' }: { src?: string; label?: string; variant?: 'pill' | 'link' }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -38,8 +38,8 @@ export function HowItWorks({ src, label = 'Veja como funciona' }: { src?: string
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} style={btn} className="kl-howbtn">
-        <span style={playIcon}>▶</span>
+      <button type="button" onClick={() => setOpen(true)} style={variant === 'link' ? linkBtn : btn} className="kl-howbtn">
+        <span style={variant === 'link' ? playIconInline : playIcon}>▶</span>
         {label}
       </button>
 
@@ -65,9 +65,20 @@ const btn: React.CSSProperties = {
   fontFamily: font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer',
   backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
 };
+const linkBtn: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 8,
+  background: 'transparent', border: 'none', color: '#dce8e1',
+  padding: 0, borderRadius: 0,
+  fontFamily: font.sans, fontSize: 14.5, fontWeight: 700, cursor: 'pointer',
+  textDecoration: 'underline', textUnderlineOffset: 5, textDecorationThickness: 1,
+};
 const playIcon: React.CSSProperties = {
   width: 28, height: 28, borderRadius: 999, background: color.accent, color: color.ink,
   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, paddingLeft: 2, flex: 'none',
+};
+const playIconInline: React.CSSProperties = {
+  width: 20, height: 20, borderRadius: 999, background: 'rgba(220,232,225,0.16)', color: '#dce8e1',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, paddingLeft: 1, flex: 'none',
 };
 const backdrop: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(9,24,21,0.84)',

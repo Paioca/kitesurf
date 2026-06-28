@@ -3,6 +3,9 @@ import * as Sentry from '@sentry/nextjs';
 
 const isProd = process.env.NODE_ENV === 'production';
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const isVercelRuntime = !!process.env.NEXT_PUBLIC_VERCEL_ENV;
+const sentryDev = process.env.SENTRY_DEV === 'true';
+const enabled = !!dsn && (isVercelRuntime || sentryDev);
 
 // Recovery/verificação trafegam o token na URL (?token=...). Replay-on-error (100%)
 // e traces capturam a URL inteira por padrão — limpamos antes do envio.
@@ -24,10 +27,20 @@ function scrubUrl(rawUrl: string | undefined): string | undefined {
   }
 }
 
+function isLocalUrl(rawUrl: string | undefined): boolean {
+  if (!rawUrl) return false;
+  try {
+    const host = new URL(rawUrl).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
 Sentry.init({
   dsn,
-  enabled: !!dsn && (isProd || process.env.SENTRY_DEV === 'true'),
-  environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? 'local',
+  enabled,
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? (sentryDev ? process.env.NODE_ENV : 'local'),
   release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
   tracesSampleRate: isProd ? 0.1 : 1.0,
   // Session Replay: 5% das sessões em prod + 100% das que tiveram erro.
@@ -35,10 +48,12 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   integrations: [Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true })],
   beforeSend(event) {
+    if (isLocalUrl(event.request?.url)) return null;
     if (event.request?.url) event.request.url = scrubUrl(event.request.url);
     return event;
   },
   beforeSendTransaction(event) {
+    if (isLocalUrl(event.request?.url)) return null;
     if (event.request?.url) event.request.url = scrubUrl(event.request.url);
     return event;
   },

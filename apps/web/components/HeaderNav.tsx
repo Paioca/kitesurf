@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { color } from '../lib/tokens';
 import { RequestBadge } from './RequestBadge';
 
-export function HeaderNav() {
+type HeaderLabels = { myAds?: string; deals?: string; favorites?: string };
+
+export function HeaderNav({ labels }: { labels?: HeaderLabels }) {
   const [authed, setAuthed] = useState(false);
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setAuthed(!!(u && u.id))).catch(() => {});
@@ -16,9 +18,9 @@ export function HeaderNav() {
   const link: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, color: color.ink, textDecoration: 'none' };
   return (
     <nav style={{ display: 'flex', alignItems: 'center', gap: 22, marginRight: 4 }}>
-      <Link href="/conta/anuncios" style={link}>Meus anúncios</Link>
-      <Link href="/pedidos" style={{ ...link, position: 'relative' }}>Minhas negociações<RequestBadge /></Link>
-      <Link href="/favoritos" style={link}>Favoritos</Link>
+      <Link href="/conta/anuncios" style={link}>{labels?.myAds ?? 'Meus anúncios'}</Link>
+      <Link href="/pedidos" style={{ ...link, position: 'relative' }}>{labels?.deals ?? 'Minhas negociações'}<RequestBadge /></Link>
+      <Link href="/favoritos" style={link}>{labels?.favorites ?? 'Favoritos'}</Link>
     </nav>
   );
 }

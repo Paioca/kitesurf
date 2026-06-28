@@ -2,7 +2,7 @@
 // indexável). Filtros na URL. Interação client só no bottom sheet mobile.
 import Image from 'next/image';
 import Link from 'next/link';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { color, font } from '../lib/tokens';
 import { getBrowseData } from '../lib/browse';
 import { setHref, clearHref, clearFiltersHref, pageHref, hasAnyFilter, currentHref, type SP } from '../lib/filters';
@@ -19,6 +19,115 @@ import { SearchBox } from '../components/browse/SearchBox';
 
 export const dynamic = 'force-dynamic';
 
+type Locale = 'pt' | 'en';
+const HOME_COPY = {
+  pt: {
+    heroEyebrow: 'Venda com mais contexto',
+    heroTitle: 'Anuncie seu kite com menos conversa perdida',
+    heroSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. O comprador envia pedido de visita ou oferta estruturada, e seu WhatsApp só é liberado quando você aceita.',
+    primaryCta: 'Anunciar meu kite',
+    secondaryCta: 'Ver kites à venda',
+    mobileEyebrow: 'Venda com mais confiança',
+    mobileSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.',
+    browseIntro: 'Quer ver equipamentos à venda?',
+    onWind: 'No vento agora',
+    browseTitle: 'Equipamentos rodando pela comunidade',
+    publicCount: 'Curadoria inicial',
+    all: 'Todos',
+    typeKites: 'Kites',
+    typeKit: 'Kite + barra',
+    typeBars: 'Barras',
+    sortRecent: 'Mais recentes',
+    sortPriceAsc: 'Menor preço',
+    sortPriceDesc: 'Maior preço',
+    searchPlaceholder: 'Buscar por marca ou modelo',
+    searchSubmit: 'Buscar',
+    proofVisit: 'Pedido de visita ou oferta estruturada',
+    proofWhats: 'WhatsApp liberado só com aceite',
+    proofPhone: 'Telefone verificado antes de anunciar',
+    proofRep: 'Reputação após negociação confirmada',
+    communityEyebrow: 'Cuidado em cada detalhe',
+    communityTitle: 'O destino final dos kitesurfistas',
+    communityBody: 'A Kitetropos nasceu nas areias de Cumbuco para redefinir o mercado de equipamentos de kitesurf. Unimos a paixão pelo esporte com a curadoria de quem entende cada rajada de vento. Mais que um marketplace, somos o elo de confiança entre quem vive o mar.',
+    communityBadge: 'Comunidade',
+    communityBadgeLine2: 'Elevada.',
+    trustEyebrow: 'Mais contexto antes de negociar',
+    trustTitle: 'Negocie com mais confiança',
+    trustBody: 'Veja quem está anunciando, entenda o estado do equipamento e converse direto com quem vive o esporte.',
+    flowEyebrow: 'Como a negociação acontece',
+    flowTitle: 'Do anúncio à conversa',
+    flowBody: 'A Kitetropos ajuda você a encontrar, avaliar e iniciar a conversa. Preço, pagamento e entrega ficam combinados diretamente entre comprador e vendedor.',
+    howItWorks: 'Como funciona para o vendedor',
+    filteredTitle: 'Equipamentos rodando pela comunidade',
+    adSingular: 'anúncio',
+    adPlural: 'anúncios',
+    availableSingular: 'disponível',
+    availablePlural: 'disponíveis',
+    selectedSpots: 'nos spots selecionados',
+    emptyAll: 'Ainda não há anúncios por aqui.',
+    emptyFiltered: 'Nada com esses filtros.',
+    firstListing: 'Anunciar o primeiro',
+    clearFilters: 'Limpar filtros',
+    previous: 'Anterior',
+    next: 'Próxima',
+    page: 'Página',
+    of: 'de',
+  },
+  en: {
+    heroEyebrow: 'Sell with more context',
+    heroTitle: 'List your kite with fewer wasted conversations',
+    heroSub: 'Create a listing with photos, specs, and verified phone. Buyers send a visit request or structured offer, and your WhatsApp is shared only when you accept.',
+    primaryCta: 'List my kite',
+    secondaryCta: 'See kites for sale',
+    mobileEyebrow: 'Sell with more confidence',
+    mobileSub: 'Create a listing with photos, specs, and verified phone. Your WhatsApp is shared only when you accept.',
+    browseIntro: 'Want to browse gear for sale?',
+    onWind: 'On the wind now',
+    browseTitle: 'Gear moving through the community',
+    publicCount: 'Initial curation',
+    all: 'All',
+    typeKites: 'Kites',
+    typeKit: 'Kite + bar',
+    typeBars: 'Bars',
+    sortRecent: 'Newest',
+    sortPriceAsc: 'Lowest price',
+    sortPriceDesc: 'Highest price',
+    searchPlaceholder: 'Search by brand or model',
+    searchSubmit: 'Search',
+    proofVisit: 'Visit request or structured offer',
+    proofWhats: 'WhatsApp shared only after you accept',
+    proofPhone: 'Verified phone before listing',
+    proofRep: 'Reputation after confirmed deals',
+    communityEyebrow: 'Care in every detail',
+    communityTitle: 'The final destination for kitesurfers',
+    communityBody: 'Kitetropos was born on the sands of Cumbuco to bring more trust and context to used kitesurf gear. More than a marketplace, it connects people who live the sport.',
+    communityBadge: 'Community',
+    communityBadgeLine2: 'Elevated.',
+    trustEyebrow: 'More context before negotiating',
+    trustTitle: 'Negotiate with more confidence',
+    trustBody: 'See who is listing, understand the gear condition, and start a structured conversation with people who live the sport.',
+    flowEyebrow: 'How negotiation works',
+    flowTitle: 'From listing to conversation',
+    flowBody: 'Kitetropos helps buyers evaluate gear and start the conversation. Price, payment, and delivery are arranged directly between buyer and seller.',
+    howItWorks: 'How it works for sellers',
+    filteredTitle: 'Gear moving through the community',
+    adSingular: 'listing',
+    adPlural: 'listings',
+    availableSingular: 'available',
+    availablePlural: 'available',
+    selectedSpots: 'in selected spots',
+    emptyAll: 'No listings here yet.',
+    emptyFiltered: 'Nothing matches these filters.',
+    firstListing: 'Create the first listing',
+    clearFilters: 'Clear filters',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page',
+    of: 'of',
+  },
+};
+type HomeCopy = (typeof HOME_COPY)[Locale];
+
 // OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
 export const metadata = {
   title: 'Kitetropos | kite e barra com mais confiança',
@@ -34,6 +143,8 @@ export const metadata = {
 export default async function Home(props: { searchParams: Promise<SP> }) {
   const searchParams = await props.searchParams;
   const sp = searchParams;
+  const locale: Locale = (await cookies()).get('kitetropos:locale')?.value === 'en' ? 'en' : 'pt';
+  const t = HOME_COPY[locale];
   // A home renderiza AS DUAS árvores (mobile + desktop, alternadas por CSS), cada uma
   // com seu próprio herói. Sem isto, os dois <Image priority> emitiam <link rel=preload>
   // e o viewport baixava também a versão do layout ESCONDIDO (desperdício de 1 fetch de
@@ -43,25 +154,31 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const { items, facets, total, totalAll, filters, page, totalPages } = await getBrowseData(sp);
   const activeCount = filters.size.length + filters.brand.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
   const countLocation = filters.city.length === 1
-    ? ` em ${filters.city[0]}`
+    ? locale === 'en' ? ` in ${filters.city[0]}` : ` em ${filters.city[0]}`
     : filters.city.length > 1
-      ? ' nos spots selecionados'
-      : total === 1 ? ' disponível' : ' disponíveis';
-  const countLabel = `${total} ${total === 1 ? 'anúncio' : 'anúncios'}${countLocation}`;
+      ? ` ${t.selectedSpots}`
+      : ` ${total === 1 ? t.availableSingular : t.availablePlural}`;
+  const countLabel = `${total} ${total === 1 ? t.adSingular : t.adPlural}${countLocation}`;
   const empty = totalAll === 0;
   // Sem filtros = landing editorial; com filtros = visão filtrada (sidebar).
   const browseFlag = (Array.isArray(sp.b) ? sp.b[0] : sp.b) === '1';
   const sheetOpen = (Array.isArray(sp.fs) ? sp.fs[0] : sp.fs) === '1'; // bottom sheet persistido
   const landing = !hasAnyFilter(sp) && !browseFlag;
-  const publicCountLabel = landing && total > 0 && total < 5 ? 'Curadoria inicial' : `${total} ${total === 1 ? 'anúncio' : 'anúncios'}`;
+  const publicCountLabel = landing && total > 0 && total < 5 ? t.publicCount : `${total} ${total === 1 ? t.adSingular : t.adPlural}`;
   // Tipos de anúncio (lista fixa Fase 0): Kite · Kite+Barra (kit) · Barra. Sem Acessórios.
   const typeChips = [
-    { value: 'kite', label: 'Kites', count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
-    { value: 'kit', label: 'Kite + barra', count: facets.withbar[0]?.count ?? 0 },
-    { value: 'barra', label: 'Barras', count: facets.category.find((c) => c.value === 'barra')?.count ?? 0 },
+    { value: 'kite', label: t.typeKites, count: facets.category.find((c) => c.value === 'kite')?.count ?? 0 },
+    { value: 'kit', label: t.typeKit, count: facets.withbar[0]?.count ?? 0 },
+    { value: 'barra', label: t.typeBars, count: facets.category.find((c) => c.value === 'barra')?.count ?? 0 },
   ].filter((t) => t.count > 0);
 
-  const sorts: [string, string][] = [['recent', 'Mais recentes'], ['price_asc', 'Menor preço'], ['price_desc', 'Maior preço']];
+  const sorts: [string, string][] = [['recent', t.sortRecent], ['price_asc', t.sortPriceAsc], ['price_desc', t.sortPriceDesc]];
+  const atBrowse = (href: string) => `${href}${href.includes('#') ? '' : '#browse'}`;
+  const sortControl = (key: string, label: string, keepBrowse = false) => (
+    filters.sort === key
+      ? <span key={key} style={sortBtn(true)}>{label}</span>
+      : <Link key={key} href={keepBrowse ? atBrowse(setHref(sp, 'sort', key)) : setHref(sp, 'sort', key)} style={sortBtn(false)}>{label}</Link>
+  );
 
   return (
     <>
@@ -74,30 +191,29 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             <Image src="/hero-beach.jpg" alt="" fill priority={isMobileUA} sizes="430px" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
             <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
-              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>Venda com mais confiança</div>
-              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>Anuncie seu kite com menos conversa perdida</h1>
-              <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.</p>
+              <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>{t.mobileEyebrow}</div>
+              <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>{t.heroTitle}</h1>
+              <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>{t.mobileSub}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>Anunciar meu kite</Link>
-                <Link href="/entrar" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.42)', borderRadius: 12, padding: '13px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 14.5, fontWeight: 700 }}>Já tenho conta. Entrar</Link>
+                <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>{t.primaryCta}</Link>
               </div>
             </div>
           </div>
 
-          <SellerProofs mobile />
+          <SellerProofs mobile t={t} />
 
           {/* Busca abaixo do CTA principal: quem quer comprar ainda encontra o caminho. */}
           <div id="browse" style={{ padding: '18px 18px 0', position: 'relative', zIndex: 3 }}>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 10 }}>Quer ver equipamentos à venda?</div>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 10 }}>{t.browseIntro}</div>
             <div style={{ borderRadius: 14, boxShadow: '0 10px 28px rgba(12,37,32,0.16)' }}>
-              <SearchBox />
+              <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
             </div>
           </div>
 
           {/* chips de categoria — linha única limpa (minimalista, igual ao mock) */}
           {typeChips.length > 0 && (
             <div className="kl-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 18px 8px' }}>
-              <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</Link>
+              <Link href={clearHref(sp)} style={catChip(!filters.cat)}>{t.all}</Link>
               {typeChips.map((t) => (
                 <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
               ))}
@@ -113,9 +229,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
               <span style={{ fontSize: 12.5, color: color.inkFaint, whiteSpace: 'nowrap' }}>{publicCountLabel}</span>
             </div>
             <div className="kl-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
-              {sorts.map(([key, label]) => (
-                <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
-              ))}
+              {sorts.map(([key, label]) => sortControl(key, label, true))}
             </div>
           </div>
 
@@ -125,9 +239,9 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
 
           <div style={{ padding: '6px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={200} />)}
-            {total === 0 && <EmptyState empty={empty} sp={sp} />}
+            {total === 0 && <EmptyState empty={empty} sp={sp} t={t} />}
           </div>
-          <Pager page={page} totalPages={totalPages} sp={sp} />
+          <Pager page={page} totalPages={totalPages} sp={sp} t={t} />
         </div>
         <MobileTabBar active="home" />
       </div>
@@ -137,28 +251,26 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
         <SiteHeader />
         {landing ? (
           <>
-            <Hero priority={!isMobileUA} />
-            <Community />
+            <Hero priority={!isMobileUA} t={t} />
+            <Community t={t} />
             <section id="browse" style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(56px,7vw,84px) 32px 48px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 30 }}>
                 <div>
-                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>No vento agora</div>
-                  <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.5vw,50px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: 0, lineHeight: 0.98 }}>Equipamentos rodando pela comunidade</h2>
+                  <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.primary, marginBottom: 8 }}>{t.onWind}</div>
+                  <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.5vw,50px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: 0, lineHeight: 0.98 }}>{t.browseTitle}</h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {sorts.map(([key, label]) => (
-                    <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
-                  ))}
+                  {sorts.map(([key, label]) => sortControl(key, label, true))}
                 </div>
               </div>
 
               <div style={{ maxWidth: 760, marginBottom: 26 }}>
-                <SearchBox />
+                <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
               </div>
 
               {typeChips.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 36 }}>
-                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>Todos</Link>
+                  <Link href={clearHref(sp)} style={catChip(!filters.cat)}>{t.all}</Link>
                   {typeChips.map((t) => (
                     <Link key={t.value} href={setHref(sp, 'cat', t.value, true)} style={catChip(filters.cat === t.value)}>{t.label}</Link>
                   ))}
@@ -166,16 +278,16 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
               )}
 
               {total === 0 ? (
-                <EmptyState empty={empty} sp={sp} big />
+                <EmptyState empty={empty} sp={sp} t={t} big />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
                   {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={196} />)}
                 </div>
               )}
-              <Pager page={page} totalPages={totalPages} sp={sp} />
+              <Pager page={page} totalPages={totalPages} sp={sp} t={t} />
             </section>
-            <Trust />
-            <Flow />
+            <Trust t={t} />
+            <Flow t={t} />
           </>
         ) : (
           <main style={{ maxWidth: 1320, margin: '0 auto', padding: '34px 32px 80px', display: 'grid', gridTemplateColumns: '262px 1fr', gap: 36, alignItems: 'start' }}>
@@ -184,30 +296,28 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
             </aside>
             <div>
               <div style={{ marginBottom: 18 }}>
-                <SearchBox />
+                <SearchBox placeholder={t.searchPlaceholder} submitLabel={t.searchSubmit} ariaLabel={t.searchPlaceholder} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
                 <div>
-                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>Equipamentos rodando pela comunidade</h1>
+                  <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 4px' }}>{t.filteredTitle}</h1>
                   <div style={{ fontSize: 14, color: color.inkMute }}>{countLabel}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {sorts.map(([key, label]) => (
-                    <Link key={key} href={setHref(sp, 'sort', key)} style={sortBtn(filters.sort === key)}>{label}</Link>
-                  ))}
+                  {sorts.map(([key, label]) => sortControl(key, label))}
                 </div>
               </div>
 
               <ActiveChips sp={sp} facets={facets} filters={filters} />
 
               {total === 0 ? (
-                <EmptyState empty={empty} sp={sp} big />
+                <EmptyState empty={empty} sp={sp} t={t} big />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
                   {items.map((it) => <ListingCard key={it.id} item={it} imgHeight={180} />)}
                 </div>
               )}
-              <Pager page={page} totalPages={totalPages} sp={sp} />
+              <Pager page={page} totalPages={totalPages} sp={sp} t={t} />
             </div>
           </main>
         )}
@@ -218,7 +328,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
 }
 
 // ---------- HERO (landing) — vendedor-first ----------
-function Hero({ priority = true }: { priority?: boolean }) {
+function Hero({ priority = true, t }: { priority?: boolean; t: HomeCopy }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: color.dark }}>
       <Image src="/hero-beach.jpg" alt="" fill priority={priority} sizes="100vw" style={{ objectFit: 'cover', animation: 'kl-drift 24s ease-in-out infinite alternate' }} />
@@ -227,17 +337,16 @@ function Hero({ priority = true }: { priority?: boolean }) {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,rgba(12,37,32,0.45) 0%,rgba(12,37,32,0) 40%)' }} />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,9vw,104px) 32px clamp(72px,10vw,112px)' }}>
         <div style={{ maxWidth: 690, animation: 'kl-up 0.7s ease both' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>Venda com mais contexto</div>
-          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>Anuncie seu kite com menos conversa perdida</h1>
-          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 30px', maxWidth: 640 }}>Crie um anúncio com fotos, ficha técnica e telefone verificado. O comprador envia pedido de visita ou oferta estruturada, e seu WhatsApp só é liberado quando você aceita.</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-            <Link href="/anunciar" className="kl-lift" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '16px 28px', textDecoration: 'none', fontSize: 16, fontWeight: 800 }}>Anunciar meu kite</Link>
-            <Link href="#browse" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.42)', borderRadius: 12, padding: '15px 24px', textDecoration: 'none', fontSize: 15, fontWeight: 700 }}>Ver kites à venda</Link>
-            <Link href="/entrar" style={{ color: '#dce8e1', textDecoration: 'none', fontSize: 15, fontWeight: 700 }}>Já tenho conta. Entrar</Link>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.aqua, marginBottom: 22 }}>{t.heroEyebrow}</div>
+          <h1 style={{ fontSize: 'clamp(38px,6vw,62px)', lineHeight: 0.98, fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', color: '#fff', margin: '0 0 22px' }}>{t.heroTitle}</h1>
+          <p style={{ fontSize: 19, lineHeight: 1.55, color: '#dce8e1', margin: '0 0 30px', maxWidth: 640 }}>{t.heroSub}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginBottom: 24 }}>
+            <Link href="/anunciar" className="kl-lift" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '17px 32px', textDecoration: 'none', fontSize: 17, fontWeight: 900, boxShadow: '0 14px 34px rgba(217,168,107,0.26)' }}>{t.primaryCta}</Link>
+            <a href="#browse" style={{ color: '#dce8e1', textDecoration: 'underline', textUnderlineOffset: 5, textDecorationThickness: 1, fontSize: 15, fontWeight: 700 }}>{t.secondaryCta}</a>
           </div>
-          <SellerProofs />
-          <div style={{ marginTop: 26 }}>
-            <HowItWorks />
+          <SellerProofs t={t} />
+          <div style={{ marginTop: 18 }}>
+            <HowItWorks label={t.howItWorks} variant="link" />
           </div>
         </div>
       </div>
@@ -245,12 +354,12 @@ function Hero({ priority = true }: { priority?: boolean }) {
   );
 }
 
-function SellerProofs({ mobile = false }: { mobile?: boolean }) {
+function SellerProofs({ mobile = false, t }: { mobile?: boolean; t: HomeCopy }) {
   const proofs = [
-    'Pedido de visita ou oferta estruturada',
-    'WhatsApp liberado só com aceite',
-    'Telefone verificado antes de anunciar',
-    'Reputação após negociação confirmada',
+    t.proofVisit,
+    t.proofWhats,
+    t.proofPhone,
+    t.proofRep,
   ];
   if (mobile) {
     return (
@@ -278,7 +387,7 @@ function SellerProofs({ mobile = false }: { mobile?: boolean }) {
 }
 
 // ---------- COMUNIDADE (editorial: foto + manifesto) ----------
-function Community() {
+function Community({ t }: { t: HomeCopy }) {
   return (
     <section style={{ background: '#fff', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: 'clamp(56px,8vw,96px) 32px' }}>
@@ -294,17 +403,17 @@ function Community() {
                 <Diamond size={8} c={color.dark} r={1} />
                 <Diamond size={10} c={color.dark} r={1} />
               </span>
-              <div style={{ fontFamily: font.sans, fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark }}>Comunidade<br />Elevada.</div>
+              <div style={{ fontFamily: font.sans, fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark }}>{t.communityBadge}<br />{t.communityBadgeLine2}</div>
             </div>
           </div>
           {/* manifesto */}
           <div>
             <div style={{ width: 48, height: 3, background: color.accent, borderRadius: 2, marginBottom: 24 }} />
-            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,3.4vw,40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark, margin: '0 0 22px' }}>O destino final dos kitesurfistas</h2>
-            <p style={{ fontSize: 17, lineHeight: 1.7, color: color.inkSoft, margin: '0 0 24px' }}>A Kitetropos nasceu nas areias de Cumbuco para redefinir o mercado de equipamentos de kitesurf. Unimos a paixão pelo esporte com a curadoria de quem entende cada rajada de vento. Mais que um marketplace, somos o elo de confiança entre quem vive o mar.</p>
+            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(28px,3.4vw,40px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.0, color: color.dark, margin: '0 0 22px' }}>{t.communityTitle}</h2>
+            <p style={{ fontSize: 17, lineHeight: 1.7, color: color.inkSoft, margin: '0 0 24px' }}>{t.communityBody}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: color.primary, fontWeight: 800 }}>
               <Diamond size={11} c={color.primary} r={2} />
-              <span style={{ fontSize: 13, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Cuidado em cada detalhe</span>
+              <span style={{ fontSize: 13, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.communityEyebrow}</span>
             </div>
           </div>
         </div>
@@ -314,12 +423,13 @@ function Community() {
 }
 
 // ---------- TRUST ----------
-function Trust() {
+function Trust({ t }: { t: HomeCopy }) {
+  const isEn = t === HOME_COPY.en;
   const pillars = [
-    { title: 'Número verificado', desc: 'Cada rider confirma o telefone antes de anunciar ou negociar.' },
-    { title: 'Perfil mais humano', desc: 'Foto, cidade e spot ajudam a entender quem está do outro lado da conversa.' },
-    { title: 'Histórico depois da venda', desc: 'Depois de uma negociação confirmada, comprador e vendedor podem deixar uma avaliação.' },
-    { title: 'WhatsApp só quando faz sentido', desc: 'O contato é liberado quando existe interesse real, evitando conversa solta e perda de tempo.' },
+    { title: t.proofPhone, desc: isEn ? 'Each rider confirms their phone before listing or negotiating.' : 'Cada rider confirma o telefone antes de anunciar ou negociar.' },
+    { title: isEn ? 'More human profile' : 'Perfil mais humano', desc: isEn ? 'Photo, city, and spot help people understand who is on the other side.' : 'Foto, cidade e spot ajudam a entender quem está do outro lado da conversa.' },
+    { title: isEn ? 'History after the deal' : 'Histórico depois da venda', desc: isEn ? 'After a confirmed deal, buyer and seller can leave a review.' : 'Depois de uma negociação confirmada, comprador e vendedor podem deixar uma avaliação.' },
+    { title: isEn ? 'WhatsApp only when it makes sense' : 'WhatsApp só quando faz sentido', desc: isEn ? 'Contact is shared when there is real interest, avoiding loose conversations.' : 'O contato é liberado quando existe interesse real, evitando conversa solta e perda de tempo.' },
   ];
   return (
     <section id="trust" className="kl-reveal" style={{ background: '#ece3d2' }}>
@@ -327,9 +437,9 @@ function Trust() {
         <div className="trust-grid">
           {/* manchete editorial — à esquerda, dominante */}
           <div>
-            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.primary, marginBottom: 16 }}>Mais contexto antes de negociar</div>
-            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(38px,5.4vw,62px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.8px', color: color.ink, margin: '0 0 20px', lineHeight: 0.94 }}>Negocie com mais confiança</h2>
-            <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0, maxWidth: 420 }}>Veja quem está anunciando, entenda o estado do equipamento e converse direto com quem vive o esporte.</p>
+            <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 19, color: color.primary, marginBottom: 16 }}>{t.trustEyebrow}</div>
+            <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(38px,5.4vw,62px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.8px', color: color.ink, margin: '0 0 20px', lineHeight: 0.94 }}>{t.trustTitle}</h2>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: color.inkMute, margin: 0, maxWidth: 420 }}>{t.trustBody}</p>
           </div>
           {/* pilares — grade 2×2 à direita, alinhados à esquerda, losango como bullet */}
           <div className="trust-pillars">
@@ -348,21 +458,22 @@ function Trust() {
 }
 
 // ---------- COMO FUNCIONA ----------
-function Flow() {
+function Flow({ t }: { t: HomeCopy }) {
+  const isEn = t === HOME_COPY.en;
   const steps = [
-    { n: '1', title: 'Encontre ou anuncie', desc: 'Veja fotos, tamanho, condição, cidade e detalhes do equipamento antes de chamar.' },
-    { n: '2', title: 'Faça uma oferta ou combine uma visita', desc: 'Envie uma proposta ou combine de ver o equipamento de perto antes de decidir.' },
-    { n: '3', title: 'Conversem direto pelo WhatsApp', desc: 'Quando o vendedor aceita o interesse, o contato é liberado para vocês seguirem a negociação.' },
-    { n: '4', title: 'Fechem entre vocês', desc: 'Se a venda acontecer, comprador e vendedor confirmam o negócio e podem deixar uma avaliação.' },
+    { n: '1', title: isEn ? 'Find or list' : 'Encontre ou anuncie', desc: isEn ? 'See photos, size, condition, city, and details before reaching out.' : 'Veja fotos, tamanho, condição, cidade e detalhes do equipamento antes de chamar.' },
+    { n: '2', title: isEn ? 'Send an offer or visit request' : 'Faça uma oferta ou combine uma visita', desc: isEn ? 'Send a proposal or ask to see the gear up close before deciding.' : 'Envie uma proposta ou combine de ver o equipamento de perto antes de decidir.' },
+    { n: '3', title: isEn ? 'Talk on WhatsApp' : 'Conversem direto pelo WhatsApp', desc: isEn ? 'When the seller accepts, contact is shared so you can continue negotiating.' : 'Quando o vendedor aceita o interesse, o contato é liberado para vocês seguirem a negociação.' },
+    { n: '4', title: isEn ? 'Close directly' : 'Fechem entre vocês', desc: isEn ? 'If the sale happens, both sides confirm the deal and can leave a review.' : 'Se a venda acontecer, comprador e vendedor confirmam o negócio e podem deixar uma avaliação.' },
   ];
   return (
     <section className="kl-reveal" style={{ background: color.dark, color: '#fff' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(64px,8vw,96px) 32px' }}>
         <div style={{ maxWidth: 620, margin: '0 0 44px' }}>
           <div style={{ marginBottom: 20 }}><DiamondTrail /></div>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>Como a negociação acontece</div>
-          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>Do anúncio à conversa</h2>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>A Kitetropos ajuda você a encontrar, avaliar e iniciar a conversa. Preço, pagamento e entrega ficam combinados diretamente entre comprador e vendedor.</p>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 10 }}>{t.flowEyebrow}</div>
+          <h2 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,4.8vw,52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1.5px', margin: '0 0 16px', lineHeight: 0.98, color: '#fff' }}>{t.flowTitle}</h2>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: '#cdded7', margin: 0 }}>{t.flowBody}</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
           {steps.map((f) => (
@@ -381,30 +492,30 @@ function Flow() {
   );
 }
 
-function EmptyState({ empty, sp, big }: { empty: boolean; sp: SP; big?: boolean }) {
+function EmptyState({ empty, sp, t, big }: { empty: boolean; sp: SP; t: HomeCopy; big?: boolean }) {
   return (
     <div style={{ textAlign: 'center', padding: big ? '80px 20px' : '50px 20px', border: '1px dashed #d3ccbd', borderRadius: 16 }}>
       <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: big ? 19 : 16, color: color.inkFaint2, marginBottom: 14 }}>
-        {empty ? 'Ainda não há anúncios por aqui.' : 'Nada com esses filtros.'}
+        {empty ? t.emptyAll : t.emptyFiltered}
       </div>
       <Link href={empty ? '/anunciar' : clearFiltersHref(sp)} style={{ display: 'inline-block', background: color.primary, color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '12px 22px', fontFamily: font.sans, fontSize: 14, fontWeight: 700 }}>
-        {empty ? 'Anunciar o primeiro' : 'Limpar filtros'}
+        {empty ? t.firstListing : t.clearFilters}
       </Link>
     </div>
   );
 }
 
 // Paginação Anterior/Próxima — links na URL (preserva filtros). Só aparece com 2+ páginas.
-function Pager({ page, totalPages, sp }: { page: number; totalPages: number; sp: SP }) {
+function Pager({ page, totalPages, sp, t }: { page: number; totalPages: number; sp: SP; t: HomeCopy }) {
   if (totalPages <= 1) return null;
   const base: React.CSSProperties = { fontFamily: font.sans, fontSize: 13.5, fontWeight: 600, padding: '10px 18px', borderRadius: 999, textDecoration: 'none', border: `1px solid ${color.lineChip}` };
   const on: React.CSSProperties = { ...base, background: color.surface, color: color.ink };
   const off: React.CSSProperties = { ...base, background: 'transparent', color: color.inkFaint3, pointerEvents: 'none' };
   return (
     <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '26px 18px 8px' }}>
-      {page > 1 ? <Link href={pageHref(sp, page - 1)} style={on}>← Anterior</Link> : <span style={off}>← Anterior</span>}
-      <span style={{ fontSize: 13, color: color.inkMute }}>Página {page} de {totalPages}</span>
-      {page < totalPages ? <Link href={pageHref(sp, page + 1)} style={on}>Próxima →</Link> : <span style={off}>Próxima →</span>}
+      {page > 1 ? <Link href={pageHref(sp, page - 1)} style={on}>← {t.previous}</Link> : <span style={off}>← {t.previous}</span>}
+      <span style={{ fontSize: 13, color: color.inkMute }}>{t.page} {page} {t.of} {totalPages}</span>
+      {page < totalPages ? <Link href={pageHref(sp, page + 1)} style={on}>{t.next} →</Link> : <span style={off}>{t.next} →</span>}
     </nav>
   );
 }

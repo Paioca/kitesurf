@@ -5,6 +5,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ToastProvider } from '../components/Toast';
 import { ConfirmProvider } from '../components/ConfirmDialog';
 import { publicBaseUrl } from '../lib/app-url';
+import { cookies } from 'next/headers';
 import './globals.css';
 
 // Fontes self-hosted via next/font: elimina o request render-blocking ao
@@ -38,9 +39,10 @@ export const metadata: Metadata = {
 // as antes estáticas (entrar/anuncios/termos/etc.). Trade-off aceito: perde cache estático/ISR.
 export const dynamic = 'force-dynamic';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = (await cookies()).get('kitetropos:locale')?.value === 'en' ? 'en' : 'pt-BR';
   return (
-    <html lang="pt-BR" className={`${archivo.variable} ${spectral.variable}`}>
+    <html lang={lang} className={`${archivo.variable} ${spectral.variable}`}>
       <body>
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
         <Analytics />

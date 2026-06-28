@@ -17,6 +17,7 @@ function readLocale(): Locale {
 function saveLocale(locale: Locale) {
   try {
     localStorage.setItem(KEY, locale);
+    document.cookie = `${KEY}=${locale}; path=/; max-age=31536000; samesite=lax`;
   } catch {}
 }
 
@@ -46,6 +47,7 @@ export function LanguageToggle({ compact = false }: { compact?: boolean }) {
       credentials: 'same-origin',
       body: JSON.stringify({ locale: next }),
     }).catch(() => undefined);
+    window.location.reload();
   }
 
   const option = (value: Locale): React.CSSProperties => ({

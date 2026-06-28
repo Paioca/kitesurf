@@ -3,6 +3,9 @@ import * as Sentry from '@sentry/nextjs';
 
 const isProd = process.env.NODE_ENV === 'production';
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const isVercelRuntime = !!process.env.VERCEL_ENV;
+const sentryDev = process.env.SENTRY_DEV === 'true';
+const enabled = !!dsn && (isVercelRuntime || sentryDev);
 
 const SENSITIVE_PARAMS = ['token', 'code', 'otp', 'devCode'];
 function scrubUrl(rawUrl: string | undefined): string | undefined {
@@ -22,13 +25,24 @@ function scrubUrl(rawUrl: string | undefined): string | undefined {
   }
 }
 
+function isLocalUrl(rawUrl: string | undefined): boolean {
+  if (!rawUrl) return false;
+  try {
+    const host = new URL(rawUrl).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
 Sentry.init({
   dsn,
-  enabled: !!dsn && (isProd || process.env.SENTRY_DEV === 'true'),
-  environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'local',
+  enabled,
+  environment: process.env.VERCEL_ENV ?? (sentryDev ? process.env.NODE_ENV : 'local'),
   release: process.env.VERCEL_GIT_COMMIT_SHA,
   tracesSampleRate: isProd ? 0.1 : 1.0,
   beforeSend(event) {
+    if (isLocalUrl(event.request?.url)) return null;
     if (event.request?.url) event.request.url = scrubUrl(event.request.url);
     if (event.request?.headers) {
       const h = event.request.headers as Record<string, string>;
@@ -40,6 +54,7 @@ Sentry.init({
     return event;
   },
   beforeSendTransaction(event) {
+    if (isLocalUrl(event.request?.url)) return null;
     if (event.request?.url) event.request.url = scrubUrl(event.request.url);
     return event;
   },

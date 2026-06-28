@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { color, font, radius } from '../../lib/tokens';
 
-export function SearchBox({ placeholder = 'Buscar por marca ou modelo' }: { placeholder?: string }) {
+export function SearchBox({ placeholder = 'Buscar por marca ou modelo', submitLabel = 'Buscar', ariaLabel = 'Buscar equipamento', clearLabel = 'Limpar busca' }: { placeholder?: string; submitLabel?: string; ariaLabel?: string; clearLabel?: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
@@ -31,13 +31,13 @@ export function SearchBox({ placeholder = 'Buscar por marca ou modelo' }: { plac
         type="search"
         enterKeyHint="search"
         placeholder={placeholder}
-        aria-label="Buscar equipamento"
+        aria-label={ariaLabel}
         style={input}
       />
       {q && (
-        <button type="button" onClick={() => { setQ(''); go(''); }} aria-label="Limpar busca" style={clearBtn}>✕</button>
+        <button type="button" onClick={() => { setQ(''); go(''); }} aria-label={clearLabel} style={clearBtn}>✕</button>
       )}
-      <button type="submit" style={submitBtn}>Buscar</button>
+      <button type="submit" style={submitBtn}>{submitLabel}</button>
     </form>
   );
 }
