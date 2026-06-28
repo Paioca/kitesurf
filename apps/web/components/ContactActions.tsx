@@ -226,6 +226,7 @@ function SentBox({ title, status }: { title: string; status: string }) {
       <div>
         <div style={{ fontSize: 14.5, fontWeight: 700, color: declined ? '#b3261e' : color.primary }}>{title}</div>
         <div style={{ fontSize: 12.5, color: color.inkMute, marginTop: 3, lineHeight: 1.45 }}>{declined ? 'O vendedor recusou desta vez.' : 'Quando o vendedor aceitar, o contato dele aparece aqui para vocês combinarem pelo WhatsApp.'}</div>
+        {!declined && <a href="/pedidos?tab=sent" style={{ display: 'inline-flex', marginTop: 8, color: color.primary, fontSize: 12.5, fontWeight: 800, textDecoration: 'none' }}>Ver em minhas negociações</a>}
       </div>
     </div>
   );

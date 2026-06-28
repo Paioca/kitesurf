@@ -6,6 +6,8 @@ const { mockDb } = vi.hoisted(() => ({
     user: { findUnique: vi.fn() },
     request: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn() },
     deal: { count: vi.fn(), findMany: vi.fn() },
+    conversation: { upsert: vi.fn() },
+    message: { create: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -25,7 +27,7 @@ const listingMock = (over: Record<string, unknown> = {}) => ({
 const reqMock = (over: Record<string, unknown> = {}) => ({ id: 'R', sellerId: 'S', buyerId: 'B', status: 'pending', component: 'conjunto', listingId: 'L', ...over });
 const requestListMock = (over: Record<string, unknown> = {}) => ({
   id: 'R', sellerId: 'S', buyerId: 'B', status: 'accepted', type: 'offer', amount: 150000, component: 'conjunto',
-  listingId: 'L', createdAt: new Date('2026-06-01T12:00:00Z'),
+  listingId: 'L', createdAt: new Date('2026-06-01T12:00:00Z'), updatedAt: new Date('2026-06-01T12:05:00Z'),
   listing: { id: 'L', title: 'Kite X', price: 620000, status: 'active', images: [] },
   ...over,
 });
@@ -40,6 +42,8 @@ beforeEach(() => {
   mockDb.request.findMany.mockResolvedValue([]);
   mockDb.request.updateMany.mockResolvedValue({ count: 0 });
   mockDb.deal.findMany.mockResolvedValue([]); // §7 reserve-block: sem reservas ativas por padrão
+  mockDb.conversation.upsert.mockResolvedValue({ id: 'C' });
+  mockDb.message.create.mockResolvedValue({ id: 'M' });
 });
 
 describe('waLink', () => {
@@ -48,6 +52,9 @@ describe('waLink', () => {
     expect(waLink(null)).toBeNull();
     expect(waLink('deleted_user_123456789')).toBeNull();
     expect(waLink('abc')).toBeNull();
+  });
+  it('inclui mensagem inicial quando informada', () => {
+    expect(waLink('+55 (88) 99999-0000', 'Oi, queria ver o kite.')).toBe(`https://wa.me/5588999990000?text=${encodeURIComponent('Oi, queria ver o kite.')}`);
   });
 });
 
@@ -73,6 +80,17 @@ describe('createRequest', () => {
     mockDb.request.upsert.mockResolvedValue({ id: 'R', status: 'pending' });
     const r = await createRequest('B', 'L', 'offer', 150000);
     expect(r).toMatchObject({ id: 'R' });
+    expect(mockDb.conversation.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { listingId_buyerId: { listingId: 'L', buyerId: 'B' } },
+      create: expect.objectContaining({ listingId: 'L', buyerId: 'B', sellerId: 'S', status: 'open' }),
+    }));
+    expect(mockDb.message.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        conversationId: 'C',
+        senderId: 'B',
+        body: expect.stringMatching(/^Enviei uma oferta de R\$\s?1\.500,00 em "t"\.$/),
+      }),
+    });
     expect(notifyNewRequest).toHaveBeenCalledOnce();
   });
   it('não deixa reenviar um pedido já aceito e voltar para pending', async () => {
@@ -184,12 +202,16 @@ describe('setRequestStatus', () => {
   it('aceita pedido pendente com a peça disponível e manda SMS de interesse pro comprador', async () => {
     mockDb.request.findUnique
       .mockResolvedValueOnce(reqMock()) // r (guard inicial)
-      .mockResolvedValueOnce({ buyer: { phone: '+5588999990000' }, seller: { phone: '+5599999990000' } }); // parties (pós-commit)
+      .mockResolvedValueOnce({ buyer: { phone: '+5588999990000' }, seller: { name: 'Sofia', phone: '+5599999990000' } }); // parties (pós-commit)
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
     mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X' });
     mockDb.request.update.mockResolvedValue({});
     // §8/§15 #1 — aceite devolve o link do WhatsApp do COMPRADOR (front navega na mesma aba).
-    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({ ok: true, status: 'accepted', whatsapp: 'https://wa.me/5588999990000' });
+    await expect(setRequestStatus('S', 'R', 'accepted')).resolves.toMatchObject({
+      ok: true,
+      status: 'accepted',
+      whatsapp: `https://wa.me/5588999990000?text=${encodeURIComponent('Oi, aqui é Sofia. Recebi seu pedido pelo anúncio "Kite X" na Kitetropos e queria conversar por aqui.')}`,
+    });
     expect(notifyRequestAccepted).toHaveBeenCalledWith(expect.objectContaining({ buyerPhone: '+5588999990000', sellerPhone: '+5599999990000' }));
   });
   // §15 #2 — recusar não compartilha contato (sem SMS, sem link de WhatsApp).
@@ -255,7 +277,23 @@ describe('getRequestsForUser', () => {
     mockDb.deal.findMany.mockResolvedValue([]);
 
     await expect(getRequestsForUser('B')).resolves.toMatchObject({
-      outgoing: [expect.objectContaining({ whatsapp: 'https://wa.me/5599999990000' })],
+      outgoing: [expect.objectContaining({ whatsapp: `https://wa.me/5599999990000?text=${encodeURIComponent('Oi, aqui é Bruno. Vi seu anúncio "Kite X" na Kitetropos e queria ver o kite.')}` })],
+    });
+  });
+
+  it('vendedor abre WhatsApp do comprador com mensagem contextual', async () => {
+    mockDb.request.findMany
+      .mockResolvedValueOnce([requestListMock({ buyer: { name: 'Ana', avatarUrl: null, phone: '+5588999990000' } })])
+      .mockResolvedValueOnce([]);
+    mockDb.deal.findMany.mockResolvedValue([]);
+    mockDb.user.findUnique.mockResolvedValue({ name: 'Sofia' });
+
+    await expect(getRequestsForUser('S')).resolves.toMatchObject({
+      incoming: [expect.objectContaining({
+        buyer: expect.objectContaining({
+          whatsapp: `https://wa.me/5588999990000?text=${encodeURIComponent('Oi, aqui é Sofia. Recebi seu pedido pelo anúncio "Kite X" na Kitetropos e queria conversar por aqui.')}`,
+        }),
+      })],
     });
   });
 });
@@ -282,6 +320,21 @@ describe('getListingRequestState', () => {
 
     await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
       conjunto: { visit: { id: 'VISIT1', status: 'pending' }, whatsapp: null },
+    });
+  });
+
+  it('detalhe do anúncio libera WhatsApp do vendedor com mensagem do comprador', async () => {
+    mockDb.request.findMany.mockResolvedValue([
+      { ...reqMock({ id: 'VISIT1', status: 'accepted', type: 'visit', amount: null }), seller: { phone: '+5599999990000' } },
+    ]);
+    mockDb.deal.findMany.mockResolvedValue([]);
+    mockDb.user.findUnique.mockResolvedValue({ name: 'Ana' });
+    mockDb.listing.findUnique.mockResolvedValue({ title: 'Kite X', hasBarra: false, category: { slug: 'kite' } });
+
+    await expect(getListingRequestState('B', 'L')).resolves.toMatchObject({
+      conjunto: {
+        whatsapp: `https://wa.me/5599999990000?text=${encodeURIComponent('Oi, aqui é Ana. Vi seu anúncio "Kite X" na Kitetropos e queria ver o kite.')}`,
+      },
     });
   });
 

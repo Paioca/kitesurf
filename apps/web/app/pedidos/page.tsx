@@ -40,10 +40,15 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
   // representado pelos cards de negociação, sem empilhar eventos antigos no topo.
   const notifs = await listUnreadNotifications(user.id, 6);
   const novos = incoming.filter((r) => r.status === 'pending').length;
-  // sem ?tab explícito, abre na aba que tem conteúdo (comprador cai em "Enviados").
+  const latestIncoming = incoming[0]?.updatedAt ?? '';
+  const latestOutgoing = outgoing[0]?.updatedAt ?? '';
+  const sentIsNewest = latestOutgoing && (!latestIncoming || latestOutgoing > latestIncoming);
+  // sem ?tab explícito, abre no lado que acabou de se mexer; comprador que enviou
+  // uma oferta não cai preso em "Recebidos" só porque tem histórico antigo.
   const tab: 'received' | 'sent' =
     searchParams?.tab === 'sent' ? 'sent'
     : searchParams?.tab === 'received' ? 'received'
+    : sentIsNewest ? 'sent'
     : incoming.length === 0 && outgoing.length > 0 ? 'sent' : 'received';
 
   const heading = (
