@@ -5,7 +5,6 @@ import { cookies } from 'next/headers';
 import { Logo } from './ui';
 import { AccountNav } from './AccountNav';
 import { HeaderNav } from './HeaderNav';
-import { LanguageToggle } from './LanguageToggle';
 
 export async function SiteHeader() {
   const locale = (await cookies()).get('kitetropos:locale')?.value === 'en' ? 'en' : 'pt';
@@ -19,7 +18,6 @@ export async function SiteHeader() {
         <Link href="/" style={{ textDecoration: 'none' }}><Logo size={21} /></Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <HeaderNav labels={labels} />
-          <LanguageToggle />
           <AccountNav labels={labels} />
           <Link href="/anunciar" className="kl-lift" style={{ display: 'inline-block', fontSize: 14.5, fontWeight: 700, color: color.accentInk, background: color.accent, padding: '11px 22px', borderRadius: radius.pill, textDecoration: 'none' }}>{labels.announce}</Link>
         </div>
