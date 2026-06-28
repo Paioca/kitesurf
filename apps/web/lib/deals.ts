@@ -102,7 +102,7 @@ export async function confirmPurchase(userId: string, dealId: string) {
   // Marca a peça vendida + encerra concorrentes (helper compartilhado com o
   // encerramento-sem-confirmação), e notifica o vendedor.
   await db.$transaction(async (tx) => {
-    await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'completed');
+    await applyPieceSale(tx, deal, listing as ListingLike & { title: string });
     await emit(tx, { userId: deal.sellerId, type: 'purchase_confirmed', listingId: deal.listingId, dealId, actorId: deal.buyerId, data: { title: listing.title } });
     // Audit: deal vira completed — registro financeiro/contratual. Indispensável pra
     // disputa (reversal/dispute olham pra cá pra reconstituir o estado anterior).
@@ -159,10 +159,10 @@ export async function denyPurchase(userId: string, dealId: string) {
   });
 }
 
-// Marca a peça do deal como VENDIDA (mesma mutação do confirmPurchase) e encerra os
-// concorrentes incompatíveis. Parametrizado pelo status final do deal: 'completed'
-// (comprador confirmou) ou 'closed_unconfirmed' (vendedor encerrou após 72h).
-async function applyPieceSale(tx: any, deal: { id: string; listingId: string; buyerId: string; component: Component }, listing: ListingLike & { title: string }, finalStatus: 'completed' | 'closed_unconfirmed') {
+// Marca a peça do deal como VENDIDA (comprador confirmou → deal 'completed') e encerra os
+// concorrentes incompatíveis (sold_elsewhere/voided). SÓ o confirmPurchase chama — o
+// encerramento por 72h (closeUnconfirmedExpired) NÃO é venda e não passa por aqui (N5).
+async function applyPieceSale(tx: any, deal: { id: string; listingId: string; buyerId: string; component: Component }, listing: ListingLike & { title: string }) {
   const comp = deal.component;
   const close = shouldCloseListing(listing, comp);
   const where: Record<string, unknown> = { id: deal.listingId, status: { in: ['active', 'paused'] } };
@@ -173,7 +173,7 @@ async function applyPieceSale(tx: any, deal: { id: string; listingId: string; bu
   if (close) { data.status = 'sold'; data.soldToUserId = deal.buyerId; }
   const updated = await tx.listing.updateMany({ where, data });
   if (updated.count === 0) throw new DealError('Esta peça já foi vendida.', 409);
-  await tx.deal.update({ where: { id: deal.id }, data: finalStatus === 'completed' ? { status: 'completed', buyerConfirmedAt: new Date() } : { status: 'closed_unconfirmed', closedUnconfirmedAt: new Date() } });
+  await tx.deal.update({ where: { id: deal.id }, data: { status: 'completed', buyerConfirmedAt: new Date() } });
   const compFilter = close ? {} : { component: { in: ['conjunto', comp] as Component[] } };
   const affected = await affectedBuyerIds(tx, deal.listingId, { excludeBuyerId: deal.buyerId, components: close ? undefined : ['conjunto', comp] });
   await tx.request.updateMany({ where: { listingId: deal.listingId, buyerId: { not: deal.buyerId }, status: { in: ['pending', 'accepted'] }, ...compFilter }, data: { status: 'sold_elsewhere' } });
@@ -258,7 +258,12 @@ export async function closeUnconfirmedExpired(now = new Date()): Promise<number>
           if (!deal || deal.status !== 'seller_confirmed') return false; // corrida: alguém já mexeu
           const listing = await tx.listing.findFirst({ where: { id: deal.listingId, deletedAt: null }, select: { ...sellableSel, title: true } });
           if (!listing) { await tx.deal.update({ where: { id }, data: { status: 'cancelled', confirmationDeadlineAt: null } }); return false; }
-          await applyPieceSale(tx, deal, listing as ListingLike & { title: string }, 'closed_unconfirmed');
+          // N5 — encerramento por 72h sem confirmação NÃO é venda: não marca a peça vendida
+          // nem atribui o comprador (que nunca confirmou), e não fecha concorrentes. Reserva o
+          // anúncio (paused → oculto do público) até o vendedor corrigir (correctUnconfirmed)
+          // ou reativar. Só vira 'Vendido' público quando o comprador confirma (confirmPurchase).
+          await tx.deal.update({ where: { id }, data: { status: 'closed_unconfirmed', closedUnconfirmedAt: new Date() } });
+          await tx.listing.updateMany({ where: { id: deal.listingId, status: 'active' }, data: { status: 'paused' } });
           await emit(tx, { userId: deal.buyerId, type: 'sale_closed_unconfirmed', listingId: deal.listingId, dealId: id, actorId: deal.sellerId, data: { title: listing.title } });
           return true;
         });
