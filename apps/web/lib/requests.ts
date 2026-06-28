@@ -100,9 +100,11 @@ export async function createRequest(userId: string, listingId: string, type: 'of
     if (active.some((r) => r.status === 'accepted')) {
       throw new RequestError('Este pedido já foi aceito. Continue pela negociação em Minhas negociações.', 409);
     }
-    const pendingOtherTypeIds = active.filter((r) => r.status === 'pending' && r.type !== type).map((r) => r.id);
-    if (pendingOtherTypeIds.length > 0) {
-      await tx.request.updateMany({ where: { id: { in: pendingOtherTypeIds } }, data: { status: 'withdrawn' } });
+    const pendingOtherType = active.find((r) => r.status === 'pending' && r.type !== type);
+    if (pendingOtherType) {
+      const current = pendingOtherType.type === 'offer' ? 'uma oferta' : 'um pedido de visita';
+      const next = type === 'offer' ? 'enviar uma oferta' : 'pedir para ver de perto';
+      throw new RequestError(`Você já tem ${current} em andamento. Cancele antes de ${next}.`, 409);
     }
     const req = await tx.request.upsert({
       where: { listingId_buyerId_type_component: key },

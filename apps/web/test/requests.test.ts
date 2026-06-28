@@ -102,29 +102,23 @@ describe('createRequest', () => {
     expect(mockDb.request.upsert).not.toHaveBeenCalled();
     expect(notifyNewRequest).not.toHaveBeenCalled();
   });
-  it('substitui visita pendente por oferta no mesmo item e peça', async () => {
+  it('bloqueia oferta quando já existe visita pendente no mesmo item e peça', async () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
     mockDb.request.findMany.mockResolvedValue([{ id: 'VISIT1', type: 'visit', status: 'pending' }]);
-    mockDb.request.upsert.mockResolvedValue({ id: 'OFFER1', status: 'pending' });
 
-    await expect(createRequest('B', 'L', 'offer', 150000)).resolves.toMatchObject({ id: 'OFFER1' });
+    await expect(createRequest('B', 'L', 'offer', 150000)).rejects.toThrow(/pedido de visita em andamento/i);
 
-    expect(mockDb.request.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['VISIT1'] } },
-      data: { status: 'withdrawn' },
-    });
+    expect(mockDb.request.updateMany).not.toHaveBeenCalled();
+    expect(mockDb.request.upsert).not.toHaveBeenCalled();
   });
-  it('substitui oferta pendente por visita no mesmo item e peça', async () => {
+  it('bloqueia visita quando já existe oferta pendente no mesmo item e peça', async () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock());
     mockDb.request.findMany.mockResolvedValue([{ id: 'OFFER1', type: 'offer', status: 'pending' }]);
-    mockDb.request.upsert.mockResolvedValue({ id: 'VISIT1', status: 'pending' });
 
-    await expect(createRequest('B', 'L', 'visit')).resolves.toMatchObject({ id: 'VISIT1' });
+    await expect(createRequest('B', 'L', 'visit')).rejects.toThrow(/oferta em andamento/i);
 
-    expect(mockDb.request.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['OFFER1'] } },
-      data: { status: 'withdrawn' },
-    });
+    expect(mockDb.request.updateMany).not.toHaveBeenCalled();
+    expect(mockDb.request.upsert).not.toHaveBeenCalled();
   });
   it('rejeita ofertar numa peça já vendida do kit', async () => {
     mockDb.listing.findFirst.mockResolvedValue(listingMock({ hasBarra: true, kitePrice: 480000, barraPrice: 180000, barraSoldAt: new Date() }));

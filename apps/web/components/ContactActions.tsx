@@ -12,6 +12,12 @@ const PENDING_KEY = (id: string) => `vaya:pending-request:${id}`;
 type State = { offer: { id?: string; status: string; amount: number | null } | null; visit: { id?: string; status: string } | null; whatsapp: string | null };
 export type Target = { component: Component; label: string; price: number; summary: string; itemNoun: string };
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const ACTIVE_STATUSES = new Set(['pending', 'accepted']);
+const activeRequestKind = (s: State) => (
+  s.offer && ACTIVE_STATUSES.has(s.offer.status) ? 'offer'
+  : s.visit && ACTIVE_STATUSES.has(s.visit.status) ? 'visit'
+  : null
+);
 
 export function ContactActions({ listingId, targets, stateByComponent }: { listingId: string; targets: Target[]; stateByComponent: Record<Component, State> }) {
   const [stateMap, setStateMap] = useState(stateByComponent);
@@ -26,8 +32,9 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
   const target = targets[sel];
   const component = target.component;
   const state = stateMap[component];
+  const activeKind = activeRequestKind(state);
   // Passo da jornada (visual, derivado do estado): 0 interesse · 1 contato · 2 negócio.
-  const journeyStep = state.whatsapp ? 2 : (state.offer || state.visit) ? 1 : 0;
+  const journeyStep = state.whatsapp ? 2 : activeKind ? 1 : 0;
   const { visitSummary, itemNoun } = { visitSummary: target.summary, itemNoun: target.itemNoun };
 
   const switchTarget = (i: number) => { setSel(i); setShowOffer(false); setConfirmVisit(false); setCiente(false); setAmount(''); setErr(''); };
@@ -45,6 +52,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     if (i < 0) return; // alvo não está mais à venda
     setSel(i);
     const st = stateMap[targets[i].component];
+    if (activeRequestKind(st)) return;
     if (pend.type === 'offer' && !st.offer) {
       if (pend.amount != null) setAmount(String(Math.round(pend.amount / 100)));
       setCiente(true);
@@ -111,7 +119,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     <div style={{ marginBottom: 24 }}>
       {selector}
       <JourneyStepper step={journeyStep} />
-      {!confirmVisit ? (
+      {!activeKind && (!confirmVisit ? (
         // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
         // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).
         (<button onClick={() => { setConfirmVisit(true); setShowOffer(false); setCiente(false); }} disabled={!!busy || state.visit?.status === 'pending'} style={btnPrimary}>{busy === 'visit' ? '…' : 'Quero ver de perto'}</button>)
@@ -127,7 +135,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
             <button onClick={() => ciente && send('visit')} disabled={busy === 'visit' || !ciente} style={{ ...btnPrimary, flex: 1, ...(!ciente ? disabledBtn : {}) }}>{busy === 'visit' ? '…' : 'Enviar pedido e compartilhar WhatsApp'}</button>
           </div>
         </div>
-      )}
+      ))}
       {state.visit && (
         <>
           <SentBox title="Pedido enviado ao vendedor" status={state.visit.status} />
@@ -135,7 +143,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
         </>
       )}
 
-      {!showOffer ? (
+      {!activeKind && (!showOffer ? (
         <button onClick={() => { setShowOffer(true); setConfirmVisit(false); setCiente(false); }} disabled={!!busy} style={{ ...btnOutline, marginTop: 10 }}>Fazer uma oferta antes</button>
       ) : (
         <div style={{ marginTop: 10, border: `1.5px solid ${color.lineCard}`, borderRadius: 13, padding: 15, background: '#fff' }}>
@@ -153,7 +161,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
             <button onClick={() => ciente && Number(amount) > 0 && send('offer', Number(amount) * 100)} disabled={busy === 'offer' || !ciente || !(Number(amount) > 0)} style={{ ...btnPrimary, flex: 1, ...((!ciente || !(Number(amount) > 0)) ? disabledBtn : {}) }}>{busy === 'offer' ? '…' : 'Confirmar oferta'}</button>
           </div>
         </div>
-      )}
+      ))}
       {state.offer && (
         <>
           <SentBox title={state.offer.amount != null ? `Oferta de ${brl(state.offer.amount)} enviada` : 'Oferta enviada'} status={state.offer.status} />
