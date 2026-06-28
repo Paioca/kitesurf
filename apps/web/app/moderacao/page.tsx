@@ -1,7 +1,7 @@
 // Moderação de denúncias — só admin (User.admin). Pra virar admin:
 // no Supabase SQL: UPDATE "User" SET admin=true WHERE phone='+55...';
 import { notFound } from 'next/navigation';
-import { getCurrentUser } from '../../lib/session';
+import { getCurrentUser, getNavUser } from '../../lib/session';
 import { db } from '../../lib/db';
 import { color, font } from '../../lib/tokens';
 import { SiteHeader } from '../../components/SiteHeader';
@@ -18,6 +18,7 @@ function datePt(date: Date) {
 
 export default async function Moderacao() {
   const user = await getCurrentUser();
+  const navMe = await getNavUser();
   if (!user || !user.admin) notFound();
 
   const raw = await db.report.findMany({
@@ -90,7 +91,7 @@ export default async function Moderacao() {
 
   return (
     <>
-      <div className="only-mobile"><MobileAppBar /></div>
+      <div className="only-mobile"><MobileAppBar initialMe={navMe} /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '36px 24px 80px' }}>
         <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>Moderação</h1>

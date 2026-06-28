@@ -9,13 +9,17 @@ import { color, radius } from '../lib/tokens';
 type Me = { id: string; name?: string; avatarUrl?: string } | null;
 type AccountLabels = { signIn?: string; account?: string };
 
-export function AccountNav({ mobile = false, labels }: { mobile?: boolean; labels?: AccountLabels }) {
-  const [me, setMe] = useState<Me | undefined>(undefined);
+export function AccountNav({ mobile = false, labels, initialMe }: { mobile?: boolean; labels?: AccountLabels; initialMe?: Me }) {
+  // Quando o servidor injeta a sessão (initialMe definido, mesmo que null), o SSR já
+  // renderiza o estado certo — sem o flash "Entrar" → "Minha conta". Páginas client sem
+  // sessão no servidor (anunciar/error) omitem a prop e caímos no fetch (comportamento antigo).
+  const [me, setMe] = useState<Me | undefined>(initialMe);
   const signInLabel = labels?.signIn ?? 'Entrar';
   const accountLabel = labels?.account ?? 'Minha conta';
   useEffect(() => {
+    if (initialMe !== undefined) return; // servidor já resolveu; força-dynamic revalida a cada navegação
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => r.json()).then((u) => setMe(u && u.id ? u : null)).catch(() => setMe(null));
-  }, []);
+  }, [initialMe]);
 
   if (me === undefined) return <span style={{ width: mobile ? 54 : 64 }} />; // reserva espaço enquanto carrega
 

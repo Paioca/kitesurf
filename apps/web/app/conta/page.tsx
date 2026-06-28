@@ -1,7 +1,7 @@
 // Hub da conta do usuário logado — ponto de saída (logout) e acesso ao próprio
 // perfil. Redireciona pra /entrar se não houver sessão.
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '../../lib/session';
+import { getCurrentUser, getNavUser } from '../../lib/session';
 import { color, font } from '../../lib/tokens';
 import { SiteHeader } from '../../components/SiteHeader';
 import { Footer } from '../../components/Footer';
@@ -72,6 +72,7 @@ const ACCOUNT_COPY = {
 
 export default async function Conta() {
   const user = await getCurrentUser();
+  const navMe = await getNavUser();
   if (!user) redirect('/entrar?next=%2Fconta');
   const locale = await getServerLocale(user.locale);
   const t = ACCOUNT_COPY[locale];
@@ -221,9 +222,9 @@ export default async function Conta() {
     <>
       {/* MOBILE */}
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
-        <MobileAppBar />
+        <MobileAppBar initialMe={navMe} />
         <div style={{ padding: '22px 18px 96px' }}>{body}</div>
-        <MobileTabBar />
+        <MobileTabBar initialAuthed={!!navMe} />
       </div>
 
       {/* DESKTOP */}

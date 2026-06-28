@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListing } from '../../../lib/queries';
-import { getCurrentUser } from '../../../lib/session';
+import { getCurrentUser, getNavUser } from '../../../lib/session';
 import { db } from '../../../lib/db';
 import { getListingRequestState } from '../../../lib/requests';
 import { listingHasSaleRecord } from '../../../lib/deals';
@@ -62,6 +62,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (!l) notFound();
 
   const me = await getCurrentUser();
+  const navMe = await getNavUser();
   const isOwner = !!me && me.id === l.userId;
   // Visibilidade: draft/paused/archived são privados do dono. Terceiro que adivinhe o
   // UUID não pode ver anúncio não publicado (vaza preço/fotos/ficha).
@@ -165,7 +166,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
 
   return (
     <>
-      <div className="only-mobile"><MobileAppBar /></div>
+      <div className="only-mobile"><MobileAppBar initialMe={navMe} /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
         <div style={{ fontSize: 13.5, color: color.inkFaint, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -325,7 +326,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             <a href="#contato" className="kl-lift" style={{ flex: 'none', background: color.primary, color: '#fff', fontFamily: font.sans, fontSize: 15, fontWeight: 800, padding: '14px 26px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(20,72,62,0.16)' }}>Quero ver de perto</a>
           </div>
         ) : (
-          <MobileTabBar />
+          <MobileTabBar initialAuthed={!!navMe} />
         )}
       </div>
     </>

@@ -11,6 +11,7 @@ import { SiteHeader } from '../components/SiteHeader';
 import { Footer } from '../components/Footer';
 import { Diamond, DiamondTrail } from '../components/ui';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
+import { getNavUser } from '../lib/session';
 import { HowItWorks } from '../components/HowItWorks';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
@@ -166,6 +167,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   // é só uma dica de preload (sem risco de correção se a heurística errar).
   const isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test((await headers()).get('user-agent') ?? '');
   const { items, facets, total, totalAll, filters, page, totalPages, viewer } = await getBrowseData(sp);
+  const navMe = await getNavUser();
   const authed = !!viewer;
   const activeCount = filters.size.length + filters.brand.length + filters.uf.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
   const countLocation = filters.city.length === 1
@@ -204,7 +206,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
     <>
       {/* ---------- MOBILE ---------- */}
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
-        <MobileAppBar />
+        <MobileAppBar initialMe={navMe} />
         <div style={{ paddingBottom: 84 }}>
           {sellerLanding && (
             <>
@@ -258,7 +260,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
           </div>
           <Pager page={page} totalPages={totalPages} sp={sp} t={t} />
         </div>
-        <MobileTabBar active="home" />
+        <MobileTabBar active="home" initialAuthed={!!navMe} />
       </div>
 
       {/* ---------- DESKTOP ---------- */}

@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react';
 import { Diamond, Logo } from './ui';
 import { AccountNav } from './AccountNav';
 import { RequestBadge } from './RequestBadge';
-import { LanguageToggle } from './LanguageToggle';
 
 type Locale = 'pt' | 'en';
+// Sessão injetada pelo Server Component pai (página) para renderizar o estado certo já no
+// SSR — sem o flash anon→logado no app bar / tab bar. Mesma forma que lib/session NavUser.
+type NavMe = { id: string; name?: string; avatarUrl?: string } | null;
 const localeKey = 'kitetropos:locale';
 const mobileCopy = {
   pt: {
@@ -43,29 +45,29 @@ function useMobileLocale() {
   return mobileCopy[locale];
 }
 
-export function MobileAppBar() {
+export function MobileAppBar({ initialMe }: { initialMe?: NavMe }) {
   const t = useMobileLocale();
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(246,243,236,0.94)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${color.line}`, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <Link href="/" style={{ textDecoration: 'none' }}><Logo size={18} /></Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <LanguageToggle compact />
-        <AccountNav mobile labels={t} />
+        <AccountNav mobile labels={t} initialMe={initialMe} />
       </div>
     </header>
   );
 }
 
-export function MobileTabBar({ active = 'home' }: { active?: 'home' | 'fav' | 'msg' | 'anuncios' }) {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+export function MobileTabBar({ active = 'home', initialAuthed }: { active?: 'home' | 'fav' | 'msg' | 'anuncios'; initialAuthed?: boolean }) {
+  const [authed, setAuthed] = useState<boolean | null>(initialAuthed ?? null);
   const t = useMobileLocale();
 
   useEffect(() => {
+    if (initialAuthed !== undefined) return; // servidor já resolveu o login → sem flash de aba
     fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' })
       .then((r) => r.json())
       .then((u) => setAuthed(!!(u && u.id)))
       .catch(() => setAuthed(false));
-  }, []);
+  }, [initialAuthed]);
 
   if (authed !== true) {
     return (

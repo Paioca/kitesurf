@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { clearSession, getUserId, revokeAllSessions } from '../../../../lib/session';
 
 export const runtime = 'nodejs';
@@ -12,8 +13,10 @@ export async function POST() {
   if (userId) {
     try {
       await revokeAllSessions(userId);
-    } catch {
-      // Mesmo se a revogação falhar (DB indisponível), ainda apagamos o cookie abaixo.
+    } catch (e) {
+      // Ainda apagamos o cookie abaixo (UX de "Sair" não pode travar), mas NÃO silenciamos:
+      // revoke falho deixa o JWT válido por até 30d — buraco de segurança que precisa de alerta.
+      Sentry.captureException(e, { tags: { component: 'logout', event: 'revoke_all_failed' } });
     }
   }
   await clearSession();

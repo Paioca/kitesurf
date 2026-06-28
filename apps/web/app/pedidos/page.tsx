@@ -2,7 +2,7 @@
 // aceitar/recusar) + Enviados (comprador: status + WhatsApp quando liberado).
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '../../lib/session';
+import { getCurrentUser, getNavUser } from '../../lib/session';
 import { getRequestsForUser } from '../../lib/requests';
 import { listUnreadNotifications } from '../../lib/notifications';
 import { notificationText, notificationHref, timeAgo } from '../../lib/notification-copy';
@@ -34,6 +34,7 @@ function Thumb({ src }: { src: string | null }) {
 export default async function Pedidos(props: { searchParams: Promise<{ tab?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
+  const navMe = await getNavUser();
   if (!user) redirect('/entrar?next=%2Fpedidos');
   const { incoming, outgoing, moreIncoming, moreOutgoing } = await getRequestsForUser(user.id);
   // Feed de novidades: mostra só o que ainda não foi visto. O histórico completo fica
@@ -160,9 +161,9 @@ export default async function Pedidos(props: { searchParams: Promise<{ tab?: str
   return (
     <>
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
-        <MobileAppBar />
+        <MobileAppBar initialMe={navMe} />
         <div style={{ padding: '20px 18px 96px' }}>{body}</div>
-        <MobileTabBar active="msg" />
+        <MobileTabBar active="msg" initialAuthed={!!navMe} />
       </div>
       <div className="only-desktop">
         <SiteHeader />

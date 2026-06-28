@@ -3,6 +3,7 @@ import { errorResponse } from '../../../../lib/http';
 import { z } from 'zod';
 import { setRequestStatus, cancelRequest, RequestError } from '../../../../lib/requests';
 import { requireUser, UnauthorizedError } from '../../../../lib/session';
+import { rateLimit, tooMany } from '../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -13,6 +14,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const params = await props.params;
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`req-mut:${user.id}`, 60, 3600))) return tooMany();
     const parsed = schema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 });
     return NextResponse.json(await setRequestStatus(user.id, params.id, parsed.data.status));
@@ -28,6 +30,7 @@ export async function DELETE(_req: Request, props: { params: Promise<{ id: strin
   const params = await props.params;
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`req-mut:${user.id}`, 60, 3600))) return tooMany();
     return NextResponse.json(await cancelRequest(user.id, params.id));
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });

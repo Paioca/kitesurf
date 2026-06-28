@@ -60,7 +60,7 @@ export function DisputeList({ disputes: initial }: { disputes: Dispute[] }) {
 
             {confirming ? (
               <div style={{ background: '#f3f1e9', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 12.5, color: color.ink, lineHeight: 1.4 }}>{confirm!.action === 'reverse' ? 'Reverter a venda? Ela deixa de contar, as avaliações ficam ocultas e a peça volta a ficar disponível (pausada).' : 'Manter a venda? Ela volta a contar como concluída e as avaliações reaparecem.'}</div>
+                <div style={{ fontSize: 12.5, color: color.ink, lineHeight: 1.4 }}>{confirm!.action === 'reverse' ? 'Reverter a venda? Ela deixa de contar, as avaliações ficam ocultas e a peça volta a ficar à venda.' : 'Manter a venda? Ela volta a contar como concluída e as avaliações reaparecem.'}</div>
                 <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Justificativa (opcional, registrada na disputa)" rows={2} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${color.lineCard}`, borderRadius: 10, padding: 9, fontSize: 13.5, fontFamily: font.sans, resize: 'vertical' }} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => resolve(d, confirm!.action)} disabled={!!busy} style={confirm!.action === 'reverse' ? btnDanger : btnPrimary}>Sim, confirmar</button>

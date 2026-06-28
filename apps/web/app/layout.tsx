@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Archivo, Spectral } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -30,6 +30,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(publicBaseUrl()),
   title: 'Kitetropos | kite e barra com mais confiança',
   description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
+};
+
+// O teclado virtual do mobile redimensiona o conteúdo (interactive-widget) em vez de
+// sobrepor o CTA fixo do rodapé do wizard de anúncio (.criar-nav). Sem isso, em telas
+// pequenas o teclado cobre o botão "Continuar/Publicar" e a mensagem de validação.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  interactiveWidget: 'resizes-content',
 };
 
 // Render dinâmico em TODAS as rotas (CSP nonce por request). O nonce só é carimbado nos
