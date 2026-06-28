@@ -32,9 +32,12 @@ Onboarding/copy segue num passe separado do dono (ver `docs/COPY-CONTRATO.md`).
 
 ## Outras mudanças recentes (jun/2026)
 
-- **Banco em São Paulo.** Supabase `sa-east-1`, ref **`oycxkofylcofvvditjeg`**; função Vercel fixada em
-  **`gru1`** (`apps/web/vercel.json`). Home TTFB ~1,1s → ~0,15s. Projeto antigo `vndzuhgshqdxqqbqtawn`
-  (us-west-2) **órfão → deletar**.
+- **Banco em São Paulo.** PROD: Supabase `sa-east-1`, ref **`oycxkofylcofvvditjeg`**; função Vercel fixada
+  em **`gru1`** (`apps/web/vercel.json`). Home TTFB ~1,1s → ~0,15s. Projeto antigo `vndzuhgshqdxqqbqtawn`
+  (us-west-2) já **deletado**.
+- **STAGING separado.** Supabase `kitetropos-staging` (`sa-east-1`, ref **`otuqhjatkdtmazvfnjrw`**) com
+  schema + bucket `listings` + taxonomia. **Local e Previews da Vercel usam staging**, não prod. Arquitetura
+  e fluxo em [PLANO-AMBIENTES.md](PLANO-AMBIENTES.md). `main` protegida (PR + CI `verify` obrigatório).
 - **Busca SQL** (`lib/browse.ts`): filtros + paginação no banco (sem teto de 500), facetas por agregação
   cacheadas; mobile tem chips de tamanho on-page + ordenação. **Imagens:** thumb 400px nos cards, resize
   no cliente antes do upload.
@@ -45,8 +48,9 @@ Onboarding/copy segue num passe separado do dono (ver `docs/COPY-CONTRATO.md`).
   editar/excluir conta, favoritos, "Meus anúncios", **wizard de anunciar multi-step** (mantido por
   decisão — NÃO é tela única), e-mail opcional no cadastro, máscara de preço (bug), tamanho em chips.
 
-> **Testar sempre no Vercel, não local** (o `.env` local tende a perder a `SERVICE_ROLE_KEY` → upload
-> quebra com "Invalid Compact JWS"). Fluxo: editar em `apps/web` → `npm run build` → commit+push → redeploy.
+> **Testar local agora é seguro:** o `.env` local aponta para o **Supabase de staging** (não prod), com
+> `SERVICE_ROLE_KEY` preenchida. Rode `npm run dev` → http://localhost:3000. Dados de teste caem no staging.
+> Para acessar a prod deliberadamente (admin/script), use `apps/web/.env.prod` explicitamente. Ver [SETUP.md](../SETUP.md).
 
 ## O que é / estratégia
 
@@ -60,9 +64,10 @@ Norte: fricção mínima, crescer base, cobrar depois. Login só por **OTP de te
 |---|---|
 | Repo GitHub | https://github.com/Paioca/kitesurf (branch `main`) · deploy key SSH |
 | App no ar | **https://kitesurf-web.vercel.app** (Vercel `kitesurf-web`, região `gru1`) |
-| Supabase | **`oycxkofylcofvvditjeg` (sa-east-1 / São Paulo)** · bucket público `listings` |
-| Supabase ANTIGO (DELETAR) | `vndzuhgshqdxqqbqtawn` (us-west-2) — órfão, creds vazadas |
-| Vercel órfãos (DELETAR) | `kitesurf` e `kitesurf-api` |
+| Supabase PROD | **`oycxkofylcofvvditjeg` (sa-east-1 / São Paulo)** · bucket público `listings` |
+| Supabase STAGING | **`otuqhjatkdtmazvfnjrw` (sa-east-1)** · usado por local + Previews da Vercel |
+| Vercel PROD | **`kitesurf-web`** (tem o domínio `kitetropos.com`) |
+| Vercel órfãos (DELETAR) | `kitesurf`, `kitesurf-niz6`, `kitesurf-api` — duplicados/mortos no mesmo repo |
 | Dir local | `/Users/felipegalli/Downloads/Kitesurf app` (monorepo) |
 | Bundle de design | `/Users/felipegalli/Downloads/_kite_handoff2/an-lise-e-prototipo-web/project/*.dc.html` |
 

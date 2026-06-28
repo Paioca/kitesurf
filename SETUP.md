@@ -1,7 +1,10 @@
 # SETUP — rodar localmente
 
 App único **Next.js** (App Router + API routes + Prisma) em `apps/web`. O banco e o
-storage são o Supabase (mesmo de produção, no MVP — sem banco de staging ainda).
+storage são o Supabase. **O ambiente local aponta para o Supabase de STAGING**
+(`kitetropos-staging`, sa-east-1) — nunca para produção. Assim você testa e cria
+dados de teste sem risco. Arquitetura completa de ambientes em
+[docs/PLANO-AMBIENTES.md](docs/PLANO-AMBIENTES.md).
 
 ## Pré-requisitos
 
@@ -14,8 +17,17 @@ storage são o Supabase (mesmo de produção, no MVP — sem banco de staging ai
 cp .env.example apps/web/.env
 ```
 
-Preencha `apps/web/.env` com as credenciais do Supabase (ver `.env.example`). No
-local o OTP é **mockado** (`OTP_MOCK=true`): o código aparece no log, sem SMS, e os
+Preencha `apps/web/.env` com as credenciais do **Supabase de staging**
+(`kitetropos-staging`), não as de produção (ver `.env.example`). Convenção de arquivos
+(todos gitignored):
+
+- `apps/web/.env` → ambiente de trabalho local = **staging** (`npm run dev` e o Prisma CLI usam este).
+- `apps/web/.env.staging` → cópia de referência das credenciais de staging.
+- `apps/web/.env.prod` → credenciais de **produção**, usadas **só deliberadamente**
+  para tarefas de admin/script contra a prod (ex: `set -a && . ./.env.prod && set +a && <cmd>`).
+  Nunca é o padrão do local — isso evita rodar migration/script em produção por engano.
+
+No local o OTP é **mockado** (`OTP_MOCK=true`): o código aparece no log, sem SMS, e os
 números de teste (`+5585991000…`, `+5500…`) recebem o código direto na resposta.
 
 > Em produção `OTP_MOCK` e números de teste são ignorados — login exige SMS real
