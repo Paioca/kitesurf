@@ -63,6 +63,18 @@ export async function affectedBuyerIds(tx: Tx, listingId: string, opts: { exclud
   return rows.map((r) => r.buyerId);
 }
 
+// Usuários que FAVORITARAM o anúncio (ids distintos), menos os já notificados por outro
+// caminho (`exclude` = compradores que receberam sold_elsewhere/listing_removed). Usado
+// pra avisar quem SALVOU quando o anúncio é vendido/removido. Roda dentro da transação.
+export async function favoriterIds(tx: Tx, listingId: string, exclude: string[] = []): Promise<string[]> {
+  const rows = await tx.favorite.findMany({
+    where: { listingId, ...(exclude.length ? { userId: { notIn: exclude } } : {}) },
+    select: { userId: true },
+    distinct: ['userId'],
+  });
+  return rows.map((r) => r.userId);
+}
+
 // ---- leitura (fora de transação) ----
 
 export async function unreadCount(userId: string): Promise<number> {

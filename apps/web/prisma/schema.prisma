@@ -527,6 +527,7 @@ enum NotificationType {
   reversal_requested // a outra parte pediu correção/devolução da venda
   reversal_confirmed // a correção foi aceita: venda revertida
   reversal_rejected // a correção foi recusada: virou disputa
+  listing_sold // quem favoritou: um anúncio que salvou foi vendido
 }
 
 // Auditoria de ações IRREVERSÍVEIS / financeiras (LGPD + disputa). Append-only.

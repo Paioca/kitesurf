@@ -9,6 +9,7 @@ const { mockDb } = vi.hoisted(() => ({
     review: { upsert: vi.fn() },
     dealDispute: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn(), findFirst: vi.fn() },
+    favorite: { findMany: vi.fn() },
     auditEvent: { create: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
@@ -31,6 +32,7 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(mockDb)));
   mockDb.$queryRaw.mockResolvedValue([]); // lock FOR UPDATE — no-op no mock
   mockDb.listing.updateMany.mockResolvedValue({ count: 1 });
+  mockDb.favorite.findMany.mockResolvedValue([]);
   mockDb.listing.findUnique.mockResolvedValue({ title: 't', ...listingMock({ status: 'sold' }), deletedAt: null });
   mockDb.listing.update.mockResolvedValue({});
   mockDb.deal.update.mockResolvedValue({});

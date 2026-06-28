@@ -19,6 +19,7 @@ export function notificationText(n: NotificationLike): string {
     case 'sale_cancelled': return `O vendedor cancelou a venda marcada de ${t}.`;
     case 'sale_closed_unconfirmed': return `A venda de ${t} foi encerrada por falta de confirmação no prazo.`;
     case 'sold_elsewhere': return `${t} foi vendido a outro comprador.`;
+    case 'listing_sold': return d.title ? `"${d.title}" que você salvou foi vendido.` : 'Um anúncio que você salvou foi vendido.';
     case 'listing_removed': return d.title ? `O anúncio ${t} foi removido.` : 'Um anúncio que você acompanhava foi removido.';
     case 'reversal_requested': return `Pediram a correção da venda de ${t}. Responda nos seus pedidos.`;
     case 'reversal_confirmed': return d.byModerator ? `A moderação reverteu a venda de ${t}.` : `A correção da venda de ${t} foi confirmada.`;
@@ -50,6 +51,9 @@ export function notificationHref(n: NotificationTarget): string {
     // anúncio ainda visível (vendido) → abre o anúncio
     case 'sold_elsewhere':
       return n.listingId ? `/anuncio/${n.listingId}` : '/pedidos';
+    // quem favoritou → abre o anúncio vendido (ou cai nos favoritos)
+    case 'listing_sold':
+      return n.listingId ? `/anuncio/${n.listingId}` : '/favoritos';
     // correção/reversão e removido: deixa a página escolher a aba
     case 'reversal_requested':
     case 'reversal_confirmed':

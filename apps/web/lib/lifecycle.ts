@@ -1,7 +1,7 @@
 import 'server-only';
 import { db } from './db';
 import { PublicError } from './http';
-import { emitMany, affectedBuyerIds } from './notifications';
+import { emitMany, affectedBuyerIds, favoriterIds } from './notifications';
 import { listingHasSaleRecord } from './deals';
 import { recordAudit } from './audit';
 
@@ -33,6 +33,9 @@ export async function removeListing(userId: string, listingId: string) {
     await tx.request.updateMany({ where: { listingId, status: { in: ['pending', 'accepted'] } }, data: { status: 'listing_removed' } });
     await tx.listing.update({ where: { id: listingId }, data: { deletedAt: new Date(), status: 'archived' } });
     await emitMany(tx, affected.map((bid) => ({ userId: bid, type: 'listing_removed' as const, listingId, actorId: userId, data: { title: listing.title } })));
+    // quem favoritou (e não tinha pedido) também é avisado da remoção
+    const favs = await favoriterIds(tx, listingId, affected);
+    await emitMany(tx, favs.map((uid) => ({ userId: uid, type: 'listing_removed' as const, listingId, actorId: userId, data: { title: listing.title } })));
   });
 }
 
