@@ -7,7 +7,7 @@ import { getListing } from '../../../../lib/queries';
 import { requireUser, getCurrentUser, UnauthorizedError } from '../../../../lib/session';
 import { validateAttributes } from '../../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../../lib/storage';
-import { canTransition, isEditable, isPubliclyVisible, type ListingStatus, ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../../lib/listing-status';
+import { canTransition, isEditable, isPubliclyVisible, type ListingStatus, ACTIVE_LISTING_LIMIT, activeListingWhere, canBypassListingLimit, MIN_LISTING_PRICE_CENTS } from '../../../../lib/listing-status';
 import { openNegotiationExists } from '../../../../lib/deals';
 import { removeListing, LifecycleError } from '../../../../lib/lifecycle';
 import { type Component } from '../../../../lib/components';
@@ -101,7 +101,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     }
     // Reativar (→active) reconta pro teto: como só 'active' conta, reativar um pausado
     // não pode furar o limite de 5 ativos.
-    if (dto.status === 'active' && current !== 'active') {
+    if (dto.status === 'active' && current !== 'active' && !canBypassListingLimit(user)) {
       if ((await db.listing.count({ where: activeListingWhere(user.id) })) >= ACTIVE_LISTING_LIMIT) {
         return NextResponse.json({ message: `Você atingiu o limite de ${ACTIVE_LISTING_LIMIT} anúncios ativos. Pause ou exclua outro para reativar este.` }, { status: 409 });
       }

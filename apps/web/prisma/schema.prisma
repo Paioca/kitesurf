@@ -63,6 +63,7 @@ model User {
   role            UserRole   @default(individual)
   status          UserStatus @default(active)
   admin           Boolean    @default(false) // acesso à moderação (/moderacao)
+  unlimitedListings Boolean  @default(false) // isenção INDIVIDUAL do teto de anúncios ativos — concedida manualmente, nunca por regra geral
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
