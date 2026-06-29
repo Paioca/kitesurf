@@ -20,6 +20,8 @@ import { Footer } from '../../../components/Footer';
 import { Gallery } from '../../../components/Gallery';
 import { BarraPhotos } from '../../../components/BarraPhotos';
 import { ReportButton } from '../../../components/ReportButton';
+import { ShareButton } from '../../../components/ShareButton';
+import { appUrl } from '../../../lib/app-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -214,6 +216,18 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
             )}
             <div style={{ fontSize: 12.5, color: color.inkFaint2, marginTop: 12, lineHeight: 1.4 }}>Pagamento e entrega são combinados direto com o vendedor.</div>
           </div>
+
+          {/* Compartilhar — só em anúncio publicamente visível (link que o amigo consegue abrir).
+              O card rico no WhatsApp/IG já vem das meta tags OG da página. */}
+          {isPubliclyVisible(l.status) && (
+            <div style={{ marginBottom: 24 }}>
+              <ShareButton
+                url={appUrl(`/anuncio/${l.id}`)}
+                title={[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}
+                text={`Olha esse ${l.category?.namePt ?? 'equipamento'} na Kitetropos: ${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')} — ${formatBRL(l.price)}`}
+              />
+            </div>
+          )}
 
           {attrs.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: color.line, border: `1px solid ${color.line}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
