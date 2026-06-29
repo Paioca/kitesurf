@@ -312,7 +312,9 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                 </div>
               </div>
 
-              <QuickFilters sp={sp} facets={facets} filters={filters} typeChips={typeChips} t={t} compact />
+              {/* Sem QuickFilters aqui: no desktop a sidebar (FilterContent) já cobre todas as
+                  dimensões — os chips inline duplicavam o menu lateral. QuickFilters segue só no
+                  mobile (sem sidebar) e na landing pública (layout editorial sem sidebar). */}
               <ActiveChips sp={sp} facets={facets} filters={filters} locale={locale} />
 
               {total === 0 ? (

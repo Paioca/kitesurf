@@ -42,13 +42,13 @@ const FIELD_LABELS: Record<Locale, Record<string, string>> = {
     size_m2: 'Tamanho do kite',
     condition: 'Estado do equipamento',
     reparos: 'Reparos no tecido',
-    microfuros: 'Microfuros no bladder',
+    microfuros: 'Microfuros no kite',
   },
   en: {
     size_m2: 'Kite size',
     condition: 'Gear condition',
     reparos: 'Canopy repairs',
-    microfuros: 'Bladder micro leaks',
+    microfuros: 'Kite micro leaks',
   },
 };
 const KITE_SLOTS: Record<Locale, string[]> = {
