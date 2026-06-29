@@ -22,6 +22,7 @@ import { BarraPhotos } from '../../../components/BarraPhotos';
 import { ReportButton } from '../../../components/ReportButton';
 import { ShareButton } from '../../../components/ShareButton';
 import { appUrl } from '../../../lib/app-url';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,8 +167,31 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   ficha.push({ k: 'Spot', v: `${l.city}${l.spot ? ` · ${l.spot}` : ''}` });
   ficha.push({ k: 'Entrega', v: [l.pickup && 'Retirada', l.shippable && 'Envio'].filter(Boolean).join(' + ') || 'Retirada local' });
 
+  // JSON-LD Product/Offer → rich results no Google (preço + disponibilidade). Só em anúncio
+  // publicamente visível. Carimba o nonce da CSP (o proxy expõe em x-nonce) p/ não ser bloqueado.
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+  const ldCond = typeof a.condition === 'string' && /(novo|lacrad)/.test(a.condition) ? 'NewCondition' : 'UsedCondition';
+  const productLd = isPubliclyVisible(l.status)
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: [l.brand?.name, title].filter(Boolean).join(' '),
+        ...(photos.length ? { image: photos.slice(0, 5) } : {}),
+        ...(l.brand?.name ? { brand: { '@type': 'Brand', name: l.brand.name } } : {}),
+        offers: {
+          '@type': 'Offer',
+          price: (l.price / 100).toFixed(2),
+          priceCurrency: 'BRL',
+          availability: `https://schema.org/${l.status === 'active' ? 'InStock' : 'OutOfStock'}`,
+          itemCondition: `https://schema.org/${ldCond}`,
+          url: appUrl(`/anuncio/${l.id}`),
+        },
+      }
+    : null;
+
   return (
     <>
+      {productLd && <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />}
       <div className="only-mobile"><MobileAppBar initialMe={navMe} /></div>
       <div className="only-desktop"><SiteHeader /></div>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 0' }}>
