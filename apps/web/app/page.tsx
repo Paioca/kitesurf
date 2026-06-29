@@ -12,6 +12,7 @@ import { Footer } from '../components/Footer';
 import { Diamond, DiamondTrail } from '../components/ui';
 import { MobileAppBar, MobileTabBar } from '../components/MobileChrome';
 import { getNavUser } from '../lib/session';
+import { publicBaseUrl } from '../lib/app-url';
 import { HowItWorks } from '../components/HowItWorks';
 import { FilterContent } from '../components/browse/FilterContent';
 import { FilterSheet } from '../components/browse/FilterSheet';
@@ -167,6 +168,16 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
   const { items, facets, total, totalAll, filters, page, totalPages, viewer } = await getBrowseData(sp);
   const navMe = await getNavUser();
   const authed = !!viewer;
+  // JSON-LD de marca (Organization + WebSite) → sinal de identidade no Google. Nonce da CSP.
+  const ldNonce = (await headers()).get('x-nonce') ?? undefined;
+  const siteBase = publicBaseUrl();
+  const siteLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'Organization', name: 'Kitetropos', url: siteBase, logo: `${siteBase}/icon.svg` },
+      { '@type': 'WebSite', name: 'Kitetropos', url: siteBase },
+    ],
+  };
   const activeCount = filters.size.length + filters.brand.length + filters.uf.length + filters.city.length + filters.price.length + filters.repair.length + filters.withbar.length + filters.cond.length + filters.bladder.length + filters.mang.length + filters.delivery.length + (filters.cat ? 1 : 0);
   const countLocation = filters.city.length === 1
     ? locale === 'en' ? ` in ${filters.city[0]}` : ` em ${filters.city[0]}`
@@ -202,6 +213,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
 
   return (
     <>
+      <script type="application/ld+json" nonce={ldNonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(siteLd) }} />
       {/* ---------- MOBILE ---------- */}
       <div className="only-mobile" style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: color.bg }}>
         <MobileAppBar initialMe={navMe} />
