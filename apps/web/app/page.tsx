@@ -33,7 +33,6 @@ const HOME_COPY = {
     browseIntro: 'Quer ver equipamentos à venda?',
     loggedBrowseEyebrow: 'Equipamentos à venda',
     loggedBrowseTitle: 'Escolha pelo que importa',
-    quickFilterIntro: 'Filtre por tipo, tamanho, estado e spot.',
     quickSize: 'Tamanho',
     quickState: 'Estado',
     quickCity: 'Spot',
@@ -92,7 +91,6 @@ const HOME_COPY = {
     browseIntro: 'Want to browse gear for sale?',
     loggedBrowseEyebrow: 'Gear for sale',
     loggedBrowseTitle: 'Choose by what matters',
-    quickFilterIntro: 'Filter by type, size, state, and spot.',
     quickSize: 'Size',
     quickState: 'State',
     quickCity: 'Spot',
@@ -231,11 +229,12 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
           {/* Browse estruturado: sem busca solta por texto na home. */}
           <div id="browse" style={{ padding: sellerLanding ? '18px 18px 0' : '24px 18px 0', position: 'relative', zIndex: 3 }}>
             <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.primary, marginBottom: 6 }}>{authed ? t.loggedBrowseEyebrow : t.browseIntro}</div>
-            <h1 style={{ fontFamily: font.sans, fontSize: 28, lineHeight: 1, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: color.ink, margin: '0 0 8px' }}>{authed ? t.loggedBrowseTitle : t.browseTitle}</h1>
-            <div style={{ fontSize: 13.5, color: color.inkMute, lineHeight: 1.45 }}>{t.quickFilterIntro}</div>
+            <h1 style={{ fontFamily: font.sans, fontSize: 28, lineHeight: 1, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: color.ink, margin: 0 }}>{authed ? t.loggedBrowseTitle : t.browseTitle}</h1>
           </div>
 
-          <QuickFilters sp={sp} facets={facets} filters={filters} typeChips={typeChips} t={t} mobile />
+          {/* Só o TIPO como controle segmentado. Estado/Tamanho/Spot e o resto vivem no
+              bottom sheet "Filtros" (FilterContent) — sem duplicar, libera a dobra no mobile. */}
+          <MobileTypeTabs sp={sp} typeChips={typeChips} cat={filters.cat} t={t} />
 
           {/* Filtros (pill discreto) + contagem em linha própria; ordenação sem sobrepor. */}
           <div style={{ padding: '6px 18px 8px' }}>
@@ -393,18 +392,40 @@ function SellerProofs({ mobile = false, t }: { mobile?: boolean; t: HomeCopy }) 
   );
 }
 
-function QuickFilters({ sp, facets, filters, typeChips, t, mobile = false, compact = false }: { sp: SP; facets: Facets; filters: ReturnType<typeof import('../lib/filters').parseFilters>; typeChips: { value: string; label: string; count: number }[]; t: HomeCopy; mobile?: boolean; compact?: boolean }) {
-  const sizeOptions = facets.size.slice(0, mobile ? 5 : 6);
-  const stateOptions = facets.uf.slice(0, mobile ? 3 : 4);
-  const cityOptions = facets.city.slice(0, mobile ? 4 : 5);
+// Controle segmentado de TIPO (Todos / Kites / Kite + barra) — a única "lente" rápida que
+// fica na home MOBILE. Estado/Tamanho/Spot e os demais filtros vivem no bottom sheet
+// "Filtros" (FilterContent). Rola na horizontal se não couber. Mesmos links de URL do
+// filtro de categoria (clearHref para "Todos", setHref('cat') para cada tipo).
+function MobileTypeTabs({ sp, typeChips, cat, t }: { sp: SP; typeChips: { value: string; label: string; count: number }[]; cat: string; t: HomeCopy }) {
+  if (typeChips.length === 0) return null;
+  const href = (value: string) => `${value}#browse`;
+  const seg = (on: boolean): React.CSSProperties => ({ flex: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 36, boxSizing: 'border-box', fontFamily: font.sans, fontSize: 13.5, fontWeight: 600, padding: '8px 16px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap', background: on ? color.primary : 'transparent', color: on ? '#fff' : color.inkSoft });
+  return (
+    <div className="kl-scroll" style={{ padding: '14px 18px 2px', overflowX: 'auto' }}>
+      <div style={{ display: 'inline-flex', gap: 4, background: color.tabTrack, borderRadius: 999, padding: 3 }}>
+        <Link href={href(clearHref(sp))} style={seg(!cat)}>{t.all}</Link>
+        {typeChips.map((type) => (
+          <Link key={type.value} href={href(setHref(sp, 'cat', type.value, true))} style={seg(cat === type.value)}>{type.label}</Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Filtros rápidos da LANDING desktop (pública): tipo + estado + tamanho + spot em chips.
+// Só usado lá; no mobile a home usa MobileTypeTabs + o sheet, e no desktop logado a
+// sidebar (FilterContent) cobre tudo.
+function QuickFilters({ sp, facets, filters, typeChips, t }: { sp: SP; facets: Facets; filters: ReturnType<typeof import('../lib/filters').parseFilters>; typeChips: { value: string; label: string; count: number }[]; t: HomeCopy }) {
+  const sizeOptions = facets.size.slice(0, 6);
+  const stateOptions = facets.uf.slice(0, 4);
+  const cityOptions = facets.city.slice(0, 5);
   const href = (value: string) => `${value}${value.includes('#') ? '' : '#browse'}`;
-  const groupStyle: React.CSSProperties = compact ? { marginBottom: 18 } : { padding: mobile ? '14px 18px 2px' : '0 0 28px' };
-  const scrollStyle: React.CSSProperties = { display: 'flex', gap: 8, overflowX: mobile ? 'auto' : undefined, flexWrap: mobile ? 'nowrap' : 'wrap', paddingBottom: mobile ? 6 : 0 };
+  const scrollStyle: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap' };
 
   return (
-    <div style={groupStyle}>
+    <div style={{ padding: '0 0 28px' }}>
       {typeChips.length > 0 && (
-        <div className={mobile ? 'kl-scroll' : undefined} style={{ ...scrollStyle, marginBottom: sizeOptions.length || stateOptions.length || cityOptions.length ? 10 : 0 }}>
+        <div style={{ ...scrollStyle, marginBottom: sizeOptions.length || stateOptions.length || cityOptions.length ? 10 : 0 }}>
           <Link href={href(clearHref(sp))} style={catChip(!filters.cat)}>{t.all}</Link>
           {typeChips.map((type) => (
             <Link key={type.value} href={href(setHref(sp, 'cat', type.value, true))} style={catChip(filters.cat === type.value)}>{type.label}</Link>
@@ -413,9 +434,9 @@ function QuickFilters({ sp, facets, filters, typeChips, t, mobile = false, compa
       )}
 
       {stateOptions.length > 0 && (
-        <div style={{ marginTop: compact ? 12 : 0 }}>
+        <div>
           <div style={quickLabel}>{t.quickState}</div>
-          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+          <div style={scrollStyle}>
             {stateOptions.map((o) => (
               <Link key={o.value} href={href(toggleHref(sp, 'uf', o.value))} style={filterChip(filters.uf.includes(o.value))}>{o.label}</Link>
             ))}
@@ -424,9 +445,9 @@ function QuickFilters({ sp, facets, filters, typeChips, t, mobile = false, compa
       )}
 
       {sizeOptions.length > 0 && (
-        <div style={{ marginTop: compact || stateOptions.length ? 12 : 0 }}>
+        <div style={{ marginTop: stateOptions.length ? 12 : 0 }}>
           <div style={quickLabel}>{t.quickSize}</div>
-          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+          <div style={scrollStyle}>
             {sizeOptions.map((o) => (
               <Link key={o.value} href={href(toggleHref(sp, 'size', o.value))} style={filterChip(filters.size.includes(o.value))}>{localizedFacetLabel(o.value, o.label, t)}</Link>
             ))}
@@ -437,7 +458,7 @@ function QuickFilters({ sp, facets, filters, typeChips, t, mobile = false, compa
       {cityOptions.length > 0 && (
         <div style={{ marginTop: 12 }}>
           <div style={quickLabel}>{t.quickCity}</div>
-          <div className={mobile ? 'kl-scroll' : undefined} style={scrollStyle}>
+          <div style={scrollStyle}>
             {cityOptions.map((o) => (
               <Link key={o.value} href={href(toggleHref(sp, 'city', o.value))} style={filterChip(filters.city.includes(o.value))}>{o.label}</Link>
             ))}
