@@ -40,5 +40,12 @@ export function isPubliclyVisible(status: ListingStatus): boolean {
 export const ACTIVE_LISTING_LIMIT = 5;
 export const activeListingWhere = (userId: string) => ({ userId, status: 'active' as const, deletedAt: null });
 
+// Isenção INDIVIDUAL do teto acima. É uma entitlement por-conta (coluna `unlimitedListings`
+// no User, default false) — concedida manualmente a contas específicas, NUNCA por regra geral.
+// Default false garante que adicionar a coluna não libera ninguém; só o UPDATE explícito numa
+// linha isenta aquele usuário. Centralizado aqui pra os dois call-sites (criar/reativar) não
+// divergirem.
+export const canBypassListingLimit = (u: { unlimitedListings?: boolean | null }) => u.unlimitedListings === true;
+
 // Preço mínimo de um anúncio, em centavos (R$100) — evita preço-isca pra trapacear filtros.
 export const MIN_LISTING_PRICE_CENTS = 10000;

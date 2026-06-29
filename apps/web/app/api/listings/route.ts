@@ -8,7 +8,7 @@ import { requireUser, UnauthorizedError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../lib/storage';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
-import { ACTIVE_LISTING_LIMIT, activeListingWhere, MIN_LISTING_PRICE_CENTS } from '../../../lib/listing-status';
+import { ACTIVE_LISTING_LIMIT, activeListingWhere, canBypassListingLimit, MIN_LISTING_PRICE_CENTS } from '../../../lib/listing-status';
 import { Prisma } from '@prisma/client';
 
 const PRICE_MIN_MSG = 'O preço mínimo de um anúncio é R$100.';
@@ -95,7 +95,8 @@ export async function POST(req: Request) {
 
     // Teto anti-spam: máximo de anúncios ATIVOS por usuário (só status 'active').
     // Rate-limit (20/h) já limita a corrida do mesmo usuário; o count fecha o resto.
-    if ((await db.listing.count({ where: activeListingWhere(user.id) })) >= ACTIVE_LISTING_LIMIT) {
+    // Contas com isenção individual (unlimitedListings) pulam o teto — ver canBypassListingLimit.
+    if (!canBypassListingLimit(user) && (await db.listing.count({ where: activeListingWhere(user.id) })) >= ACTIVE_LISTING_LIMIT) {
       return NextResponse.json({ message: `Você atingiu o limite de ${ACTIVE_LISTING_LIMIT} anúncios ativos. Pause, marque como vendido ou exclua um para publicar outro.` }, { status: 409 });
     }
 
