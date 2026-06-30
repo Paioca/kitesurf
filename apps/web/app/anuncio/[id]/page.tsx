@@ -43,6 +43,7 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   return {
     title,
     description,
+    alternates: { canonical: `/anuncio/${params.id}` },
     openGraph: { title, description, type: 'website', images },
     twitter: { card: 'summary_large_image', title, description, images },
   };
@@ -171,13 +172,25 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   // publicamente visível. Carimba o nonce da CSP (o proxy expõe em x-nonce) p/ não ser bloqueado.
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   const ldCond = typeof a.condition === 'string' && /(novo|lacrad)/.test(a.condition) ? 'NewCondition' : 'UsedCondition';
+  const ldProps = [
+    sizeM2 && { '@type': 'PropertyValue', name: 'Tamanho', value: sizeM2 },
+    a.condition && { '@type': 'PropertyValue', name: 'Condição', value: CONDITION[a.condition] ?? a.condition },
+    l.year && { '@type': 'PropertyValue', name: 'Ano', value: String(l.year) },
+    l.spot && { '@type': 'PropertyValue', name: 'Spot', value: `${l.city} (${l.spot})` },
+    a.bladder && { '@type': 'PropertyValue', name: 'Bladder', value: CONDITION[a.bladder] ?? a.bladder },
+    a.microfuros != null && { '@type': 'PropertyValue', name: 'Microfuros', value: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' },
+  ].filter(Boolean);
   const productLd = isPubliclyVisible(l.status)
     ? {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: [l.brand?.name, title].filter(Boolean).join(' '),
+        description: visitSummary,
+        ...(l.category?.namePt ? { category: l.category.namePt } : {}),
+        ...(l.model?.name ? { model: l.model.name } : {}),
         ...(photos.length ? { image: photos.slice(0, 5) } : {}),
         ...(l.brand?.name ? { brand: { '@type': 'Brand', name: l.brand.name } } : {}),
+        ...(ldProps.length ? { additionalProperty: ldProps } : {}),
         offers: {
           '@type': 'Offer',
           price: (l.price / 100).toFixed(2),
