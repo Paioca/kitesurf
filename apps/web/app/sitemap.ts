@@ -12,6 +12,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const statics: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: 'hourly', priority: 1 },
+    { url: `${base}/sobre`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${base}/como-funciona`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${base}/comprar-kite-usado`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/vender-kite-usado`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/guias/checklist-kite-usado`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/anunciar`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${base}/termos`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${base}/privacidade`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
