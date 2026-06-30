@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { LegalPage, type LegalSection } from '../../components/LegalPage';
 
 export const metadata: Metadata = {
-  title: 'Sobre a Kitetropos | kite e barra com mais confiança',
+  title: 'Sobre a Kitetropos | equipamentos de kitesurf com mais confiança',
   description:
     'A Kitetropos é um marketplace brasileiro de equipamentos de kitesurf usados, nascido em Cumbuco. Conecta vendedores e compradores com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
   alternates: { canonical: '/sobre' },

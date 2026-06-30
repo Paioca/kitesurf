@@ -131,7 +131,7 @@ export function ComoFunciona() {
                 </div>
               </div>
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#f6f3ec', borderRadius: '26px 26px 0 0', padding: '24px 22px 30px' }}>
-                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de kite e barra com gente <strong style={{ color: '#23332e' }}>verificada</strong>. Sem anúncio fake.</div>
+                <div style={{ fontSize: 14, color: '#6b7a73', lineHeight: 1.5, marginBottom: 18 }}>Compra e venda de equipamentos de kitesurf com gente <strong style={{ color: '#23332e' }}>verificada</strong>. Sem anúncio fake.</div>
                 <div style={cta}>Entrar ou criar conta</div>
                 <div style={{ textAlign: 'center', fontSize: 12, color: '#8a948d', marginTop: 12 }}>Sem senha · código por SMS</div>
               </div>

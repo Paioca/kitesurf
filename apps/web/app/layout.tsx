@@ -28,8 +28,8 @@ const spectral = Spectral({
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicBaseUrl()),
-  title: 'Kitetropos | kite e barra com mais confiança',
-  description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
+  title: 'Kitetropos | equipamentos de kitesurf com mais confiança',
+  description: 'Marketplace de equipamentos de kitesurf para a comunidade global, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
 };
 
 // O teclado virtual do mobile redimensiona o conteúdo (interactive-widget) em vez de

@@ -6,7 +6,7 @@ export async function Footer() {
   const en = (await cookies()).get('kitetropos:locale')?.value === 'en';
   const copy = en
     ? {
-        body: 'Kite and bar marketplace for the global kitesurf community. Born in Cumbuco.',
+        body: 'Kitesurf gear marketplace for the global community. Born in Cumbuco.',
         search: 'Browse gear',
         announce: 'List gear',
         myAds: 'My listings',
@@ -23,7 +23,7 @@ export async function Footer() {
         born: 'Born in Cumbuco. Open to the world.',
       }
     : {
-        body: 'Marketplace de kite e barra para a comunidade global do kitesurf. Nascido em Cumbuco.',
+        body: 'Marketplace de equipamentos de kitesurf para a comunidade global. Nascido em Cumbuco.',
         search: 'Buscar equipamento',
         announce: 'Anunciar equipamento',
         myAds: 'Meus anúncios',
