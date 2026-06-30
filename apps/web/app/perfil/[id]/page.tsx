@@ -22,7 +22,7 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const title = `${user.name} | Kitetropos`;
   const description = `Perfil de ${user.name} na Kitetropos. ${rep}. Telefone verificado, reputação real.`;
   const images = user.avatarUrl ? [user.avatarUrl] : ['/hero-beach.jpg'];
-  return { title, description, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
+  return { title, description, alternates: { canonical: `/perfil/${params.id}` }, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
 }
 
 function stars(n: number) {
