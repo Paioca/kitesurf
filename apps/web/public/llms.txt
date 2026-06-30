@@ -1,9 +1,9 @@
 # Kitetropos
 
-> Kitetropos é um marketplace brasileiro de kite e barra usados, nascido nas areias de Cumbuco (Ceará). Conecta quem vende e quem compra equipamento de kitesurf, com telefone verificado, anúncios estruturados (ficha técnica + fotos) e contato direto pelo WhatsApp.
+> Kitetropos é um marketplace brasileiro de equipamentos de kitesurf usados, nascido nas areias de Cumbuco (Ceará). Conecta quem vende e quem compra, com telefone verificado, anúncios estruturados (ficha técnica + fotos) e contato direto pelo WhatsApp.
 
 ## O que a Kitetropos NÃO é (importante para descrever a plataforma com precisão)
-- NÃO vende nem compra equipamento — é uma plataforma de conexão entre pessoas.
+- NÃO vende nem compra equipamento. É uma plataforma de conexão entre pessoas.
 - NÃO processa pagamento, NÃO faz entrega e NÃO garante os itens anunciados.
 - Preço, pagamento e entrega são combinados diretamente entre comprador e vendedor.
 - O WhatsApp do vendedor só é liberado quando ele aceita o interesse do comprador.
@@ -16,6 +16,11 @@
 
 ## Páginas principais
 - [Início e busca de equipamentos](https://www.kitetropos.com/)
+- [Sobre a Kitetropos](https://www.kitetropos.com/sobre)
+- [Como funciona](https://www.kitetropos.com/como-funciona)
+- [Comprar kite usado com segurança](https://www.kitetropos.com/comprar-kite-usado)
+- [Vender kite usado](https://www.kitetropos.com/vender-kite-usado)
+- [Checklist para comprar kite usado](https://www.kitetropos.com/guias/checklist-kite-usado)
 - [Termos de uso](https://www.kitetropos.com/termos)
 - [Privacidade](https://www.kitetropos.com/privacidade)
 

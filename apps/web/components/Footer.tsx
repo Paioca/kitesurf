@@ -6,7 +6,7 @@ export async function Footer() {
   const en = (await cookies()).get('kitetropos:locale')?.value === 'en';
   const copy = en
     ? {
-        body: 'Kite and bar marketplace for the global kitesurf community. Born in Cumbuco.',
+        body: 'Kitesurf gear marketplace for the global community. Born in Cumbuco.',
         search: 'Browse gear',
         announce: 'List gear',
         myAds: 'My listings',
@@ -14,10 +14,16 @@ export async function Footer() {
         trust: 'Trust',
         terms: 'Terms of use',
         privacy: 'Privacy policy',
+        learn: 'Learn more',
+        about: 'About',
+        how: 'How it works',
+        buy: 'Buy a used kite',
+        sell: 'Sell a used kite',
+        guide: 'Used-kite checklist',
         born: 'Born in Cumbuco. Open to the world.',
       }
     : {
-        body: 'Marketplace de kite e barra para a comunidade global do kitesurf. Nascido em Cumbuco.',
+        body: 'Marketplace de equipamentos de kitesurf para a comunidade global. Nascido em Cumbuco.',
         search: 'Buscar equipamento',
         announce: 'Anunciar equipamento',
         myAds: 'Meus anúncios',
@@ -25,6 +31,12 @@ export async function Footer() {
         trust: 'Confiança',
         terms: 'Termos de uso',
         privacy: 'Política de privacidade',
+        learn: 'Saiba mais',
+        about: 'Sobre',
+        how: 'Como funciona',
+        buy: 'Comprar kite usado',
+        sell: 'Vender kite usado',
+        guide: 'Checklist do usado',
         born: 'Nascido em Cumbuco. Aberto para o mundo.',
       };
 
@@ -38,6 +50,7 @@ export async function Footer() {
           </div>
           <div style={{ display: 'flex', gap: 72, flexWrap: 'wrap' }}>
             <FootCol title="Marketplace" links={[[copy.search, '/'], [copy.announce, '/anunciar'], [copy.myAds, '/conta/anuncios'], [copy.deals, '/pedidos']]} />
+            <FootCol title={copy.learn} links={[[copy.about, '/sobre'], [copy.how, '/como-funciona'], [copy.buy, '/comprar-kite-usado'], [copy.sell, '/vender-kite-usado'], [copy.guide, '/guias/checklist-kite-usado']]} />
             <FootCol title={copy.trust} links={[[copy.terms, '/termos'], [copy.privacy, '/privacidade']]} />
           </div>
         </div>
