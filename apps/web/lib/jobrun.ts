@@ -10,23 +10,17 @@ const log = childLogger('jobrun');
 // o painel saber "rodou? quando?". Idempotente em relação a falhas: se o handler
 // lançar, a linha vira status=error e a exceção propaga pro caller.
 //
-// Lock contra execução concorrente: usa pg_try_advisory_lock(hashtext(job)). Se outra
-// execução do MESMO job estiver em curso, ESTA aborta com status=skipped (não esperamos
-// na fila — o cron é diário, perder uma janela é melhor que pendurar).
-export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ skipped: true } | { skipped: false; result: T }> {
+// CONCORRÊNCIA: Vercel Cron já garante "uma execução por vez por path" — invocações
+// novas são puladas se a anterior ainda está rodando. Antes a gente tinha um
+// pg_try_advisory_lock(hashtext(job)) aqui como camada extra, mas advisory_lock é
+// SESSION-LEVEL e o Supabase está em pgbouncer transaction-mode: a "session" PG tem
+// vida curta e o lock fica ÓRFÃO preso em conexões devolvidas ao pool. Resultado:
+// toda invocação tentava pegar e falhava em `pg_try_advisory_lock`, caía no
+// `return { skipped: true }`, e NUNCA criava linha em JobRun. Removido. Se um dia
+// quisermos blindar contra "curl manual em paralelo", a forma certa é xact-level
+// lock dentro de uma transação curta que pega o lock E grava a linha JobRun juntos.
+export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ skipped: false; result: T }> {
   const checkInId = Sentry.captureCheckIn({ monitorSlug: `job-${job}`, status: 'in_progress' });
-
-  // Tenta um advisory lock por job. Mesmo nome de job → mesmo lock id (hashtext).
-  // pg_try_advisory_lock devolve true se pegou, false se já estava com outro processo.
-  const lockRow = await db.$queryRaw<Array<{ locked: boolean }>>`
-    SELECT pg_try_advisory_lock(hashtext(${job})) AS locked
-  `;
-  const locked = lockRow[0]?.locked === true;
-  if (!locked) {
-    Sentry.captureCheckIn({ checkInId, monitorSlug: `job-${job}`, status: 'ok' });
-    log.warn({ event: 'skipped', job, reason: 'already_running' }, 'job skipped — another instance is running');
-    return { skipped: true };
-  }
 
   const run = await db.jobRun.create({
     data: { job, status: 'running', release: process.env.VERCEL_GIT_COMMIT_SHA ?? null },
@@ -52,9 +46,5 @@ export async function runJob<T>(job: string, fn: () => Promise<T>): Promise<{ sk
     Sentry.captureException(err, { tags: { component: 'jobrun', job } });
     log.error({ event: 'finished', job, runId: run.id, status: 'error', err }, 'job failed');
     throw err;
-  } finally {
-    // Solta o advisory lock SEMPRE (mesmo em erro). Em serverless isso libera pro
-    // próximo schedule sem depender do reciclo da conexão.
-    await db.$executeRaw`SELECT pg_advisory_unlock(hashtext(${job}))`.catch(() => undefined);
   }
 }
