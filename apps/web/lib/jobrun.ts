@@ -25,6 +25,7 @@ const log = childLogger('jobrun');
 // e REJEITA o check-in (era o caso: nenhum monitor job-* existia e o alerta de cron-parado não
 // funcionava). Mantenha em sincronia com vercel.json. UTC: o Vercel Cron dispara em UTC.
 const JOB_SCHEDULES: Record<string, string> = {
+  'expire-requests': '0 2 * * *',
   'close-unconfirmed': '0 3 * * *',
   cleanup: '0 4 * * *',
   'drain-notifications': '*/5 * * * *',

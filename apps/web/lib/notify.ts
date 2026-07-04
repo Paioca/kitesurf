@@ -152,6 +152,33 @@ export async function notifyRequestAccepted(opts: { buyerPhone: string; sellerPh
   await sendOrEnqueue(waFrom && acceptContentSid ? 'whatsapp' : 'sms', 'accept', sid, token, body);
 }
 
+// Lembrete ao VENDEDOR de que ainda há um pedido pendente (cron expire-requests). No
+// máximo 1 por pedido — a dedup é do chamador via Request.reminderSentAt. Mesma estrutura
+// do notifyNewRequest; WhatsApp exigiria um template Meta próprio, então por ora só SMS —
+// sem canal configurado é no-op (não derruba o cron). NÃO carrega o contato do comprador.
+export async function notifyRequestReminder(opts: { sellerPhone: string; type: 'offer' | 'visit'; listingTitle: string }) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token || !opts.sellerPhone) {
+    log.warn({ event: 'notify_skipped', kind: 'request_reminder', reason: !sid || !token ? 'twilio_unconfigured' : 'missing_seller_phone' }, 'lembrete de pedido pendente não enviado');
+    return;
+  }
+  const smsFrom = process.env.TWILIO_SMS_FROM;
+  if (!smsFrom) {
+    log.warn({ event: 'notify_skipped', kind: 'request_reminder', reason: 'no_channel' }, 'Twilio sem SMS configurado — lembrete de pedido pendente não enviado');
+    return;
+  }
+  const what = opts.type === 'offer' ? 'uma oferta' : 'um pedido de visita';
+  const url = appUrl('/pedidos');
+  const to = opts.sellerPhone.replace(/[^\d+]/g, '');
+  const body = new URLSearchParams({
+    From: smsFrom,
+    To: to,
+    Body: `Kitetropos: você ainda tem ${what} pendente no anúncio "${opts.listingTitle}". Responda em ${url} para liberar o contato. Bons ventos!`,
+  });
+  await sendOrEnqueue('sms', 'request_reminder', sid, token, body);
+}
+
 // Reenvio do OUTBOX (cron drain-notifications). Drena `pending` vencidos em lotes,
 // com backoff exponencial; após MAX_ATTEMPTS marca `failed`. Idempotente por status.
 const DRAIN_BATCH = 50;
