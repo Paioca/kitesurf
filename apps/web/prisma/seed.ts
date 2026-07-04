@@ -258,9 +258,35 @@ async function main() {
   }
   console.log(`  ${CATEGORIES.length} categorias`);
 
-  // Marca legada "Core" (criada vazia em seeds antigos) -> "CORE" da lista oficial,
-  // evitando duplicata por diferença de caixa (Postgres é case-sensitive).
-  await prisma.brand.updateMany({ where: { name: 'Core' }, data: { name: 'CORE' } });
+  // Marca legada "Core" (criada vazia em seeds antigos) -> "CORE" da lista oficial.
+  // Rename direto colide com o unique Brand.name quando as duas coexistem (P2002) e
+  // travava o seed inteiro. Fusão idempotente: reaponta FKs (Model + Listing) e remove
+  // a legada. Correção completa e reutilizável fora do seed: prisma/merge-brand-core.mjs.
+  const coreLegacy = await prisma.brand.findUnique({ where: { name: 'Core' } });
+  if (coreLegacy) {
+    const coreCanonical = await prisma.brand.findUnique({ where: { name: 'CORE' } });
+    if (!coreCanonical) {
+      await prisma.brand.update({ where: { id: coreLegacy.id }, data: { name: 'CORE' } });
+    } else {
+      await prisma.$transaction(async (tx) => {
+        for (const m of await tx.model.findMany({ where: { brandId: coreLegacy.id } })) {
+          const clash = await tx.model.findUnique({
+            where: { brandId_name: { brandId: coreCanonical.id, name: m.name } },
+          });
+          if (clash) {
+            await tx.listing.updateMany({ where: { modelId: m.id }, data: { modelId: clash.id } });
+            await tx.listing.updateMany({ where: { barraModelId: m.id }, data: { barraModelId: clash.id } });
+            await tx.model.delete({ where: { id: m.id } });
+          } else {
+            await tx.model.update({ where: { id: m.id }, data: { brandId: coreCanonical.id } });
+          }
+        }
+        await tx.listing.updateMany({ where: { brandId: coreLegacy.id }, data: { brandId: coreCanonical.id } });
+        await tx.listing.updateMany({ where: { barraBrandId: coreLegacy.id }, data: { barraBrandId: coreCanonical.id } });
+        await tx.brand.delete({ where: { id: coreLegacy.id } });
+      });
+    }
+  }
 
   const kite = await prisma.category.findUnique({ where: { slug: 'kite' } });
   if (!kite) throw new Error('Categoria "kite" não encontrada — seed de categorias falhou.');
