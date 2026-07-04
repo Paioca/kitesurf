@@ -10,6 +10,7 @@ import { SiteHeader } from '../../components/SiteHeader';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Footer } from '../../components/Footer';
 import { FailedDeliveries } from '../../components/FailedDeliveries';
+import { FunnelMetrics } from '../../components/FunnelMetrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -135,6 +136,9 @@ export default async function Saude() {
             )}
           </>
         )}
+
+        <div style={{ height: 1, background: color.lineCard, margin: '36px 0 28px' }} />
+        <FunnelMetrics />
       </main>
       <Footer />
     </>
