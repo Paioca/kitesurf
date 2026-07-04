@@ -8,6 +8,7 @@ const DISALLOW = [
   '/pedidos',
   '/favoritos',
   '/moderacao',
+  '/saude',
   '/chat',
   '/entrar',
   '/recuperar',
