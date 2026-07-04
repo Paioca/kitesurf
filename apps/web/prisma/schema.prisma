@@ -489,6 +489,7 @@ model Request {
   component Component     @default(conjunto) // alvo da oferta/visita (peça do kit)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  reminderSentAt DateTime? // cron expire-requests: marca 1 lembrete enviado ao vendedor (dedup, nunca 2)
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyer   User    @relation("buyerRequests", fields: [buyerId], references: [id])
@@ -529,6 +530,7 @@ enum NotificationType {
   reversal_confirmed // a correção foi aceita: venda revertida
   reversal_rejected // a correção foi recusada: virou disputa
   listing_sold // quem favoritou: um anúncio que salvou foi vendido
+  request_expired // comprador: pedido pendente expirou sem resposta do vendedor
 }
 
 // Auditoria de ações IRREVERSÍVEIS / financeiras (LGPD + disputa). Append-only.

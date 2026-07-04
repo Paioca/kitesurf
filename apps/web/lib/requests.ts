@@ -1,6 +1,6 @@
 import 'server-only';
 import { db } from './db';
-import { notifyNewRequest, notifyRequestAccepted } from './notify';
+import { notifyNewRequest, notifyRequestAccepted, notifyRequestReminder } from './notify';
 import { emit } from './notifications';
 import { PublicError } from './http';
 import { sellables, reservationConflict, COMPONENT_LABEL, type Component, type ListingLike } from './components';
@@ -284,4 +284,65 @@ export async function getListingRequestState(userId: string, listingId: string):
     };
   };
   return { conjunto: forComp('conjunto'), kite: forComp('kite'), barra: forComp('barra') };
+}
+
+// ---- ciclo de vida do pedido (cron expire-requests, diário) ----
+// Dois passos, ambos idempotentes e concorrência-seguros (guard por updateMany condicional):
+//  1) LEMBRETE — pedido pending sem lembrete, com idade entre REQUEST_REMINDER_HOURS (24h)
+//     e REQUEST_EXPIRE_DAYS (7d): 1 SMS ao vendedor, marca reminderSentAt (nunca 2º).
+//  2) EXPIRAÇÃO — pending mais velho que REQUEST_EXPIRE_DAYS vira `expired` + notifica o
+//     comprador in-app. Só toca `pending` (accepted/declined/etc. jamais).
+const LIFECYCLE_BATCH = 200;
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+
+function envPositive(name: string, fallback: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+export async function runRequestLifecycle(now: Date = new Date()): Promise<{ reminded: number; expired: number }> {
+  const expireDays = envPositive('REQUEST_EXPIRE_DAYS', 7);
+  const reminderHours = envPositive('REQUEST_REMINDER_HOURS', 24);
+  const expireCutoff = new Date(now.getTime() - expireDays * DAY_MS); // criado antes disto → expira
+  const reminderCutoff = new Date(now.getTime() - reminderHours * HOUR_MS); // criado antes disto → elegível
+
+  // 1) LEMBRETE — só a faixa [expireCutoff, reminderCutoff): não lembra quem já vai expirar agora.
+  const dueReminder = await db.request.findMany({
+    where: { status: 'pending', reminderSentAt: null, createdAt: { lt: reminderCutoff, gte: expireCutoff } },
+    select: { id: true, type: true, seller: { select: { phone: true } }, listing: { select: { title: true } } },
+    take: LIFECYCLE_BATCH,
+  });
+  let reminded = 0;
+  for (const r of dueReminder) {
+    // claim atômico: marca reminderSentAt SÓ se ainda pending e sem lembrete → nunca 2º envio.
+    const claimed = await db.request.updateMany({
+      where: { id: r.id, status: 'pending', reminderSentAt: null },
+      data: { reminderSentAt: now },
+    });
+    if (claimed.count !== 1) continue;
+    // fora de transação e fail-open (mesmo padrão dos outros avisos): não derruba o cron.
+    await notifyRequestReminder({ sellerPhone: r.seller?.phone ?? '', type: r.type as 'offer' | 'visit', listingTitle: r.listing.title });
+    reminded++;
+  }
+
+  // 2) EXPIRAÇÃO — pending vencido → expired + Notification in-app ao comprador, na mesma transação.
+  const stale = await db.request.findMany({
+    where: { status: 'pending', createdAt: { lt: expireCutoff } },
+    select: { id: true, buyerId: true, sellerId: true, listingId: true, listing: { select: { title: true } } },
+    take: LIFECYCLE_BATCH,
+  });
+  let expired = 0;
+  for (const r of stale) {
+    const didExpire = await db.$transaction(async (tx) => {
+      // guard condicional: se o vendedor aceitou/recusou nesse meio-tempo, count=0 e nada muda.
+      const res = await tx.request.updateMany({ where: { id: r.id, status: 'pending' }, data: { status: 'expired' } });
+      if (res.count !== 1) return false;
+      await emit(tx, { userId: r.buyerId, type: 'request_expired', listingId: r.listingId, requestId: r.id, actorId: r.sellerId, data: { title: r.listing.title } });
+      return true;
+    });
+    if (didExpire) expired++;
+  }
+
+  return { reminded, expired };
 }
