@@ -26,9 +26,14 @@ function supabase(): SupabaseClient {
 async function save(buffer: Buffer, format: 'webp' | 'jpeg' = 'webp'): Promise<string> {
   const ext = format === 'webp' ? 'webp' : 'jpg';
   const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
+  // cacheControl longo (1 ano) — objetos têm nome único (UUID) e são IMUTÁVEIS, então
+  // o navegador/CDN pode cachear "pra sempre" sem risco de servir foto velha. Sem isto o
+  // Supabase devolve o default ~1h e todo retorno ao site re-baixa a imagem, queimando
+  // egress (foi o que estourou a cota free e derrubou as fotos em 2026-07). Vale só pra
+  // uploads NOVOS; os antigos mantêm o header velho até serem reprocessados.
   const { error } = await supabase()
     .storage.from(BUCKET)
-    .upload(path, buffer, { contentType: `image/${format}`, upsert: false });
+    .upload(path, buffer, { contentType: `image/${format}`, cacheControl: '31536000', upsert: false });
   if (error) throw new Error(`Upload Supabase falhou: ${error.message}`); // interno → vira genérico + Sentry
   return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
