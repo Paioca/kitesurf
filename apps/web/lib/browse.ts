@@ -60,10 +60,12 @@ function pickPhoto(images: any[], component: string): string | null {
   return img?.thumbUrl ?? img?.url ?? null;
 }
 
-type Perspective = 'kite' | 'barra' | 'all';
+type Perspective = string; // 'kite' | 'barra' | 'all' | <slug de categoria standalone, ex.: 'wing'>
 function perspectiveOf(f: Filters): Perspective {
-  // 'kit' = kite + barra → perspectiva de kite (filtra hasBarra no WHERE)
-  return f.cat === 'barra' ? 'barra' : f.cat === 'kite' || f.cat === 'kit' ? 'kite' : 'all';
+  // 'kit' = kite + barra → perspectiva de kite (filtra hasBarra no WHERE).
+  if (f.cat === 'barra') return 'barra';
+  if (f.cat === 'kite' || f.cat === 'kit') return 'kite';
+  return f.cat || 'all'; // categoria standalone (wing...) é a própria perspectiva; sem cat = 'all'
 }
 
 const COND_LABEL: Record<string, string> = {
@@ -220,6 +222,11 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
       { category: { is: { slug: 'barra' } }, deals: { some: { status: 'seller_confirmed', component: { in: ['barra', 'conjunto'] as Component[] } } } },
     ] } });
   }
+  if (persp !== 'barra' && persp !== 'kite' && persp !== 'all') {
+    // Categoria standalone (wing...): filtra pela categoria e esconde a peça reservada.
+    and.push({ category: { is: { slug: persp } } });
+    and.push(noReservation('conjunto'));
+  }
   if (f.cat === 'kit') and.push({ hasBarra: true }); // tipo "Kite + Barra" = kite com barra
   if (f.brand.length) and.push({ brand: { name: { in: f.brand } } });
   if (locationSpots) and.push({ city: { in: locationSpots } });
@@ -262,7 +269,7 @@ function buildWhere(f: Filters, persp: Perspective): Prisma.ListingWhereInput {
 // a partir daqui em JS, de forma CONTEXTUAL (refletindo os filtros ativos).
 type ActiveRow = {
   price: number; city: string; uf: string | null; hasBarra: boolean; barraPrice: number | null;
-  pickup: boolean; shippable: boolean; catSlug: string;
+  pickup: boolean; shippable: boolean; catSlug: string; catName: string;
   brandName: string | null; size: string | null; cond: string | null;
   bladder: string | null; mang: string | null; repair: boolean;
   kiteSold: boolean; barraSold: boolean; // peça avulsa do kit já vendida
@@ -272,13 +279,13 @@ type ActiveRow = {
 async function fetchActiveRows(): Promise<ActiveRow[]> {
   const rows = await db.listing.findMany({
     where: BASE,
-    select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true } }, brand: { select: { name: true } } },
+    select: { price: true, city: true, hasBarra: true, barraPrice: true, pickup: true, shippable: true, attributes: true, kiteSoldAt: true, barraSoldAt: true, category: { select: { slug: true, namePt: true } }, brand: { select: { name: true } } },
   });
   return rows.map((r) => {
     const a = (r.attributes ?? {}) as Record<string, any>;
     return {
       price: r.price, city: r.city, uf: stateForSpot(r.city), hasBarra: r.hasBarra === true, barraPrice: r.barraPrice ?? null,
-      pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', brandName: r.brand?.name ?? null,
+      pickup: !!r.pickup, shippable: !!r.shippable, catSlug: r.category?.slug ?? '', catName: r.category?.namePt ?? r.category?.slug ?? '', brandName: r.brand?.name ?? null,
       size: a.size_m2 != null ? String(a.size_m2) : null, cond: a.condition ?? null,
       bladder: a.bladder ?? null, mang: a.mangueiras ?? null, repair: Number(a.repairs_count ?? 0) > 0,
       kiteSold: r.kiteSoldAt != null, barraSold: r.barraSoldAt != null,
@@ -377,7 +384,8 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
   const inPersp = (r: ActiveRow) =>
     persp === 'barra' ? r.catSlug === 'barra' || (r.hasBarra && r.barraPrice != null && !r.barraSold)
       : persp === 'kite' ? r.catSlug === 'kite' && !r.kiteSold && (f.cat === 'kit' ? r.hasBarra : true)
-        : true;
+        : persp === 'all' ? true
+          : r.catSlug === persp; // categoria standalone (wing...)
 
   const P = {
     size: (r: ActiveRow) => !f.size.length || (r.size != null && f.size.includes(sizeBucket(Number(r.size)))),
@@ -412,21 +420,40 @@ function computeFacets(rows: ActiveRow[], f: Filters, persp: Perspective): { fac
   const pickupCount = dM.filter((r) => r.pickup).length;
   const shipCount = dM.filter((r) => r.shippable).length;
 
+  // Chips de categorias standalone (wing...), contadas sobre os mesmos filtros cross-categoria.
+  const stdCounts = new Map<string, { name: string; count: number }>();
+  for (const r of catSet) {
+    if (r.catSlug && r.catSlug !== 'kite' && r.catSlug !== 'barra') {
+      const e = stdCounts.get(r.catSlug) ?? { name: r.catName || r.catSlug, count: 0 };
+      e.count++;
+      stdCounts.set(r.catSlug, e);
+    }
+  }
+  const stdCategoryChips = [...stdCounts].map(([value, { name, count }]) => ({ value, label: name, count }));
+
+  // macro→micro: as facetas kite-específicas (tamanho/reparo/bladder/mangueiras/kit) só fazem
+  // sentido na perspectiva de kite. Na visão "Tudo" com categoria standalone presente elas somem
+  // (senão "Reparo de quê?" numa lista misturada). Sem standalone ativo → showKiteFacets true em
+  // "Tudo" = comportamento IDÊNTICO ao de hoje (kite/barra sozinhos).
+  const hasStandalone = rows.some((r) => r.catSlug && r.catSlug !== 'kite' && r.catSlug !== 'barra');
+  const showKiteFacets = persp === 'kite' || (persp === 'all' && !hasStandalone);
+
   const facets: Facets = {
     category: [
       ...(kiteCount > 0 ? [{ value: 'kite', label: 'Kite', count: kiteCount }] : []),
       ...(barraCount > 0 ? [{ value: 'barra', label: 'Barra', count: barraCount }] : []),
+      ...stdCategoryChips,
     ],
-    size: list(tally(setExcept('size'), (r) => (r.size != null ? sizeBucket(Number(r.size)) : null)), (v) => SIZE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
+    size: showKiteFacets ? list(tally(setExcept('size'), (r) => (r.size != null ? sizeBucket(Number(r.size)) : null)), (v) => SIZE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)) : [],
     brand: list(tally(setExcept('brand'), (r) => r.brandName), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
     uf: list(tally(setExcept('uf'), (r) => r.uf), stateLabel).sort((a, b) => a.label.localeCompare(b.label)),
     city: list(tally(setExcept('city'), (r) => r.city), (v) => v).sort((a, b) => a.label.localeCompare(b.label)),
     price: list(tally(setExcept('price'), (r) => priceBucket(r.price)), (v) => PRICE_LABELS[v] ?? v).sort((a, b) => a.value.localeCompare(b.value)),
-    repair: list(tally(setExcept('repair'), (r) => (r.repair ? 'rep' : 'norep')), (v) => (v === 'rep' ? 'Com reparo' : 'Sem reparo')),
-    withbar: withbarCount > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: withbarCount }] : [],
+    repair: showKiteFacets ? list(tally(setExcept('repair'), (r) => (r.repair ? 'rep' : 'norep')), (v) => (v === 'rep' ? 'Com reparo' : 'Sem reparo')) : [],
+    withbar: showKiteFacets && withbarCount > 0 ? [{ value: '1', label: 'Vem com barra (kit)', count: withbarCount }] : [],
     cond: list(tally(setExcept('cond'), (r) => r.cond), (v) => COND_LABEL[v] ?? v).sort((a, b) => (COND_ORDER.indexOf(a.value) + 1 || 99) - (COND_ORDER.indexOf(b.value) + 1 || 99)),
-    bladder: list(tally(setExcept('bladder'), (r) => r.bladder), (v) => BLADDER_LABEL[v] ?? v),
-    mang: list(tally(setExcept('mang'), (r) => r.mang), (v) => MANG_LABEL[v] ?? v),
+    bladder: showKiteFacets ? list(tally(setExcept('bladder'), (r) => r.bladder), (v) => BLADDER_LABEL[v] ?? v) : [],
+    mang: showKiteFacets ? list(tally(setExcept('mang'), (r) => r.mang), (v) => MANG_LABEL[v] ?? v) : [],
     delivery: [
       ...(pickupCount > 0 ? [{ value: 'local', label: 'Retirada', count: pickupCount }] : []),
       ...(shipCount > 0 ? [{ value: 'ship', label: 'Envio', count: shipCount }] : []),
