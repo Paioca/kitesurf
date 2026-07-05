@@ -28,6 +28,8 @@ que espera o sinal (ativação).
 | Categoria `wing` | **Não existe** — precisa ser criada (ticket N1) |
 | Dropdown de criação de anúncio | Dinâmico: `lib/queries.ts` lê `active: true` |
 | Formulário de atributos | Dinâmico: `app/anunciar/page.tsx` renderiza campos do `attributeSchema` |
+| **Seletor de TIPO em /anunciar** | **⚠ QUEBRA para 3ª categoria**: 3 botões hardcoded (kite/barra/kit), `type Kind` fixo (`anunciar/page.tsx:64-65,705-707`) — ver `docs/AUDITORIA-CATEGORIA-WING.md` (ticket N-C) |
+| Ciclo de negociação (oferta→aceite→venda→review→reversão) | **Auditado 2026-07-04: funciona para categoria standalone SEM mudança** (ver auditoria) |
 | Busca/vitrine | `lib/browse.ts` esconde categoria inativa (`category.active: true` no BASE where) |
 | Card do anúncio | Fallback de rótulo já cobre outras categorias (`harness_size`/`length_cm`/nome da categoria) |
 | Filtro de tamanho da busca | **Kite-only** (faixas sobre `size_m2`) — categorias novas lançam sem filtro de tamanho (ticket N5, depois) |
@@ -175,6 +177,38 @@ compatibilidade), destravando importar wing/prancha/trapézio dos vendedores ân
 coluna continua funcionando idêntico.
 **Quem:** Codex.
 
+## Ticket N-C — Porta de entrada do anúncio multi-categoria (da auditoria)
+
+**Objetivo:** o usuário conseguir CRIAR um anúncio de categoria nova. Hoje é impossível:
+o seletor de tipo do /anunciar tem 3 botões fixos (kite/barra/kit).
+
+**Escopo (pontos da auditoria, `docs/AUDITORIA-CATEGORIA-WING.md`):**
+1. `app/anunciar/page.tsx:705-707` + `type Kind` (linha 64-65): seletor de tipo dinâmico a
+   partir das categorias ativas (mantendo o botão especial "Kite + Barra" como variação do
+   kite). Com só kite/barra ativas, renderiza idêntico ao atual.
+2. Tag de foto (`pickPhotos`/`upload`, linha 461/504; `EditForm.tsx:71`): `component` da
+   foto por slug da categoria (ou null para standalone) em vez de 'kite' fixo.
+3. Título automático (linha 407-415): fallback genérico quando a categoria não tem `size_m2`
+   (wing tem, então o impacto real é para trapézio/prancha depois).
+4. Textos "o kite" genéricos → `category.namePt` (`lib/requests.ts:43`,
+   `anuncio/[id]/page.tsx:119`, breadcrumb linha 213).
+
+**Banco:** Não. **Aceite (staging, wing ativa de teste):** criar anúncio de wing pela UI de
+ponta a ponta (tipo → ficha → fotos → publicar); editar depois; com só kite/barra ativas o
+/anunciar fica visualmente idêntico ao atual. **Quem:** Codex; Preview (CSP) antes do merge.
+
+## Ticket N-P — Posicionamento e copy (decisão do dono + edição pequena)
+
+**Contexto da auditoria:** o texto MOBILE da home **já diz "equipamentos de kitesurf &
+wing"** (`app/page.tsx:33,96`); o desktop ("Anuncie seu kite", CTA "Anunciar meu kite",
+linhas 28/30) e o title global (`app/layout.tsx:32`) ficaram para trás.
+
+**Escopo:** dono decide a fórmula (ex.: "kitesurf & wing"); alinhar hero desktop, CTA,
+title global e a lista do `/sobre` ("kites, barras e kits" → incluir wings). Páginas SEO
+novas (`/comprar-wing-usado`) ficam no N5.
+**Banco:** Não. **Aceite:** nenhuma superfície pública contradiz a existência de wing no ar.
+**Quem:** copy é do dono; aplicação é edição trivial (Codex).
+
 ## Ticket N-F — Busca e filtros multi-categoria (macro → micro)
 
 **Objetivo:** implementar a decisão nº 5. É o único trabalho de código de verdade da
@@ -237,14 +271,18 @@ provar Requests reais. Explicitamente fora do escopo atual.
 ## Sequência
 
 ```
-AGORA (não expõe nada):        M0 → N1 → N2 → N3 → N-F
-QUANDO O SINAL CHEGAR:         N4 (Wing primeiro — decisão travada; depois Prancha, Trapézio — 1 por vez)
+AGORA (não expõe nada):        M0 → N1 → N2 → N3 → N-C → N-F   (+ decisão N-P do dono em paralelo)
+QUANDO O SINAL/ÂNCORAS:        N-P aplicado → N4 (Wing — decisão travada; depois Prancha, Trapézio — 1 por vez)
 QUANDO TIVER VOLUME:           N5
 ```
 
-N-F pode ser feito antes da ativação sem expor nada: com só kite/barra ativas, os chips
-dinâmicos renderizam idêntico ao atual. M0 continua valioso mesmo com Wing decidido — mede
-se Prancha/Trapézio merecem ser as próximas e em que ordem.
+N-C e N-F podem ser feitos antes da ativação sem expor nada: com só kite/barra ativas,
+seletor e chips dinâmicos renderizam idêntico ao atual. M0 continua valioso mesmo com Wing
+decidido — mede se Prancha/Trapézio merecem ser as próximas e em que ordem.
+
+**Auditoria pré-decisão (2026-07-04):** `docs/AUDITORIA-CATEGORIA-WING.md` — veredito GO
+com correções; ciclo de negociação funciona sem mudança; bloqueios = N-C (criar anúncio) e
+N-F (filtros); incoerência de copy = N-P. Zero migration.
 
 ## Perguntas abertas (dono)
 
