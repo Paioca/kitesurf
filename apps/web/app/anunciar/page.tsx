@@ -11,7 +11,7 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
-import { ShareButton, trackEvent } from '../../components/ShareButton';
+import { ShareButton, WhatsappShareButton, trackEvent } from '../../components/ShareButton';
 import { storedLocale } from '../../components/LanguageToggle';
 import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
@@ -639,7 +639,13 @@ export default function Criar() {
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>{t.createdTitle}</h1>
           <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 12px', maxWidth: 400 }}>{t.createdBody}</p>
           <p style={{ fontSize: 15.5, color: color.ink, fontWeight: 600, margin: '0 auto 22px', maxWidth: 400 }}>{t.createdShareHint}</p>
-          <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
+            <WhatsappShareButton
+              listingId={createdId}
+              context="post_publish"
+              url={`${window.location.origin}/anuncio/${createdId}`}
+              text={t.shareText(autoTitle || t.fallbackTitle)}
+            />
             <ShareButton
               variant="primary"
               context="post_publish"
