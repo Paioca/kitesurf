@@ -38,8 +38,9 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const price = formatBRL(l.price);
   const title = `${name} | ${price} · Kitetropos`;
   const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados na Kitetropos.`;
-  const img = (l.images ?? [])[0]?.url;
-  const images = img ? [img] : undefined;
+  // Card composto (foto + preço + spot) renderizado em /api/og/anuncio/[id].
+  // Dimensões explícitas ajudam o crawler do WhatsApp a montar o card grande.
+  const images = [{ url: appUrl(`/api/og/anuncio/${params.id}`), width: 1200, height: 630 }];
   return {
     title,
     description,
