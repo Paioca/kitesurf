@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Archivo, Spectral } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/GoogleTagManager';
 import { ToastProvider } from '../components/Toast';
 import { ConfirmProvider } from '../components/ConfirmDialog';
 import { publicBaseUrl } from '../lib/app-url';
@@ -53,6 +54,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={lang} className={`${archivo.variable} ${spectral.variable}`}>
       <body>
+        <GoogleTagManager />
+        <GoogleTagManagerNoScript />
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
         <Analytics />
         <SpeedInsights />

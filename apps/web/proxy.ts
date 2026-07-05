@@ -62,9 +62,14 @@ const CSP_ENFORCE_STRICT = true;
 
 function buildCsp(nonce: string, strict: boolean): string {
   // 'unsafe-eval' só em dev: o React Refresh/HMR do Next precisa de eval.
+  // www.googletagmanager.com: host do GTM (gtm.js) e das tags Google que o container carrega
+  // (gtag/js do GA4 etc.). O bootstrap inline do GTM leva o nonce (x-nonce) e injeta o gtm.js
+  // deste host. Beacons de coleta (google-analytics.com / *.analytics.google.com) já passam no
+  // connect-src/img-src 'https:'. Tags de terceiros adicionadas DENTRO do GTM (Meta, LinkedIn,
+  // Custom HTML...) têm host próprio e precisarão ser liberadas aqui caso a CSP as bloqueie.
   const scriptSources = strict
-    ? `'self' 'nonce-${nonce}' https://va.vercel-scripts.com`
-    : `'self' 'unsafe-inline' https://va.vercel-scripts.com`;
+    ? `'self' 'nonce-${nonce}' https://va.vercel-scripts.com https://www.googletagmanager.com`
+    : `'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com`;
   const directives = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -76,6 +81,9 @@ function buildCsp(nonce: string, strict: boolean): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src ${scriptSources}${isProd ? '' : " 'unsafe-eval'"}`,
     "connect-src 'self' https:",
+    // frame-src: o <noscript> do GTM embute um iframe de googletagmanager.com/ns.html. Sem
+    // esta linha ele cairia no default-src 'self' e seria bloqueado (só afeta usuários sem JS).
+    "frame-src 'self' https://www.googletagmanager.com",
   ];
   // Reporting opcional (só com CSP_REPORT_URI): report-uri (legado, suporte amplo) +
   // report-to (moderno, declarado no header Reporting-Endpoints). Cobre browser novo e antigo.
