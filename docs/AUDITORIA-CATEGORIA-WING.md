@@ -66,6 +66,38 @@ mudança de banco além do próprio seed da categoria.
 (N-C, N-F, N-P) + 3 de dados (N1–N3), todos executáveis por agente com revisão, tudo
 testável em staging antes de ligar.
 
+## Generalização — vale para board/trapézio/foil? (duas camadas)
+
+Pergunta do dono: essa auditoria serve para qualquer categoria nova? Resposta: o
+**framework** sim; o **conteúdo por categoria** não. Separe as duas camadas.
+
+**Camada 1 — framework (vale para QUALQUER categoria standalone, hasBarra=false):**
+- Motor de negociação (oferta→...→reversão): intocado, funciona para todas.
+- N-C (seletor de tipo dinâmico), N-F (mecanismo de filtro macro→micro), N-P (padrão de
+  copy sem "kite" hardcoded): resolvidos UMA vez = rampa de entrada para toda categoria
+  futura. Se N-C/N-F forem escritos como "categoria genérica" (não hardcodar 'wing'), a 2ª
+  e 3ª categoria não repetem esse trabalho.
+
+**Camada 2 — conteúdo por categoria (NÃO transfere; cada uma é um mini-projeto de dados):**
+attributeSchema próprio, catálogo marca/modelo, copy/SEO — e principalmente a **dimensão de
+filtro**. O filtro de tamanho e o título automático são presos a `size_m2` hoje
+(`lib/browse.ts:231`; `anunciar/page.tsx:413`). Cada categoria usa dimensão diferente:
+
+| Categoria | Dimensão primária (schema) | Custo relativo p/ filtro/título/card |
+|---|---|---|
+| **Wing** | `size_m2` (igual ao kite) | **o mais barato** — reusa filtro de m² e título do kite |
+| Prancha (twin-tip) | `length_cm` | precisa de faixa própria no N-F |
+| Prancha wave (surfboard) | `length` | faixa própria + rótulo do card não coberto hoje |
+| Trapézio | `harness_size` (S–XL) | filtro por enum, não por faixa numérica |
+| Foil | `mast_length` | faixa própria + rótulo do card não coberto (`browse.ts:145` cobre harness/bar/length_cm, não mast) |
+
+**Consequência estratégica:** Wing é a categoria **mais barata possível** justamente por ser
+dimensionalmente um kite (m²). Board e trapézio rodam no MESMO motor (negociação zero
+trabalho), mas exigem mais no N-F (dimensão própria) e no card/título. Portanto: fazer N-C e
+N-F de forma genérica agora paga a rampa; cada categoria seguinte custa só o schema +
+catálogo + as faixas do seu filtro. A auditoria de motor **não precisa ser repetida** por
+categoria; a de conteúdo (schema/filtro/copy), sim — e é pequena.
+
 ## Condições de ativação (mantidas do plano)
 
 ≥5 anúncios âncora reais prontos antes do flip `active: true`; decisão de posicionamento
