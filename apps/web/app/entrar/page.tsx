@@ -8,7 +8,7 @@ import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
 import { storedLocale } from '../../components/LanguageToggle';
 import { COUNTRY_NAMES } from '../../lib/geo';
-import { SPOTS } from '../../lib/filters';
+import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
@@ -587,7 +587,13 @@ export default function Entrar() {
               <label style={lbl}>{t.spot}</label>
               <select value={spot} onChange={(e) => setSpot(e.target.value)} aria-label={t.spot} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
                 <option value="">{t.selectSpot}</option>
-                {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATE_OPTIONS.map((state) => (
+                  <optgroup key={state.value} label={state.label}>
+                    {SPOT_LOCATIONS.filter((s) => s.uf === state.value).map((s) => (
+                      <option key={s.value} value={s.value}>{s.value}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
 
               <label style={lbl}>{t.nationality}</label>
