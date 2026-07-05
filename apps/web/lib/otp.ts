@@ -7,7 +7,12 @@ import { childLogger } from './logger';
 const log = childLogger('otp');
 
 const TTL = Number(process.env.OTP_TTL_SECONDS ?? 300);
-const IS_PROD = process.env.NODE_ENV === 'production';
+// VERCEL_ENV, não NODE_ENV: a Vercel builda TODO deploy (Preview incluído) com
+// NODE_ENV=production — só `next dev` local seta 'development'. Gatear no NODE_ENV
+// deixava o bypass sempre desligado em Preview, forçando Twilio real (e falhando, já
+// que Preview não tem credencial de produção). VERCEL_ENV distingue: 'preview' em
+// Preview, 'production' só no deploy de prod, undefined em local.
+const IS_PROD = process.env.VERCEL_ENV === 'production';
 
 // Produção SEMPRE envia OTP de verdade — mock e números de teste só valem fora de
 // produção. Isso fecha o bypass: em prod o código nunca volta na resposta, OTP_MOCK
