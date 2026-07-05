@@ -3,6 +3,7 @@ import { Archivo, Spectral } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/GoogleTagManager';
+import { MetaPixel } from '../components/MetaPixel';
 import { ToastProvider } from '../components/Toast';
 import { ConfirmProvider } from '../components/ConfirmDialog';
 import { publicBaseUrl } from '../lib/app-url';
@@ -56,6 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <GoogleTagManager />
         <GoogleTagManagerNoScript />
+        <MetaPixel />
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
         <Analytics />
         <SpeedInsights />
