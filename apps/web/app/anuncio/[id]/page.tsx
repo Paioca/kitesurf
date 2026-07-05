@@ -259,6 +259,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           {isPubliclyVisible(l.status) && (
             <div style={{ marginBottom: 24 }}>
               <ShareButton
+                listingId={l.id}
                 url={appUrl(`/anuncio/${l.id}`)}
                 title={[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}
                 text={`Olha esse ${l.category?.namePt ?? 'equipamento'} na Kitetropos: ${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')} — ${formatBRL(l.price)}`}

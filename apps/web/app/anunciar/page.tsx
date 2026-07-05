@@ -11,6 +11,7 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
+import { ShareButton, trackEvent } from '../../components/ShareButton';
 import { storedLocale } from '../../components/LanguageToggle';
 import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
@@ -73,6 +74,8 @@ const AD_COPY = {
     confirmPhone: 'Confirme seu telefone para criar o anúncio.',
     createdTitle: 'Seu anúncio está no ar',
     createdBody: 'Quando alguém fizer uma oferta ou pedir uma visita, você acompanha tudo em Minhas negociações.',
+    createdShareHint: 'Compartilhe nos grupos de WhatsApp do seu spot — é onde a maioria vende mais rápido.',
+    shareText: (name: string) => `Olha esse equipamento na Kitetropos: ${name}`,
     viewListing: 'Ver anúncio',
     viewGear: 'Ver outros equipamentos',
     restored: 'Rascunho recuperado. Continue de onde parou.',
@@ -181,6 +184,8 @@ const AD_COPY = {
     confirmPhone: 'Confirm your phone to create the listing.',
     createdTitle: 'Your listing is live',
     createdBody: 'When someone sends an offer or visit request, you follow everything in My deals.',
+    createdShareHint: "Share it in your spot's WhatsApp groups — that's where most gear sells fastest.",
+    shareText: (name: string) => `Check out this gear on Kitetropos: ${name}`,
     viewListing: 'View listing',
     viewGear: 'See more gear',
     restored: 'Draft restored. Continue where you left off.',
@@ -361,7 +366,11 @@ export default function Criar() {
     } catch {}
   }, [kind, brandId, modelId, barraBrandId, barraModelId, year, barraYear, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
 
-  useEffect(() => { if (createdId) { try { localStorage.removeItem(DRAFT_KEY); } catch {} } }, [createdId]);
+  useEffect(() => {
+    if (!createdId) return;
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    trackEvent('listing_published', { listing_id: createdId });
+  }, [createdId]);
 
   function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} window.location.reload(); }
 
@@ -628,7 +637,18 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>{t.createdTitle}</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>{t.createdBody}</p>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 12px', maxWidth: 400 }}>{t.createdBody}</p>
+          <p style={{ fontSize: 15.5, color: color.ink, fontWeight: 600, margin: '0 auto 22px', maxWidth: 400 }}>{t.createdShareHint}</p>
+          <div style={{ marginBottom: 18 }}>
+            <ShareButton
+              variant="primary"
+              context="post_publish"
+              listingId={createdId}
+              url={`${window.location.origin}/anuncio/${createdId}`}
+              title={autoTitle || t.fallbackTitle}
+              text={t.shareText(autoTitle || t.fallbackTitle)}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>{t.viewListing}</a>
             <Link href="/" style={outline}>{t.viewGear}</Link>
