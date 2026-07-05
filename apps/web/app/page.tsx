@@ -30,7 +30,12 @@ const HOME_COPY = {
     primaryCta: 'Anunciar meu kite',
     secondaryCta: 'Ver kites à venda',
     mobileEyebrow: 'Venda com mais confiança',
+    mobileTitle: 'Anuncie seu equipamento de kitesurf & wing em um marketplace de verdade',
     mobileSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.',
+    mobileProofVisit: 'Anúncios e conversa padronizados',
+    mobileProofWhats: 'Filtros padronizados para otimizar buscas',
+    mobileProofPhone: 'Usuários com WhatsApp confirmados',
+    mobileProofRep: 'Reputação após negociação confirmada',
     browseIntro: 'Quer ver equipamentos à venda?',
     loggedBrowseEyebrow: 'Equipamentos à venda',
     loggedBrowseTitle: 'Escolha pelo que importa',
@@ -88,7 +93,12 @@ const HOME_COPY = {
     primaryCta: 'List my kite',
     secondaryCta: 'See kites for sale',
     mobileEyebrow: 'Sell with more confidence',
+    mobileTitle: 'List your kitesurf & wing gear in a real marketplace',
     mobileSub: 'Create a listing with photos, specs, and verified phone. Your WhatsApp is shared only when you accept.',
+    mobileProofVisit: 'Structured listings and conversations',
+    mobileProofWhats: 'Standard filters to improve search',
+    mobileProofPhone: 'Users with confirmed WhatsApp',
+    mobileProofRep: 'Reputation after confirmed deals',
     browseIntro: 'Want to browse gear for sale?',
     loggedBrowseEyebrow: 'Gear for sale',
     loggedBrowseTitle: 'Choose by what matters',
@@ -227,7 +237,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
                 <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
                   <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>{t.mobileEyebrow}</div>
-                  <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(34px,9vw,44px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', lineHeight: 0.98, margin: 0 }}>{t.heroTitle}</h1>
+                  <h1 style={{ fontFamily: font.sans, fontSize: 32, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0, color: '#fff', lineHeight: 1.02, margin: 0 }}>{t.mobileTitle}</h1>
                   <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>{t.mobileSub}</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>{t.primaryCta}</Link>
@@ -374,7 +384,12 @@ function Hero({ priority = true, t }: { priority?: boolean; t: HomeCopy }) {
 }
 
 function SellerProofs({ mobile = false, t }: { mobile?: boolean; t: HomeCopy }) {
-  const proofs = [
+  const proofs = mobile ? [
+    t.mobileProofVisit,
+    t.mobileProofWhats,
+    t.mobileProofPhone,
+    t.mobileProofRep,
+  ] : [
     t.proofVisit,
     t.proofWhats,
     t.proofPhone,
