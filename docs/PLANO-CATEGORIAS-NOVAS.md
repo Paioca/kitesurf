@@ -13,6 +13,12 @@ que espera o sinal (ativação).
    standalone (que já é o default do sistema — custo zero).
 2. **Ordem por hora:** Wing → Prancha bidirecional (twin-tip) → Trapézio.
 3. **Depois (fora deste plano):** prancha wave (surfboard), foil, prancha de foil/wing.
+4. **Wing confirmado como primeira aposta** (tese: oceano azul — pouca oferta organizada de
+   wing usado no BR). Catálogo marca/modelo de wing validado pelo dono (ver N2).
+5. **Modelo de filtros: macro → micro.** Filtro primário é a categoria (chip); as fichas
+   técnicas específicas (Reparo, Bladder, Mangueiras, tamanho) só aparecem com a categoria
+   selecionada. Nada de ficha duplicada nem ficha ambígua na visão "Tudo" (ver seção
+   "Filtros — análise de impacto" e ticket N-F).
 
 ## O que JÁ EXISTE (inventário verificado no código, não presumido)
 
@@ -31,7 +37,38 @@ que espera o sinal (ativação).
 
 Conclusão do inventário: expandir categoria aqui é majoritariamente **dado, não código**.
 O plano original superestimou o custo ("maior custo técnico da lista") — isso valia para o
-modelo kit; a trilha standalone é barata.
+modelo kit; a trilha standalone é barata. **A exceção é a busca/filtros** — ver abaixo.
+
+---
+
+## Filtros — análise de impacto (verificada no código, 2026-07-04)
+
+Pergunta do dono: ao ativar Wing, a ficha "Reparo" (e afins) duplica? Fica ambígua
+("reparo de quê?")? A resposta, olhando `lib/browse.ts` + `components/browse/`:
+
+**Como funciona hoje:**
+- As facetas são **contextuais** (cada dimensão conta aplicando os demais filtros ativos) e
+  **orientadas a dados**: uma ficha aparece se `facets.X.length > 0` — ou seja, Bladder/
+  Mangueiras/Reparo aparecem porque existem *kites* no resultado, não porque "kite" está
+  selecionado.
+- Os chips de categoria são **hardcoded** kite/barra (`computeFacets` só gera esses dois).
+- A busca tem "perspectiva" (`kite` | `barra` | `all`); qualquer `cat` desconhecido cai em
+  `all`. A perspectiva barra já mostra menos fichas — **o padrão macro→micro já meio existe**.
+- `FilterContent.tsx` é **compartilhado entre desktop e mobile** (`FilterSheet` é só o
+  invólucro mobile) — a correção é num lugar só.
+
+**O risco confirmado:** ligar Wing sem mexer na busca faria os anúncios de wing caírem na
+visão "Tudo" SEM chip próprio para filtrá-los, e as fichas kite-only (Reparo/Bladder/
+Mangueiras) continuariam visíveis nessa visão — usá-las excluiria os wings silenciosamente.
+Exatamente a ambiguidade que o dono apontou.
+
+**A decisão (travada, nº 5): macro → micro.**
+- Sem categoria selecionada ("Tudo"): só filtros universais — preço, local (UF/cidade),
+  entrega, marca, condição (o campo `condition` já é compartilhado entre categorias).
+- Categoria selecionada: entram as fichas específicas dela. Kite: Reparo, Bladder,
+  Mangueiras, faixas de m² de kite. Wing: faixas de m² de wing, boom/handles, janela.
+  Trapézio: tamanho S–XL, tipo (seat/waist).
+- Nenhuma ficha duplicada; nenhuma ficha órfã de contexto.
 
 ---
 
@@ -79,15 +116,45 @@ no site público (categoria inativa é invisível).
 do `seedModels` existente. Marcas já existentes (Duotone, F-One, etc.) são reusadas pelo
 upsert por nome — modelos novos apontam pra categoria nova.
 
-**Proposta inicial (rascunho para o dono validar com vendedores âncora — NÃO é lista final):**
-- **Wing:** Duotone (Unit, Slick, Ventis), F-One (Strike, Swing, Origin), Ozone (Wasp, Flux),
-  Cabrinha (Mantis, Crosswing, Vision), North (Nova, Mode), Naish (Wing-Surfer, MK4, ADX),
-  Slingshot (SlingWing), Armstrong (A-Wing), AK/Airush (Ahi), Ensis (Score, Spin), Reedin (SuperWing).
+**Catálogo de WING — VALIDADO PELO DONO (2026-07-04), usar como está:**
+
+| Marca | Modelos |
+|---|---|
+| Duotone | Unit, Unit SLS, Unit D/Lab, Slick, Slick SLS, Slick D/Lab, Ventis, Ventis D/Lab, Float, Echo |
+| North | Nova, Nova Pro, Mode Pro, Mode Ultra, Loft Pro |
+| Cabrinha | Mantis, Mantis Apex, Vision, Crosswing |
+| F-One | Strike, Strike CWC, Strike Aluula, Swing, Origin |
+| Slingshot | SlingWing, SlingWing NXT, Javelin, Blaster, Dart |
+| Naish | ADX, ADX Nvision, Atom, Neutron, Matador, Wing-Surfer |
+| Ozone | Fly, Flow, Flux, Flux Ultra-X, Liteforce, Wasp |
+| **CORE** ⚠ | Halo, Halo Pro, Halo Pro LW |
+| Reedin | SuperNatural, SuperNatural SSD, SuperWing, SuperWing X |
+| Ensis | Score, Spin, Top Spin, Drive |
+| Armstrong | A-Wing, A-Wing XPS, A-Wing XPS Mk II, X-Wing |
+| Takoon | Wing, Wing Pro, Wing Ultra, VX, VX Pro |
+| FreeWing | Air, Air Team, Nitro, Pro, N-Team |
+| GONG | Droid, Neutra, Pulse, SuperPower, Plus |
+| KT | Wing Air, Wing Air DD |
+| Eleveight | WFS |
+| Harlem | Pace |
+| NeilPryde | Fly, Fly Pro, Fly SL, FireFly, FireFly Pro |
+| RRD | Wind Wing, Air Wing, Air Wing School, Evolution Wing, Evolution Gold Wing, Pocket Wing |
+| PPC | M1, M1-X, M1-L, M2, Vortex SDS, Sonic FDS |
+| Ocean Rodeo | Glide, Glide A-Series, Glide HL-Series, Glide Pro Dacron |
+
+> ⚠ **CORE, não "Core":** a lista original do dono grafa "Core", mas a marca canônica no
+> banco é **`CORE`** (maiúscula). Semear como "Core" recriaria a duplicata que a fusão de
+> 2026-07-04 eliminou (`prisma/merge-brand-core.mjs`). Usar `CORE` sempre.
+> Marcas já existentes no banco (Duotone, North, Cabrinha, F-One, Slingshot, Naish, Ozone,
+> CORE, Reedin, Eleveight, Harlem, RRD, Ocean Rodeo) são reusadas pelo upsert por nome;
+> as demais (Ensis, Armstrong, Takoon, FreeWing, GONG, KT, NeilPryde, PPC) são novas.
+
+**Twin-tip e Trapézio — rascunho para o dono validar depois (NÃO é lista final):**
 - **Twin-tip:** Duotone (Jaime, Select, Team Series, Gonzales), North (Atmos, Prime, Trace),
   Cabrinha (Ace, Xcaliber, Spectrum), CORE (Fusion, Choice, Bolt), F-One (Trax, Magnet),
-  Slingshot (Misfit, Refraction), Naish (Motion, Orbit), Ozone (Base, Code), Nobile, Mystic? (não — Mystic é acessório).
+  Slingshot (Misfit, Refraction), Naish (Motion, Orbit), Ozone (Base, Code), Nobile.
 - **Trapézio:** Mystic (Majestic, Stealth, Warrior, Star), ION (Riot, Apex, Nova), Ride Engine
-  (Elite, Prime, Saber), Manera (Exo, Union), NP/Neilpryde, Dakine (Pyro, C-1), Prolimit, Brunotti.
+  (Elite, Prime, Saber), Manera (Exo, Union), NeilPryde, Dakine (Pyro, C-1), Prolimit, Brunotti.
 
 **Fora de escopo:** fotos de catálogo, anos por modelo.
 **Banco:** Não (dados via seed).
@@ -107,6 +174,39 @@ compatibilidade), destravando importar wing/prancha/trapézio dos vendedores ân
 **Aceite:** CSV de teste com 1 wing importa em staging (`--dry` primeiro); CSV antigo sem a
 coluna continua funcionando idêntico.
 **Quem:** Codex.
+
+## Ticket N-F — Busca e filtros multi-categoria (macro → micro)
+
+**Objetivo:** implementar a decisão nº 5. É o único trabalho de código de verdade da
+expansão — e é pré-requisito da ativação do Wing (N4 depende dele).
+
+**Escopo (pontos exatos, verificados):**
+1. `lib/browse.ts` `computeFacets`: gerar os chips de categoria **dinamicamente** a partir
+   das categorias ativas com anúncio (hoje hardcoded kite/barra). Enquanto só kite/barra
+   estiverem ativas, o resultado visual é idêntico ao atual.
+2. `lib/browse.ts` `perspective()`/`buildWhere`: caso genérico para categoria standalone —
+   `f.cat === '<slug>'` filtra `category.slug`. Sem lógica de reserva por componente
+   (isso é exclusivo do kite/barra; wing não tem).
+3. `computeFacets` `inPersp`: perspectiva de categoria standalone = `catSlug === f.cat`.
+4. **Gate das fichas por categoria** (`components/browse/FilterContent.tsx` — serve desktop
+   E mobile): Reparo/Bladder/Mangueiras só com `cat=kite`; fichas do wing (boom/handles,
+   janela) só com `cat=wing`; na visão "Tudo" só universais (preço, local, entrega, marca,
+   condição). Resolve a ambiguidade "Reparo de quê?".
+5. Faixas de tamanho por perspectiva: as atuais (`sizeBucket`: <7, 7-9, 9-11, 11-13, ≥13)
+   são de kite; wing (2–8.5 m²) precisa das dele (ex.: <3.5, 3.5-4.5, 4.5-5.5, 5.5-6.5, ≥6.5).
+   Trapézio usa `harness_size` (S–XL), não faixa numérica.
+6. `ActiveChips.tsx`: rótulo dos chips ativos das fichas novas.
+
+**Fora de escopo:** SEO pages, ordenação, destaque na home (N5).
+**Banco:** Não (só leitura; nenhuma coluna nova).
+**Aceite (staging, com wing ativa de teste):** visão "Tudo" mostra chips Kite/Barra/Wing e
+NENHUMA ficha técnica ambígua; selecionar Wing mostra faixas de wing e esconde Reparo/
+Bladder; selecionar Kite fica idêntico ao hoje; mobile (FilterSheet) espelha o desktop sem
+trabalho extra; buscar com filtro de bladder na visão Tudo não "some" com wings (a ficha
+nem aparece lá).
+**Risco:** regressão na busca atual de kite — mitigar comparando resultados antes/depois em
+staging com os `diag-search-*`.
+**Quem:** Codex; validar Preview (CSP) antes do merge, como sempre.
 
 ## Ticket N4 — Ativação (por categoria; ESPERA O SINAL)
 
@@ -137,13 +237,14 @@ provar Requests reais. Explicitamente fora do escopo atual.
 ## Sequência
 
 ```
-AGORA (não expõe nada):        M0 → N1 → N2 → N3
-QUANDO O SINAL CHEGAR:         N4 (Wing primeiro, depois Prancha, depois Trapézio — 1 por vez)
+AGORA (não expõe nada):        M0 → N1 → N2 → N3 → N-F
+QUANDO O SINAL CHEGAR:         N4 (Wing primeiro — decisão travada; depois Prancha, Trapézio — 1 por vez)
 QUANDO TIVER VOLUME:           N5
 ```
 
-M0 é o mais valioso: começa a acumular dado de demanda hoje, e é ele que diz QUAL categoria
-ligar primeiro de verdade (pode surpreender — talvez seja trapézio, não wing).
+N-F pode ser feito antes da ativação sem expor nada: com só kite/barra ativas, os chips
+dinâmicos renderizam idêntico ao atual. M0 continua valioso mesmo com Wing decidido — mede
+se Prancha/Trapézio merecem ser as próximas e em que ordem.
 
 ## Perguntas abertas (dono)
 
@@ -152,7 +253,8 @@ ligar primeiro de verdade (pode surpreender — talvez seja trapézio, não wing
    de copy antes do N4 do Wing.
 2. **"Prancha"** = twin-tip (bidirecional) primeiro, correto? Wave (surfboard) fica pra fase
    seguinte, junto de foil.
-3. As listas de marca/modelo do N2 precisam do seu corte (o rascunho é chute educado).
+3. ~~Lista de marcas do Wing~~ **respondida** (catálogo validado no N2). Faltam os cortes de
+   twin-tip e trapézio quando chegar a vez deles.
 
 ## O que explicitamente NÃO fazer
 
