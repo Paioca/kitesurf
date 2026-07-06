@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Archivo, Spectral } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/GoogleTagManager';
 import { MetaPixel } from '../components/MetaPixel';
@@ -59,7 +58,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <GoogleTagManagerNoScript />
         <MetaPixel />
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
-        <Analytics />
         <SpeedInsights />
       </body>
     </html>
