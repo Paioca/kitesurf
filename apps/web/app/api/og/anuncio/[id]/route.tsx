@@ -1,7 +1,10 @@
 import { ImageResponse } from 'next/og';
+import sharp from 'sharp';
 import { getListing } from '../../../../../lib/queries';
 import { isPubliclyVisible } from '../../../../../lib/listing-status';
 import { formatBRL } from '../../../../../lib/api';
+
+export const runtime = 'nodejs'; // sharp é nativo — precisa do runtime Node, não edge.
 
 // Card OG composto do anúncio (1200×630): foto + faixa com nome, preço e spot.
 // Substitui a foto crua no preview de WhatsApp/IG — se destaca no meio do grupo.
@@ -15,6 +18,22 @@ const CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
 const GREEN_DARK = '#0c2520';
 const GREEN = '#1f6b5c';
 
+// O Satori/resvg por trás do next/og não decodifica WebP de forma confiável — as fotos
+// do anúncio são salvas em WebP (lib/storage.ts) e o <img> simplesmente não desenhava,
+// sem erro (card saía só com o fundo escuro liso). Reencoda pra JPEG já no tamanho exato
+// do card, embutido como data URI — contorna o gap de formato e mantém o payload pequeno.
+async function photoDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const jpeg = await sharp(buf).resize(1200, 630, { fit: 'cover' }).jpeg({ quality: 82 }).toBuffer();
+    return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
+  } catch {
+    return null; // falha silenciosa: card ainda sai certo, só sem foto de fundo.
+  }
+}
+
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const l = await getListing(id);
@@ -25,7 +44,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
   const name = [l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ');
   const place = [l.city, l.spot].filter(Boolean).join(' · ');
-  const photo = (l.images ?? [])[0]?.url as string | undefined;
+  const photoUrl = (l.images ?? [])[0]?.url as string | undefined;
+  const photo = photoUrl ? await photoDataUri(photoUrl) : null;
 
   return new ImageResponse(
     (
