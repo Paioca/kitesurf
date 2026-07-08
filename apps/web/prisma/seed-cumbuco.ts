@@ -165,6 +165,7 @@ async function main() {
         data: {
           userId: seller.id, categoryId: cat.id, brandId: brand?.id ?? null,
           year: r.year ? Number(r.year) : null, attributes: attributes as Prisma.InputJsonValue,
+          description: r.description || null, // coluna opcional do CSV (ex.: "vem sem handles/boom")
           title, price: cents(r.price), city: r.city || 'Cumbuco', spot: r.spot || null,
           shippable: r.shippable === 'true', status: ListingStatus.active, lastConfirmedAt: new Date(),
           hasBarra: isKit, kitePrice: isKit && r.kite_price ? cents(r.kite_price) : null,
