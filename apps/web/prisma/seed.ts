@@ -122,14 +122,14 @@ const CATEGORIES = [
     slug: 'wing',
     namePt: 'Wing',
     nameEn: 'Wing',
-    active: false,
+    active: false, // só vale na criação; em PROD foi ativada à mão em 2026-07-07 (upsert não toca active)
     attributeSchema: {
+      // Ficha enxuta por decisão do dono (2026-07-07): só tamanho + condição.
+      // Detalhes (janela, controle/boom) vão na descrição livre do anúncio.
       required: ['size_m2', 'condition'],
       properties: {
         size_m2: { type: 'number', label: 'Tamanho (m²)', min: 2, max: 9, step: 0.1 }, // wings ~2.5–8 m²
         condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
-        controle: { type: 'string', label: 'Controle', enum: ['handles', 'boom', 'ambos'] }, // pegada
-        janela: { type: 'string', label: 'Janela', enum: ['com_janela', 'sem_janela'] },
       },
     },
   },
@@ -300,7 +300,10 @@ async function main() {
   for (const c of CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: c.slug },
-      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema, active: c.active },
+      // `active` NÃO entra no update: ligar/desligar categoria é decisão operacional (feita
+      // à mão em prod — ex.: wing ativada 2026-07-07). Se entrasse, um re-seed desligaria
+      // categoria ativada depois do deploy. `active` só vale no create (categoria nova).
+      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema },
       create: c,
     });
   }
