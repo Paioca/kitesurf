@@ -62,7 +62,9 @@ const BARRA_SLOTS: Record<Locale, string[]> = {
 };
 const DRAFT_KEY = 'vaya:anunciar-draft';
 
-type Kind = '' | 'kite' | 'barra' | 'kit';
+// '' | 'kite' | 'barra' | 'kit' | <slug de categoria standalone, ex.: 'wing'>. 'kit' é a
+// sub-variação exclusiva do kite (kite + barra); toda outra categoria é standalone.
+type Kind = string;
 type Img = { url: string; thumbUrl?: string; component: 'kite' | 'barra' };
 type Locale = 'pt' | 'en';
 
@@ -308,7 +310,7 @@ export default function Criar() {
   const [sellBarraAlone, setSellBarraAlone] = useState(false);
   const [kitePrice, setKitePrice] = useState('');
   const [barraPrice, setBarraPrice] = useState('');
-  const [city, setCity] = useState('Cumbuco'); // spot principal (lista)
+  const [city, setCity] = useState(''); // spot principal (lista)
   const [spot, setSpot] = useState(''); // ponto específico opcional
   const [pickup, setPickup] = useState(true); // retirada no local
   const [shippable, setShippable] = useState(false); // envio
@@ -350,7 +352,7 @@ export default function Criar() {
           setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
           setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
           setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
-          setCity(d.city ?? 'Cumbuco'); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
+          setCity(d.city ?? ''); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
           setStep(typeof d.step === 'number' ? d.step : 0);
           setRestored(true);
         }
@@ -380,7 +382,9 @@ export default function Criar() {
   const barraBrand = useMemo(() => brands.find((b) => b.id === barraBrandId), [brands, barraBrandId]);
 
   const isKit = kind === 'kit';
-  const mainCat = kind === 'barra' ? barraCat : kiteCat; // categoria primária enviada
+  // Categoria primária enviada no POST. Genérico por slug: kite→kite, barra→barra,
+  // wing/futuras→a própria; 'kit' usa a categoria kite (barra vai embutida via hasBarra).
+  const mainCat = kind === 'kit' ? kiteCat : (categories.find((c) => c.slug === kind) ?? kiteCat);
   const visibleBarraSchema = useMemo(() => {
     const condition = barraCat?.attributeSchema?.properties?.condition;
     return { required: ['condition'], properties: condition ? { condition } : {} };
@@ -406,13 +410,18 @@ export default function Criar() {
   const barraKindModels = useMemo(() => (barraBrand?.models ?? []).filter((m) => m.categoryId === barraCat?.id), [barraBrand, barraCat]);
   const barraModelOpts = useMemo(() => barraKindModels.map((m) => ({ value: m.id, label: m.name })), [barraKindModels]);
   const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
-  const showKitePhotos = kind === 'kite' || kind === 'kit';
+  // Seção de fotos principal: kite, kit e QUALQUER categoria standalone (wing...) — só a
+  // barra usa a seção de barra. Sem isto, uma categoria nova não mostraria uploader.
+  const showKitePhotos = kind !== '' && kind !== 'barra';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
   const kitePhotos = images.filter((i) => i.component === 'kite');
   const barraPhotos = images.filter((i) => i.component === 'barra');
   const t = AD_COPY[lang];
   const conditionLabels = CONDITION_LABELS[lang];
-  const fieldLabels = FIELD_LABELS[lang];
+  // FIELD_LABELS é vocabulário de kite ("Tamanho do kite", "Microfuros no kite") — aplica só
+  // a kite/barra; categoria standalone (wing...) recebe {} e o formulário usa o label do
+  // próprio schema (só alimenta o componente Fields, onde `kind` não está em escopo).
+  const fieldLabels = kind === 'kite' || kind === 'kit' || kind === 'barra' ? FIELD_LABELS[lang] : {};
 
   const autoTitle = useMemo(() => {
     const b = brand?.name;
@@ -428,7 +437,7 @@ export default function Criar() {
     setKind(k);
     setError('');
     if (k === 'kite') {
-      if (prev === 'barra') {
+      if (prev !== 'kite' && prev !== 'kit') { // trocou de família de categoria (barra, wing...) → invalida marca/modelo/ficha
         setBrandId('');
         setModelId('');
         setAttrs({});
@@ -455,7 +464,7 @@ export default function Criar() {
       setBarraPrice('');
       setImages([]);
     } else if (k === 'kit') {
-      if (prev === 'barra') {
+      if (prev !== 'kite' && prev !== 'kit') { // trocou de família de categoria (barra, wing...) → invalida marca/modelo/ficha
         setBrandId('');
         setModelId('');
         setAttrs({});
@@ -465,6 +474,22 @@ export default function Criar() {
       setBarraModelId('');
       setBarraYear('');
       setBarraAttrs({});
+    } else {
+      // Categoria standalone (wing, etc.): trocar de categoria invalida marca/modelo/ficha
+      // (marcas são filtradas por categoria) e não há barra. Reset completo, como a barra.
+      setBrandId('');
+      setModelId('');
+      setYear('');
+      setAttrs({});
+      setBarraBrandId('');
+      setBarraModelId('');
+      setBarraYear('');
+      setBarraAttrs({});
+      setSellKiteAlone(false);
+      setSellBarraAlone(false);
+      setKitePrice('');
+      setBarraPrice('');
+      setImages([]);
     }
   }
   function pickPhotos(component: 'kite' | 'barra') {
@@ -665,7 +690,7 @@ export default function Criar() {
   const previewSize = kind === 'barra' ? t.bar : (attrs.size_m2 ? `${attrs.size_m2} m²` : (lang === 'en' ? 'No size' : 'Sem tamanho'));
   const previewDelivery = pickup && shippable ? `${t.pickupLabel} · ${t.shippingLabel}` : shippable ? t.shippingLabel : t.pickupLabel;
   const previewPhoto = images[0]?.thumbUrl ?? images[0]?.url ?? null;
-  const tipoLabel = kind === 'barra' ? 'Barra' : kind === 'kit' ? 'Kit' : 'Kite';
+  const tipoLabel = kind === 'kit' ? 'Kit' : (mainCat?.namePt ?? 'Kite'); // kite/barra usam namePt; wing→'Wing'
 
   return (
     <Shell t={t}>
@@ -723,6 +748,13 @@ export default function Criar() {
                 <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc={t.onlyKite} icon={IconKite} />
                 <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title={t.bar} desc={t.onlyBar} icon={IconBarra} />
                 <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title={`Kite + ${t.bar}`} desc={t.kitDesc} icon={IconKit} />
+                {/* Categorias standalone ativas além de kite/barra (wing, etc.). Com só
+                    kite/barra ativas, este map é vazio → seletor idêntico ao original. */}
+                {categories
+                  .filter((c) => c.slug !== 'kite' && c.slug !== 'barra')
+                  .map((c) => (
+                    <KindBtn key={c.slug} on={kind === c.slug} onClick={() => selectKind(c.slug)} title={c.namePt} desc={lang === 'en' ? 'Single item' : 'Peça única'} icon={IconKite} />
+                  ))}
               </div>
 
               {kind && (
@@ -837,6 +869,7 @@ export default function Criar() {
                 <Cell>
                   <Label>Spot *</Label>
                   <select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>
+                    <option value="" disabled>{t.missing.spot}</option>
                     {STATE_OPTIONS.map((state) => (
                       <optgroup key={state.value} label={`${state.label} (${state.value})`}>
                         {SPOT_LOCATIONS.filter((spotOption) => spotOption.uf === state.value).map((spotOption) => (

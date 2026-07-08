@@ -115,6 +115,24 @@ const CATEGORIES = [
       },
     },
   },
+  {
+    // Wing (wing foil). Standalone — nunca vira "kit". Dimensão em m² como o kite, então
+    // reusa o filtro de tamanho e o rótulo de condição do kite (KITE_CONDITION = estado do
+    // tecido, que também vale pra wing). Nasce active:false — só liga com âncoras prontas.
+    slug: 'wing',
+    namePt: 'Wing',
+    nameEn: 'Wing',
+    active: false,
+    attributeSchema: {
+      required: ['size_m2', 'condition'],
+      properties: {
+        size_m2: { type: 'number', label: 'Tamanho (m²)', min: 2, max: 9, step: 0.1 }, // wings ~2.5–8 m²
+        condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
+        controle: { type: 'string', label: 'Controle', enum: ['handles', 'boom', 'ambos'] }, // pegada
+        janela: { type: 'string', label: 'Janela', enum: ['com_janela', 'sem_janela'] },
+      },
+    },
+  },
 ];
 
 // Marca -> modelos. Catálogo de kites (marcas/modelos amarrados à categoria kite).
@@ -246,6 +264,36 @@ const BAR_BRANDS: Record<string, string[]> = {
   Harlem: ['Force Control Bar', 'Lead Bar', 'Harlem Bar'],
 };
 
+// Marca -> modelos de WING (amarrados à categoria wing). Catálogo validado pelo dono
+// (2026-07-04). Normalizações de consistência com o catálogo existente:
+//  - "Core" -> "CORE" (marca canônica; senão recria a duplicata fundida em 2026-07-04).
+//  - "North" -> "North Kiteboarding" (é como o catálogo de kite grafa; senão viram 2 marcas
+//    "North" distintas na busca). Reavaliar se o dono quiser padronizar tudo pra "North".
+// Marcas novas (só de wing): Ensis, Armstrong, Takoon, FreeWing, GONG, KT, NeilPryde, PPC.
+const WING_BRANDS: Record<string, string[]> = {
+  Duotone: ['Unit', 'Unit SLS', 'Unit D/Lab', 'Slick', 'Slick SLS', 'Slick D/Lab', 'Ventis', 'Ventis D/Lab', 'Float', 'Echo'],
+  'North Kiteboarding': ['Nova', 'Nova Pro', 'Mode Pro', 'Mode Ultra', 'Loft Pro'],
+  Cabrinha: ['Mantis', 'Mantis Apex', 'Vision', 'Crosswing'],
+  'F-One': ['Strike', 'Strike CWC', 'Strike Aluula', 'Swing', 'Origin'],
+  Slingshot: ['SlingWing', 'SlingWing NXT', 'Javelin', 'Blaster', 'Dart'],
+  Naish: ['ADX', 'ADX Nvision', 'Atom', 'Neutron', 'Matador', 'Wing-Surfer'],
+  Ozone: ['Fly', 'Flow', 'Flux', 'Flux Ultra-X', 'Liteforce', 'Wasp'],
+  CORE: ['Halo', 'Halo Pro', 'Halo Pro LW'],
+  Reedin: ['SuperNatural', 'SuperNatural SSD', 'SuperWing', 'SuperWing X'],
+  Ensis: ['Score', 'Spin', 'Top Spin', 'Drive'],
+  Armstrong: ['A-Wing', 'A-Wing XPS', 'A-Wing XPS Mk II', 'X-Wing'],
+  Takoon: ['Wing', 'Wing Pro', 'Wing Ultra', 'VX', 'VX Pro'],
+  FreeWing: ['Air', 'Air Team', 'Nitro', 'Pro', 'N-Team'],
+  GONG: ['Droid', 'Neutra', 'Pulse', 'SuperPower', 'Plus'],
+  KT: ['Wing Air', 'Wing Air DD'],
+  Eleveight: ['WFS'],
+  Harlem: ['Pace'],
+  NeilPryde: ['Fly', 'Fly Pro', 'Fly SL', 'FireFly', 'FireFly Pro'],
+  RRD: ['Wind Wing', 'Air Wing', 'Air Wing School', 'Evolution Wing', 'Evolution Gold Wing', 'Pocket Wing'],
+  PPC: ['M1', 'M1-X', 'M1-L', 'M2', 'Vortex SDS', 'Sonic FDS'],
+  'Ocean Rodeo': ['Glide', 'Glide A-Series', 'Glide HL-Series', 'Glide Pro Dacron'],
+};
+
 async function main() {
   console.log('Seeding taxonomia...');
 
@@ -314,10 +362,14 @@ async function main() {
     return count;
   }
 
+  const wing = await prisma.category.findUnique({ where: { slug: 'wing' } });
+  if (!wing) throw new Error('Categoria "wing" não encontrada — seed de categorias falhou.');
+
   const kiteModels = await seedModels(BRANDS, kite.id);
   const barModels = await seedModels(BAR_BRANDS, barra.id);
+  const wingModels = await seedModels(WING_BRANDS, wing.id);
   const brandCount = await prisma.brand.count();
-  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra`);
+  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra, ${wingModels} modelos de wing`);
   console.log('Seed concluído.');
 }
 

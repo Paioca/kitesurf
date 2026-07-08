@@ -3,6 +3,13 @@
 // Cada linha vira 1 anúncio sob um vendedor (criado/reusado pelo telefone, WhatsApp = telefone).
 // Fotos podem ser URL (http...) ou caminho local; passam por resize + EXIF strip + thumb 400px e
 // vão pro Storage (mesmo pipeline do app). Idempotente: pula se já há anúncio com (vendedor, título).
+//
+// Coluna `type`: kite | barra | kit | <slug de categoria standalone (ex.: wing)>.
+//   Standalone usa as colunas size_m2, condition e photos (ou photos_kite); wing aceita
+//   opcionais controle (handles|boom|ambos) e janela (com_janela|sem_janela). `condition`
+//   aceita a lista legada OU o enum do attributeSchema da categoria (ex.: novo_lacrado).
+//   Categoria pode estar INATIVA — dá pra pré-carregar âncoras antes do flip (ficam
+//   invisíveis na busca até ativar).
 import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
@@ -81,8 +88,8 @@ async function loadBuffer(src: string, baseDir: string): Promise<Buffer> {
   return fs.readFile(path.isAbsolute(src) ? src : path.join(baseDir, src));
 }
 
-async function uploadPhotos(list: string, component: 'kite' | 'barra', baseDir: string, dry: boolean) {
-  const out: { url: string; thumbUrl: string | null; component: string }[] = [];
+async function uploadPhotos(list: string, component: 'kite' | 'barra' | null, baseDir: string, dry: boolean) {
+  const out: { url: string; thumbUrl: string | null; component: string | null }[] = [];
   for (const src of list.split('|').map((s) => s.trim()).filter(Boolean)) {
     if (dry) { out.push({ url: src, thumbUrl: null, component }); continue; }
     const buf = await loadBuffer(src, baseDir);
@@ -108,12 +115,21 @@ async function main() {
   for (const [i, r] of rows.entries()) {
     const tag = `[${i + 1}] ${r.type} ${r.brand} ${r.model}`;
     try {
-      const type = r.type as 'kite' | 'barra' | 'kit';
-      if (!['kite', 'barra', 'kit'].includes(type)) throw new Error(`type inválido: ${r.type}`);
-      if (!CONDITION.includes(r.condition)) throw new Error(`condition inválida: ${r.condition}`);
+      const type = r.type;
       if (!r.seller_phone) throw new Error('seller_phone vazio');
       const isKit = type === 'kit';
-      const cat = type === 'barra' ? barraCat : kiteCat;
+      // kite/barra/kit = fluxo original; qualquer outro type é slug de categoria STANDALONE
+      // (wing...). Categoria pode estar inativa (pré-carga de âncoras antes do flip).
+      const standalone = !isKit && type !== 'kite' && type !== 'barra';
+      const cat = standalone
+        ? await db.category.findUnique({ where: { slug: type } })
+        : type === 'barra' ? barraCat : kiteCat;
+      if (!cat) throw new Error(`type inválido: "${r.type}" (use kite, barra, kit ou o slug de uma categoria, ex.: wing)`);
+      // condition: lista legada OU enum do attributeSchema da categoria (ex.: novo_lacrado do kite/wing).
+      const schemaCond: string[] = (cat.attributeSchema as any)?.properties?.condition?.enum ?? [];
+      if (!CONDITION.includes(r.condition) && !schemaCond.includes(r.condition)) {
+        throw new Error(`condition inválida: ${r.condition} (aceitas: ${[...new Set([...CONDITION, ...schemaCond])].join(', ')})`);
+      }
 
       const phone = r.seller_phone.startsWith('+') ? r.seller_phone : `+55${r.seller_phone.replace(/\D/g, '')}`;
       const seller = await db.user.upsert({
@@ -124,13 +140,22 @@ async function main() {
       const title = [r.brand, r.model, type === 'barra' ? (r.line_length_m && `${r.line_length_m} m`) : (r.size_m2 && `${r.size_m2} m²`), r.year, isKit && '+ Barra'].filter(Boolean).join(' · ') || cat.namePt;
       if (await db.listing.findFirst({ where: { userId: seller.id, title } })) { console.log(`  SKIP ${tag} (já existe)`); skip++; continue; }
 
-      const attributes = type === 'barra' ? { line_length_m: Number(r.line_length_m), condition: r.condition } : { size_m2: Number(r.size_m2), condition: r.condition };
+      const attributes = type === 'barra'
+        ? { line_length_m: Number(r.line_length_m), condition: r.condition }
+        : {
+            size_m2: Number(r.size_m2), condition: r.condition,
+            // opcionais de wing (só entram se preenchidos; inofensivos p/ kite)
+            ...(r.controle ? { controle: r.controle } : {}),
+            ...(r.janela ? { janela: r.janela } : {}),
+          };
       const barraAttributes = isKit ? { line_length_m: Number(r.line_length_m), condition: r.condition } : undefined;
 
-      const photos = [
-        ...(type !== 'barra' ? await uploadPhotos(r.photos_kite, 'kite', baseDir, dry) : []),
-        ...(type !== 'kite' ? await uploadPhotos(r.photos_barra, 'barra', baseDir, dry) : []),
-      ];
+      const photos = standalone
+        ? await uploadPhotos(r.photos || r.photos_kite || '', null, baseDir, dry) // peça única: sem componente
+        : [
+            ...(type !== 'barra' ? await uploadPhotos(r.photos_kite, 'kite', baseDir, dry) : []),
+            ...(type !== 'kite' ? await uploadPhotos(r.photos_barra, 'barra', baseDir, dry) : []),
+          ];
       if (photos.length < 3) throw new Error(`precisa de ≥3 fotos (tem ${photos.length})`);
       if (isKit && (!photos.some((p) => p.component === 'kite') || !photos.some((p) => p.component === 'barra'))) throw new Error('kit precisa de foto do kite E da barra');
 
@@ -140,6 +165,7 @@ async function main() {
         data: {
           userId: seller.id, categoryId: cat.id, brandId: brand?.id ?? null,
           year: r.year ? Number(r.year) : null, attributes: attributes as Prisma.InputJsonValue,
+          description: r.description || null, // coluna opcional do CSV (ex.: "vem sem handles/boom")
           title, price: cents(r.price), city: r.city || 'Cumbuco', spot: r.spot || null,
           shippable: r.shippable === 'true', status: ListingStatus.active, lastConfirmedAt: new Date(),
           hasBarra: isKit, kitePrice: isKit && r.kite_price ? cents(r.kite_price) : null,
