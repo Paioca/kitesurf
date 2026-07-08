@@ -6,7 +6,7 @@ export async function Footer() {
   const en = (await cookies()).get('kitetropos:locale')?.value === 'en';
   const copy = en
     ? {
-        body: 'Kitesurf gear marketplace for the global community. Born in Cumbuco.',
+        body: 'Brazilian kitesurf gear marketplace for riders across Brazil.',
         search: 'Browse gear',
         announce: 'List gear',
         myAds: 'My listings',
@@ -20,10 +20,10 @@ export async function Footer() {
         buy: 'Buy a used kite',
         sell: 'Sell a used kite',
         guide: 'Used-kite checklist',
-        born: 'Born in Cumbuco. Open to the world.',
+        born: "Built for Brazil's kitesurf spots.",
       }
     : {
-        body: 'Marketplace de equipamentos de kitesurf para a comunidade global. Nascido em Cumbuco.',
+        body: 'Marketplace brasileiro de equipamentos de kitesurf para kitesurfistas de todo o país.',
         search: 'Buscar equipamento',
         announce: 'Anunciar equipamento',
         myAds: 'Meus anúncios',
@@ -37,7 +37,7 @@ export async function Footer() {
         buy: 'Comprar kite usado',
         sell: 'Vender kite usado',
         guide: 'Checklist do usado',
-        born: 'Nascido em Cumbuco. Aberto para o mundo.',
+        born: 'Feito para conectar os spots do Brasil.',
       };
 
   return (

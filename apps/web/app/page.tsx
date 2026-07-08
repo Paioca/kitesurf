@@ -25,12 +25,12 @@ type Locale = 'pt' | 'en';
 const HOME_COPY = {
   pt: {
     heroEyebrow: 'Venda com mais contexto',
-    heroTitle: 'Anuncie seu kite com menos conversa perdida',
+    heroTitle: 'Anuncie seu kite ou wing com menos conversa perdida',
     heroSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. O comprador envia pedido de visita ou oferta estruturada, e seu WhatsApp só é liberado quando você aceita.',
-    primaryCta: 'Anunciar meu kite',
-    secondaryCta: 'Ver kites à venda',
+    primaryCta: 'Criar meu anúncio',
+    secondaryCta: 'Ver equipamentos à venda',
     mobileEyebrow: 'Venda com mais confiança',
-    mobileTitle: 'Anuncie seu equipamento de kitesurf & wing em um marketplace de verdade',
+    mobileTitle: 'Equipamento de kitesurf e wing em um marketplace de verdade',
     mobileSub: 'Crie um anúncio com fotos, ficha técnica e telefone verificado. Seu WhatsApp só é liberado quando você aceita.',
     mobileProofVisit: 'Anúncios e conversa padronizados',
     mobileProofWhats: 'Filtros padronizados para otimizar buscas',
@@ -60,7 +60,7 @@ const HOME_COPY = {
     proofRep: 'Reputação após negociação confirmada',
     communityEyebrow: 'Cuidado em cada detalhe',
     communityTitle: 'O destino final dos kitesurfistas',
-    communityBody: 'A Kitetropos nasceu nas areias de Cumbuco para redefinir o mercado de equipamentos de kitesurf. Unimos a paixão pelo esporte com a curadoria de quem entende cada rajada de vento. Mais que um marketplace, somos o elo de confiança entre quem vive o mar.',
+    communityBody: 'A Kitetropos existe para organizar o mercado de equipamentos de kitesurf e wing usados no Brasil. Unimos a paixão pelo esporte com a curadoria de quem entende cada rajada de vento. Mais que um marketplace, somos o elo de confiança entre kitesurfistas de todos os spots do país.',
     communityBadge: 'Comunidade',
     communityBadgeLine2: 'Elevada.',
     trustEyebrow: 'Mais contexto antes de negociar',
@@ -88,12 +88,12 @@ const HOME_COPY = {
   },
   en: {
     heroEyebrow: 'Sell with more context',
-    heroTitle: 'List your kite with fewer wasted conversations',
+    heroTitle: 'List your kite or wing with fewer wasted conversations',
     heroSub: 'Create a listing with photos, specs, and verified phone. Buyers send a visit request or structured offer, and your WhatsApp is shared only when you accept.',
-    primaryCta: 'List my kite',
-    secondaryCta: 'See kites for sale',
+    primaryCta: 'Create my listing',
+    secondaryCta: 'See gear for sale',
     mobileEyebrow: 'Sell with more confidence',
-    mobileTitle: 'List your kitesurf & wing gear in a real marketplace',
+    mobileTitle: 'Kitesurf & wing gear in a real marketplace',
     mobileSub: 'Create a listing with photos, specs, and verified phone. Your WhatsApp is shared only when you accept.',
     mobileProofVisit: 'Structured listings and conversations',
     mobileProofWhats: 'Standard filters to improve search',
@@ -123,7 +123,7 @@ const HOME_COPY = {
     proofRep: 'Reputation after confirmed deals',
     communityEyebrow: 'Care in every detail',
     communityTitle: 'The final destination for kitesurfers',
-    communityBody: 'Kitetropos was born on the sands of Cumbuco to bring more trust and context to used kitesurf gear. More than a marketplace, it connects people who live the sport.',
+    communityBody: 'Kitetropos brings more trust and context to used kitesurf and wing gear across Brazil. More than a marketplace, it connects riders who live the sport in every spot.',
     communityBadge: 'Community',
     communityBadgeLine2: 'Elevated.',
     trustEyebrow: 'More context before negotiating',
@@ -155,11 +155,11 @@ type HomeCopy = (typeof HOME_COPY)[Locale];
 // OG da home — é a página mais compartilhada; link no WhatsApp/IG vira card.
 export const metadata = {
   alternates: { canonical: '/' },
-  title: 'Kitetropos | equipamentos de kitesurf com mais confiança',
-  description: 'Marketplace de equipamentos de kitesurf para a comunidade global, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
+  title: 'Kitetropos | equipamentos de kitesurf e wing com mais confiança',
+  description: 'Marketplace brasileiro de equipamentos de kitesurf e wing, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
   openGraph: {
-    title: 'Kitetropos | equipamentos de kitesurf com mais confiança',
-    description: 'Encontre, anuncie e negocie equipamentos de kitesurf com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
+    title: 'Kitetropos | equipamentos de kitesurf e wing com mais confiança',
+    description: 'Encontre, anuncie e negocie equipamentos de kitesurf e wing no Brasil com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
     images: ['/hero-beach.jpg'],
     type: 'website',
   },
@@ -237,7 +237,7 @@ export default async function Home(props: { searchParams: Promise<SP> }) {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(12,37,32,0.12) 0%,rgba(12,37,32,0.34) 45%,rgba(12,37,32,0.92) 100%)' }} />
                 <div style={{ position: 'relative', padding: '0 20px 40px', animation: 'kl-up 0.7s ease both' }}>
                   <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua, marginBottom: 14 }}>{t.mobileEyebrow}</div>
-                  <h1 style={{ fontFamily: font.sans, fontSize: 32, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0, color: '#fff', lineHeight: 1.02, margin: 0 }}>{t.mobileTitle}</h1>
+                  <h1 style={{ fontFamily: font.sans, fontSize: 32, fontWeight: 900, letterSpacing: 0, color: '#fff', lineHeight: 1.02, margin: 0 }}>{t.mobileTitle}</h1>
                   <p style={{ fontSize: 15.5, lineHeight: 1.55, color: '#dce8e1', margin: '18px 0 22px' }}>{t.mobileSub}</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <Link href="/anunciar" style={{ background: color.accent, color: color.accentInk, borderRadius: 12, padding: '15px 18px', textAlign: 'center', textDecoration: 'none', fontSize: 15, fontWeight: 800 }}>{t.primaryCta}</Link>

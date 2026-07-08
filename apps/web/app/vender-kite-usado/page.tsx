@@ -46,7 +46,7 @@ export default function VenderKiteUsado() {
       sections={sections}
       contact={
         <>
-          <Link href="/anunciar" style={{ color: '#1f6b5c', fontWeight: 700 }}>Anunciar meu kite</Link>{' '}
+          <Link href="/anunciar" style={{ color: '#1f6b5c', fontWeight: 700 }}>Criar meu anúncio</Link>{' '}
           ou entenda{' '}
           <Link href="/como-funciona" style={{ color: '#1f6b5c', fontWeight: 700 }}>como funciona</Link>.
         </>

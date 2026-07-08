@@ -126,7 +126,7 @@ export function ComoFunciona() {
                   <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.5px', textTransform: 'uppercase', color: '#fff' }}>Kite Life</span>
                 </div>
                 <div style={{ position: 'absolute', left: 22, right: 22, top: 150 }}>
-                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 13, color: '#e7c79a', marginBottom: 7 }}>Cumbuco · Ceará</div>
+                  <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 13, color: '#e7c79a', marginBottom: 7 }}>Spots do Brasil</div>
                   <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1.04, textTransform: 'uppercase', letterSpacing: '-0.6px', color: '#fff' }}>Equipamento<br />de kite com<br />confiança</div>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export function ComoFunciona() {
                 <div style={{ padding: '6px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ background: '#fff', border: '1px solid #ece6d8', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ position: 'relative', height: 120, backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}><div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(20,72,62,0.92)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999 }}>10 m²</div></div>
-                    <div style={{ padding: '11px 13px' }}><div style={{ fontSize: 11.5, fontWeight: 600, color: '#9aa49d', marginBottom: 3 }}>Duotone · 2026</div><div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 16, fontWeight: 600, marginBottom: 7 }}>Evo D/LAB</div><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.5px' }}>R$ 21.459</div><div style={{ fontSize: 11, color: '#8a948d' }}><span style={{ color: '#d9a86b' }}>★</span> 4.9 · Cumbuco</div></div></div>
+                    <div style={{ padding: '11px 13px' }}><div style={{ fontSize: 11.5, fontWeight: 600, color: '#9aa49d', marginBottom: 3 }}>Duotone · 2026</div><div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontSize: 16, fontWeight: 600, marginBottom: 7 }}>Evo D/LAB</div><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.5px' }}>R$ 21.459</div><div style={{ fontSize: 11, color: '#8a948d' }}><span style={{ color: '#d9a86b' }}>★</span> 4.9 · Brasil</div></div></div>
                   </div>
                 </div>
               </div>
@@ -241,7 +241,7 @@ export function ComoFunciona() {
                 <div style={{ padding: '16px 20px 0' }}>
                   <div style={{ fontFamily: "var(--font-spectral),'Spectral',serif", fontStyle: 'italic', fontSize: 14, color: '#1f6b5c', marginBottom: 5 }}>Duotone · 2026</div>
                   <h1 style={{ ...h1, fontSize: 25, marginBottom: 8 }}>Evo D/LAB 10 m²</h1>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Cumbuco · Cauípe. Retirada no spot</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#6b7a73', marginBottom: 12 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: '#d9a86b' }} />Retirada no spot ou envio combinado</div>
                   <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px' }}>R$ 21.459</div>
                 </div>
                 <div style={{ position: 'absolute', left: 20, right: 20, bottom: 22, display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -272,7 +272,7 @@ export function ComoFunciona() {
                     <div style={{ width: 50, height: 50, borderRadius: 8, flex: 'none', backgroundColor: '#f4f1ea', backgroundImage: `url('${EVO}')`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
                     <div style={{ minWidth: 0, paddingRight: 4 }}>
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: '#23332e', lineHeight: 1.15 }}>Evo D/LAB 10 m²</div>
-                      <div style={{ fontSize: 11, color: '#8a948d', margin: '1px 0 3px' }}>Duotone · Cumbuco</div>
+                      <div style={{ fontSize: 11, color: '#8a948d', margin: '1px 0 3px' }}>Duotone · Brasil</div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#1f6b5c' }}>R$ 21.459</div>
                     </div>
                   </div>
