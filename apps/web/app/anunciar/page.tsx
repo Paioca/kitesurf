@@ -305,7 +305,7 @@ export default function Criar() {
   const [sellBarraAlone, setSellBarraAlone] = useState(false);
   const [kitePrice, setKitePrice] = useState('');
   const [barraPrice, setBarraPrice] = useState('');
-  const [city, setCity] = useState('Cumbuco'); // spot principal (lista)
+  const [city, setCity] = useState(''); // spot principal (lista)
   const [spot, setSpot] = useState(''); // ponto específico opcional
   const [pickup, setPickup] = useState(true); // retirada no local
   const [shippable, setShippable] = useState(false); // envio
@@ -347,7 +347,7 @@ export default function Criar() {
           setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
           setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
           setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
-          setCity(d.city ?? 'Cumbuco'); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
+          setCity(d.city ?? ''); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
           setStep(typeof d.step === 'number' ? d.step : 0);
           setRestored(true);
         }
@@ -851,6 +851,7 @@ export default function Criar() {
                 <Cell>
                   <Label>Spot *</Label>
                   <select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>
+                    <option value="" disabled>{t.missing.spot}</option>
                     {STATE_OPTIONS.map((state) => (
                       <optgroup key={state.value} label={`${state.label} (${state.value})`}>
                         {SPOT_LOCATIONS.filter((spotOption) => spotOption.uf === state.value).map((spotOption) => (
