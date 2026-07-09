@@ -111,7 +111,9 @@ export async function POST(req: Request) {
     // Marca/modelo: existir, casar entre si e com a categoria da peça.
     const mainCatalogError = await validateCatalogPair({ brandId: dto.brandId, modelId: dto.modelId, categoryId: dto.categoryId, label: 'Equipamento' });
     if (mainCatalogError) return NextResponse.json({ message: mainCatalogError }, { status: 400 });
-    if ((category.slug === 'kite' || category.slug === 'barra') && !dto.year) {
+    // Ano obrigatório em todo equipamento principal (kite, barra, wing, twin-tip e futuras)
+    // — decisão do dono 2026-07-08: ano é dado essencial de prancha. 'acessorios' fica fora.
+    if (category.slug !== 'acessorios' && !dto.year) {
       return NextResponse.json({ message: 'Informe o ano do equipamento.' }, { status: 400 });
     }
 
