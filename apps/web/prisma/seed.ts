@@ -297,20 +297,39 @@ const WING_BRANDS: Record<string, string[]> = {
   'Ocean Rodeo': ['Glide', 'Glide A-Series', 'Glide HL-Series', 'Glide Pro Dacron'],
 };
 
-// Marca -> modelos de TWIN TIP (prancha bidirecional; categoria twin-tip). Rascunho do
-// plano (docs/PLANO-CATEGORIA-PRANCHA.md) — corte final do dono antes da ativação.
+// Marca -> modelos de TWIN TIP (prancha bidirecional; categoria twin-tip). Catálogo
+// VALIDADO PELO DONO (2026-07-08). Normalizações: "Core"->"CORE", "North"->"North
+// Kiteboarding" (consistência com o catálogo). Marcas novas: Lieuwe, Shinn, Carved,
+// Inverter, K-Jump, Blank Force, Navis, Windbra (BR).
 // REGRA: nunca repetir nome de modelo dentro da mesma marca entre categorias (o upsert
-// re-apontaria a categoria do homônimo). Rascunho verificado sem colisão em 2026-07-07.
+// re-apontaria a categoria do homônimo). Verificado em 2026-07-08: EXCLUÍDOS por já
+// existirem como KITE no catálogo — Flysurfer 'Stoke' e Eleveight 'Commander' (pendente
+// decisão do dono se também são pranchas; se sim, diferenciar o nome).
 const TWIN_TIP_BRANDS: Record<string, string[]> = {
-  Duotone: ['Jaime', 'Select', 'Team Series', 'Gonzales'],
-  'North Kiteboarding': ['Atmos', 'Prime', 'Trace'],
-  Cabrinha: ['Ace', 'Xcaliber', 'Spectrum'],
-  CORE: ['Fusion', 'Choice', 'Bolt'],
-  'F-One': ['Trax', 'Magnet'],
-  Slingshot: ['Misfit', 'Refraction'],
-  Naish: ['Motion', 'Orbit'],
-  Ozone: ['Base', 'Code'],
-  Nobile: ['NHP', 'Flying Carpet', 'Fifty50'],
+  Duotone: ['Jaime', 'Jaime SLS', 'Select', 'Select SLS', 'Gonzales', 'Soleil', 'Soleil SLS', 'Spike', 'Spike SLS', 'Teamseries', 'Teamseries SLS', 'Gambler'],
+  'North Kiteboarding': ['Prime', 'Trace', 'Atmos', 'Atmos Pro', 'Atmos Ultra', 'Astra', 'Focus', 'Flare'],
+  Cabrinha: ['Spectrum', 'Stylus', 'Ace', 'Ace Apex', 'XCal', 'XCal Carbon', 'CBL'],
+  'F-One': ['Spark', 'Spark Carbon', 'TRAX', 'TRAX HRD Lite Tech', 'TRAX HRD Carbon', 'WTF?!', 'ONE', 'BIG ONE'],
+  CORE: ['Fusion', 'Choice', 'Bolt', 'Era'],
+  Ozone: ['Element', 'Code', 'Torque', 'Infinity', 'Rise', 'The Plank'],
+  Naish: ['Motion', 'Drive', 'Traverse', 'Traverse EJ', 'Monarch', 'Hero', 'Orbit', 'Alana', 'Stomp'],
+  Slingshot: ['Misfit', 'Formula', 'Asylum', 'Crisis', 'Refraction', 'Windsor', 'Vision'],
+  Reedin: ['KevPro', 'Super E', 'Good Day', 'Snackback'],
+  Airush: ['Switch', 'Switch Team', 'Apex', 'Apex Team', 'Livewire', 'Livewire Team', 'Diamond'],
+  Eleveight: ['Process', 'Process C+', 'Master', 'Master C+', 'Stellar', 'Ignition'],
+  Lieuwe: ['Shotgun', 'Shotgun Air', 'Falcon', 'Brute', 'Awesome', 'Oceana', 'Rogue', 'Say No More', 'Carbonara'],
+  CrazyFly: ['Raptor', 'Raptor LTD', 'Raptor Extreme', 'Allround', 'Bulldozer', 'Cruiser', 'Shox', 'Girls'],
+  Nobile: ['NHP', 'NHP Carbon', 'NHP Split', 'T5', '50/Fifty', 'Flying Carpet', 'Flying Carpet Split', 'Infinity Split', 'NBL'],
+  Shinn: ['Monk', 'Monk Mental', 'Bronq', 'ADHD', 'Ronson', 'Pinbot', 'Jackson', 'Superking', 'Ultraking', 'Monkette'],
+  RRD: ['Placebo', 'Bliss', 'Bliss LTE', 'Bliss LTD', 'Poison', 'Poison LTD'],
+  Harlem: ['Ascent', 'Launch', 'Descent', 'Hadlow Descent'],
+  Carved: ['Imperator', 'Imperator Pro'],
+  Flysurfer: ['Radical', 'Radical Carbon', 'Flow', 'Flydoor'],
+  Inverter: ['Edge', 'Vortex', 'Signature', 'Coral', 'Nature', 'Cariri', 'Insane', 'Magma'],
+  'K-Jump': ['Nature', 'Sunset', 'Perfect Carbon'],
+  'Blank Force': ['Logic', 'Enduro'],
+  Navis: ['Pater'],
+  Windbra: ['Prancha Bidirecional'],
 };
 
 async function main() {
