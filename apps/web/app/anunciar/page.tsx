@@ -24,6 +24,7 @@ const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
     semi_desgaste: 'Seminovo, com sinais de uso',
     usado_desgaste: 'Usado, com desgaste visível',
     novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+    nova: 'Nova', seminova: 'Seminova', usada: 'Usada', com_reparos: 'Com reparos', // prancha (feminino)
     zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado',
     original: 'Originais', ja_trocadas: 'Trocadas',
   },
@@ -34,6 +35,7 @@ const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
     semi_desgaste: 'Used, with signs of wear',
     usado_desgaste: 'Used, visible wear',
     novo: 'New', seminovo: 'Like new', bom: 'Good condition', usado: 'Used',
+    nova: 'New', seminova: 'Like new', usada: 'Used', com_reparos: 'With repairs', // board (pt feminine)
     zero: 'No leak', microfuro_adesivado: 'Repaired micro leak',
     original: 'Original', ja_trocadas: 'Replaced',
   },
@@ -428,7 +430,7 @@ export default function Criar() {
     const model = brand?.models.find((m) => m.id === modelId)?.name;
     const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name, barraYear].filter(Boolean).join(' ');
     if (kind === 'barra') return ['Barra', b, model, year].filter(Boolean).join(' · ');
-    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? conditionLabels[attrs.condition] : ''].filter(Boolean).join(' · ');
+    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : attrs.length_cm ? `${attrs.length_cm} cm` : '', year, attrs.condition ? conditionLabels[attrs.condition] : ''].filter(Boolean).join(' · ');
     return kind === 'kit' ? (base ? `${base} + ${bmBarra || 'Barra'}` : '') : base;
   }, [brand, modelId, barraBrand, barraModelId, attrs, year, barraYear, kind, conditionLabels]);
 

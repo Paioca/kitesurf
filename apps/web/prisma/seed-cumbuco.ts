@@ -137,14 +137,19 @@ async function main() {
         create: { phone, name: r.seller_name || 'Vendedor', phoneVerified: true, phoneCountry: phone.startsWith('+55') ? 'BR' : 'INT' },
       });
 
-      const title = [r.brand, r.model, type === 'barra' ? (r.line_length_m && `${r.line_length_m} m`) : (r.size_m2 && `${r.size_m2} m²`), r.year, isKit && '+ Barra'].filter(Boolean).join(' · ') || cat.namePt;
+      // Dimensão primária por categoria: m² (kite/wing) OU cm (prancha). Só a preenchida
+      // entra — Number(undefined) viraria NaN (JSON inválido) e o título sairia sem tamanho.
+      const dim = r.size_m2 ? `${r.size_m2} m²` : r.length_cm ? `${r.length_cm} cm` : '';
+      const title = [r.brand, r.model, type === 'barra' ? (r.line_length_m && `${r.line_length_m} m`) : dim, r.year, isKit && '+ Barra'].filter(Boolean).join(' · ') || cat.namePt;
       if (await db.listing.findFirst({ where: { userId: seller.id, title } })) { console.log(`  SKIP ${tag} (já existe)`); skip++; continue; }
 
       const attributes = type === 'barra'
         ? { line_length_m: Number(r.line_length_m), condition: r.condition }
         : {
-            size_m2: Number(r.size_m2), condition: r.condition,
-            // opcionais de wing (só entram se preenchidos; inofensivos p/ kite)
+            condition: r.condition,
+            ...(r.size_m2 ? { size_m2: Number(r.size_m2) } : {}),
+            ...(r.length_cm ? { length_cm: Number(r.length_cm) } : {}),
+            // opcionais de wing (só entram se preenchidos; inofensivos p/ outras)
             ...(r.controle ? { controle: r.controle } : {}),
             ...(r.janela ? { janela: r.janela } : {}),
           };
