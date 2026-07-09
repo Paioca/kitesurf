@@ -56,6 +56,7 @@ const CONDITION: Record<string, string> = {
   semi_otimo: 'Seminovo, em ótimo estado', semi_desgaste: 'Seminovo, com sinais de uso',
   usado_desgaste: 'Usado, com desgaste visível',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos',
+  nova: 'Nova', seminova: 'Seminova', usada: 'Usada', // prancha (feminino)
   zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado', original: 'Originais', ja_trocadas: 'Trocadas',
 };
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };

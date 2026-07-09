@@ -72,6 +72,7 @@ const COND_LABEL: Record<string, string> = {
   novo_lacrado: 'Novo, lacrado', novo_10x: 'Pouco usado', semi_otimo: 'Seminovo, em ótimo estado',
   semi_desgaste: 'Seminovo, com sinais de uso', usado_desgaste: 'Usado, com desgaste visível',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+  nova: 'Nova', seminova: 'Seminova', usada: 'Usada', com_reparos: 'Com reparos', // prancha (feminino)
 };
 const COND_ORDER = Object.keys(COND_LABEL);
 const BLADDER_LABEL: Record<string, string> = { zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado' };
@@ -144,7 +145,7 @@ function toCard(l: any, persp: Perspective): Card {
     ship: !!l.shippable,
     city: l.city,
     sizeM2,
-    sizeLabel: sizeM2 ? `${sizeM2} m²` : a.harness_size || a.bar_size || a.length_cm || l.category?.namePt || 'Não informado',
+    sizeLabel: sizeM2 ? `${sizeM2} m²` : a.length_cm ? `${a.length_cm} cm` : a.harness_size || a.bar_size || l.category?.namePt || 'Não informado',
     condLabel: a.condition ? (COND_LABEL[a.condition] ?? a.condition) : null,
     repair: Number(a.repairs_count ?? 0) > 0,
     includesBar: l.hasBarra === true && l.barraSoldAt == null, // a barra avulsa do kit já saiu? sem badge "+ Barra"

@@ -8,6 +8,9 @@ const CONDITION = ['novo', 'seminovo', 'bom', 'usado', 'com_reparos'];
 // Condição do kite — focada no estado do tecido (sem "com reparo"):
 const KITE_CONDITION = ['novo_lacrado', 'novo_10x', 'semi_otimo', 'semi_desgaste', 'usado_desgaste'];
 const BARRA_CONDITION = ['novo', 'seminovo', 'bom', 'usado'];
+// Condição de PRANCHA (feminino, decisão do dono 2026-07-07). "com_reparos" fica — ding
+// reparado é o dia a dia de prancha usada.
+const BOARD_CONDITION = ['nova', 'seminova', 'usada', 'com_reparos'];
 
 const CATEGORIES = [
   {
@@ -43,18 +46,18 @@ const CATEGORIES = [
     },
   },
   {
+    // Prancha bidirecional. Standalone. Ficha enxuta (decisão do dono 2026-07-07, mesmo
+    // precedente do wing): só comprimento + condição — a validação do form exige todos os
+    // campos do schema, então largura/quilhas/straps travavam a publicação; vão na descrição.
     slug: 'twin-tip',
     namePt: 'Twin Tip',
     nameEn: 'Twin Tip',
-    active: false,
+    active: false, // só vale na criação (upsert não toca active); flip é operacional
     attributeSchema: {
       required: ['length_cm', 'condition'],
       properties: {
-        length_cm: { type: 'number', label: 'Comprimento (cm)' },
-        width_cm: { type: 'number', label: 'Largura (cm)' },
-        condition: { type: 'string', enum: CONDITION },
-        with_fins: { type: 'boolean', label: 'Com quilhas' },
-        with_pads: { type: 'boolean', label: 'Com straps/pads' },
+        length_cm: { type: 'number', label: 'Comprimento (cm)', min: 100, max: 200, step: 1 },
+        condition: { type: 'string', label: 'Condição', enum: BOARD_CONDITION },
       },
     },
   },
@@ -294,6 +297,22 @@ const WING_BRANDS: Record<string, string[]> = {
   'Ocean Rodeo': ['Glide', 'Glide A-Series', 'Glide HL-Series', 'Glide Pro Dacron'],
 };
 
+// Marca -> modelos de TWIN TIP (prancha bidirecional; categoria twin-tip). Rascunho do
+// plano (docs/PLANO-CATEGORIA-PRANCHA.md) — corte final do dono antes da ativação.
+// REGRA: nunca repetir nome de modelo dentro da mesma marca entre categorias (o upsert
+// re-apontaria a categoria do homônimo). Rascunho verificado sem colisão em 2026-07-07.
+const TWIN_TIP_BRANDS: Record<string, string[]> = {
+  Duotone: ['Jaime', 'Select', 'Team Series', 'Gonzales'],
+  'North Kiteboarding': ['Atmos', 'Prime', 'Trace'],
+  Cabrinha: ['Ace', 'Xcaliber', 'Spectrum'],
+  CORE: ['Fusion', 'Choice', 'Bolt'],
+  'F-One': ['Trax', 'Magnet'],
+  Slingshot: ['Misfit', 'Refraction'],
+  Naish: ['Motion', 'Orbit'],
+  Ozone: ['Base', 'Code'],
+  Nobile: ['NHP', 'Flying Carpet', 'Fifty50'],
+};
+
 async function main() {
   console.log('Seeding taxonomia...');
 
@@ -367,12 +386,15 @@ async function main() {
 
   const wing = await prisma.category.findUnique({ where: { slug: 'wing' } });
   if (!wing) throw new Error('Categoria "wing" não encontrada — seed de categorias falhou.');
+  const twinTip = await prisma.category.findUnique({ where: { slug: 'twin-tip' } });
+  if (!twinTip) throw new Error('Categoria "twin-tip" não encontrada — seed de categorias falhou.');
 
   const kiteModels = await seedModels(BRANDS, kite.id);
   const barModels = await seedModels(BAR_BRANDS, barra.id);
   const wingModels = await seedModels(WING_BRANDS, wing.id);
+  const ttModels = await seedModels(TWIN_TIP_BRANDS, twinTip.id);
   const brandCount = await prisma.brand.count();
-  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra, ${wingModels} modelos de wing`);
+  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra, ${wingModels} modelos de wing, ${ttModels} modelos de twin tip`);
   console.log('Seed concluído.');
 }
 
