@@ -999,6 +999,11 @@ function Fields({
                 else if (spec.min != null && n < spec.min) err = `${t.min} ${spec.min}.`;
                 else if (spec.max != null && n > spec.max) err = `${t.max} ${spec.max}.`;
               }
+              // Campo ciente do schema: step>=1 = INTEIRO (ex.: comprimento em cm, até `intDigits`
+              // dígitos); senão DECIMAL de 2 díg + 1 casa (tamanho de kite/barra: 9, 8.1).
+              const isInt = spec.step != null && Number(spec.step) >= 1;
+              const intDigits = Math.max(2, String(Math.floor(Number(spec.max) || 0)).length);
+              const numExample = spec.min != null && spec.max != null ? Math.round((Number(spec.min) + Number(spec.max)) / 2) : null;
               return (
                 <>
                   <input
@@ -1006,19 +1011,22 @@ function Fields({
                     type="text"
                     inputMode="decimal"
                     value={values[key] ?? ''}
-                    placeholder={key === 'size_m2' ? t.decimalPlaceholder : spec.min != null && spec.max != null ? `${t.decimalPlaceholder} (${t.between} ${spec.min} - ${spec.max})` : t.decimalPlaceholder}
+                    placeholder={key === 'size_m2' ? t.decimalPlaceholder : isInt && numExample != null ? `Ex.: ${numExample}` : spec.min != null && spec.max != null ? `${t.decimalPlaceholder} (${t.between} ${spec.min} - ${spec.max})` : t.decimalPlaceholder}
                     onChange={(e) => {
-                      // máscara: vírgula→ponto, só dígitos; máx. 2 dígitos inteiros + 1 decimal
-                      // (tamanho de kite/barra nunca passa de 2 dígitos) — impede 3º dígito.
+                      // máscara ciente do schema: vírgula→ponto, só dígitos. Inteiro (cm) aceita
+                      // até `intDigits` (3 p/ prancha); decimal (kite/barra) 2 díg + 1 casa.
+                      // Antes era fixo em 2 dígitos e cortava "140"→"14" na prancha.
                       let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
                       const dot = v.indexOf('.');
-                      if (dot === -1) v = v.slice(0, 2);
-                      else v = v.slice(0, dot).slice(0, 2) + '.' + v.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                      if (isInt || dot === -1) v = v.replace(/\./g, '').slice(0, intDigits);
+                      else v = v.slice(0, dot).slice(0, intDigits) + '.' + v.slice(dot + 1).replace(/\./g, '').slice(0, 1);
                       onChange(key, v);
                     }}
                   />
                   {err ? <ErrorText>{err}</ErrorText> : key === 'size_m2' ? (
                     <Helper>{t.decimalHelper}</Helper>
+                  ) : isInt ? (
+                    spec.min != null && spec.max != null ? <Helper>{`${t.between} ${spec.min}–${spec.max}.`}</Helper> : null
                   ) : spec.min != null && spec.max != null ? (
                     <Helper>{t.decimalRangeHelper(spec.min, spec.max)}</Helper>
                   ) : null}
