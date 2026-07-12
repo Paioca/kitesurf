@@ -33,8 +33,9 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   // OG/preview só pra anúncio publicado — não vaza título/preço de rascunho/pausado.
   if (!l || !isPubliclyVisible(l.status)) return { title: 'Anúncio não encontrado | Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
-  const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
-  const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
+  // dimensão primária: m² (kite/wing) ou cm (prancha)
+  const dim = a.size_m2 != null ? ` ${a.size_m2} m²` : a.length_cm != null ? ` ${a.length_cm} cm` : '';
+  const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${dim}`.trim();
   const price = formatBRL(l.price);
   const title = `${name} | ${price} · Kitetropos`;
   const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados na Kitetropos.`;
@@ -100,12 +101,14 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const barraModelName = (l as any).barraModel?.name ?? null;
   const barraName = [barraBrandName, barraModelName].filter(Boolean).join(' ') || 'Barra do kit';
   const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
-  const title = `${l.model?.name ?? l.title}${sizeM2 ? ` ${sizeM2}` : ''}`;
+  const lengthCm = a.length_cm != null ? `${a.length_cm} cm` : null; // dimensão de prancha
+  const primaryDim = sizeM2 ?? lengthCm;
+  const title = `${l.model?.name ?? l.title}${primaryDim ? ` ${primaryDim}` : ''}`;
   const memberSince = l.user?.createdAt ? new Date(l.user.createdAt).getFullYear() : null;
   const initials = (l.user?.name ?? '?').slice(0, 2).toUpperCase();
 
   const attrs: { k: string; v: string }[] = [];
-  if (sizeM2) attrs.push({ k: 'Tamanho', v: sizeM2 });
+  if (primaryDim) attrs.push({ k: sizeM2 ? 'Tamanho' : 'Comprimento', v: primaryDim });
   if (a.condition) attrs.push({ k: 'Estado', v: CONDITION[a.condition] ?? a.condition });
   if (l.year) attrs.push({ k: 'Ano', v: String(l.year) });
   if (l.brand?.name) attrs.push({ k: 'Marca', v: l.brand.name });
@@ -161,7 +164,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (l.brand?.name) ficha.push({ k: 'Marca', v: l.brand.name });
   if (l.model?.name) ficha.push({ k: 'Modelo', v: l.model.name });
   if (l.year) ficha.push({ k: 'Ano', v: String(l.year) });
-  if (sizeM2) ficha.push({ k: 'Tamanho', v: sizeM2 });
+  if (primaryDim) ficha.push({ k: sizeM2 ? 'Tamanho' : 'Comprimento', v: primaryDim });
   if (a.condition) ficha.push({ k: 'Condição', v: CONDITION[a.condition] ?? a.condition });
   if (a.microfuros != null) ficha.push({ k: 'Microfuros', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
   if (a.reparos != null) ficha.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
