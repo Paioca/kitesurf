@@ -1,106 +1,17 @@
 import 'server-only';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import { PublicError } from './http';
 import { db } from './db';
+import { r2Put, r2PublicHost, r2KeyFromPublicUrl, r2ListAll, r2DeleteKeys } from './r2';
 
-const BUCKET = process.env.SUPABASE_BUCKET ?? 'listings';
 const MAX_BYTES = 12 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
-let client: SupabaseClient | null = null;
-function supabase(): SupabaseClient {
-  if (client) return client;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY não configurados.');
-  client = createClient(url, key, { auth: { persistSession: false } });
-  return client;
-}
-
-// Salva o buffer já processado. `format` define extensão + content-type — WebP
-// corta ~25-35% dos bytes vs JPEG na mesma qualidade, com suporte universal nos
-// browsers atuais (e os anúncios são servidos direto do Supabase via <img>, então
-// o content-type correto basta — sem depender do Image Optimizer da Vercel).
-async function save(buffer: Buffer, format: 'webp' | 'jpeg' = 'webp'): Promise<string> {
-  const ext = format === 'webp' ? 'webp' : 'jpg';
-  const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase()
-    .storage.from(BUCKET)
-    .upload(path, buffer, { contentType: `image/${format}`, upsert: false });
-  if (error) throw new Error(`Upload Supabase falhou: ${error.message}`); // interno → vira genérico + Sentry
-  return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
-export interface ProcessedImage {
-  url: string;
-  thumbUrl: string;
-}
-
-// Caminho dentro do bucket a partir da URL pública (ou null se não for nossa).
-function pathFromPublicUrl(u: string): string | null {
-  const marker = `/storage/v1/object/public/${BUCKET}/`;
-  const i = u.indexOf(marker);
-  return i === -1 ? null : u.slice(i + marker.length);
-}
-
-export type OrphanResult = { scanned: number; referenced: number; orphans: number; deleted: number; sample: string[] };
-
-// Acha (e opcionalmente apaga) objetos do bucket que NENHUM registro referencia
-// (ListingImage.url/thumbUrl + User.avatarUrl). Report-only por padrão; só apaga com
-// delete=true, e mesmo assim respeita uma carência (não toca em upload recente que
-// ainda não foi salvo no banco). Loga tudo — sem corte silencioso.
-export async function purgeOrphanImages(opts: { delete?: boolean; graceHours?: number } = {}): Promise<OrphanResult> {
-  const sb = supabase();
-  const cutoff = Date.now() - (opts.graceHours ?? 24) * 3600 * 1000;
-
-  const [imgs, users] = await Promise.all([
-    db.listingImage.findMany({ select: { url: true, thumbUrl: true } }),
-    db.user.findMany({ where: { avatarUrl: { not: null } }, select: { avatarUrl: true } }),
-  ]);
-  const referenced = new Set<string>();
-  const add = (u?: string | null) => { const p = u ? pathFromPublicUrl(u) : null; if (p) referenced.add(p); };
-  imgs.forEach((i) => { add(i.url); add(i.thumbUrl); });
-  users.forEach((u) => add(u.avatarUrl));
-
-  // Lista o bucket: pastas (ano) no topo, arquivos dentro de cada uma.
-  let scanned = 0;
-  const orphanPaths: string[] = [];
-  const folders = await sb.storage.from(BUCKET).list('', { limit: 1000 });
-  for (const folder of folders.data ?? []) {
-    if (folder.id !== null) continue; // null id = pasta
-    let offset = 0;
-    for (;;) {
-      const page = await sb.storage.from(BUCKET).list(folder.name, { limit: 1000, offset });
-      const files = page.data ?? [];
-      if (!files.length) break;
-      for (const f of files) {
-        if (f.id === null) continue;
-        scanned++;
-        const path = `${folder.name}/${f.name}`;
-        const createdMs = f.created_at ? new Date(f.created_at).getTime() : 0;
-        if (!referenced.has(path) && createdMs < cutoff) orphanPaths.push(path);
-      }
-      if (files.length < 1000) break;
-      offset += files.length;
-    }
-  }
-
-  let deleted = 0;
-  if (opts.delete && orphanPaths.length) {
-    // remove em lotes de 100
-    for (let i = 0; i < orphanPaths.length; i += 100) {
-      const batch = orphanPaths.slice(i, i + 100);
-      const { error } = await sb.storage.from(BUCKET).remove(batch);
-      if (!error) deleted += batch.length;
-    }
-  }
-  return { scanned, referenced: referenced.size, orphans: orphanPaths.length, deleted, sample: orphanPaths.slice(0, 10) };
-}
-
-// Host oficial do storage (derivado do SUPABASE_URL).
-function officialImageHost(): string | null {
+// Host EXATO do storage LEGADO do Supabase. As fotos migraram pro R2 (egress zero),
+// mas URLs antigas podem sobreviver no banco durante a transição — a allowlist continua
+// aceitando este host até a migração ser confirmada e o bucket antigo apagado.
+function legacySupabaseHost(): string | null {
   const u = process.env.SUPABASE_URL;
   if (!u) return null;
   try {
@@ -110,9 +21,69 @@ function officialImageHost(): string | null {
   }
 }
 
-// true só se a URL é https, aponta pro host do NOSSO Supabase e está no caminho
-// público de storage. Bloqueia o cliente de persistir URL de imagem/avatar
-// apontando pra fora (host externo, tracker, payload de CSS injection).
+// Salva o buffer já processado no R2. `format` define extensão + content-type — WebP
+// corta ~25-35% dos bytes vs JPEG na mesma qualidade, com suporte universal nos
+// browsers atuais (e os anúncios são servidos direto via <img>, então o content-type
+// correto basta — sem depender do Image Optimizer da Vercel).
+async function save(buffer: Buffer, format: 'webp' | 'jpeg' = 'webp'): Promise<string> {
+  const ext = format === 'webp' ? 'webp' : 'jpg';
+  const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
+  try {
+    // r2Put aplica cacheControl de 1 ano — nomes únicos (UUID) são imutáveis, então o
+    // browser/CDN cacheia "pra sempre" sem risco de foto velha.
+    return await r2Put(path, buffer, `image/${format}`);
+  } catch (e) {
+    throw new Error(`Upload R2 falhou: ${(e as Error).message}`); // interno → vira genérico + Sentry
+  }
+}
+
+export interface ProcessedImage {
+  url: string;
+  thumbUrl: string;
+}
+
+export type OrphanResult = { scanned: number; referenced: number; orphans: number; deleted: number; sample: string[] };
+
+// Acha (e opcionalmente apaga) objetos do bucket R2 que NENHUM registro referencia
+// (ListingImage.url/thumbUrl + User.avatarUrl). Report-only por padrão; só apaga com
+// delete=true, e mesmo assim respeita uma carência (não toca em upload recente que
+// ainda não foi salvo no banco). Loga tudo — sem corte silencioso.
+export async function purgeOrphanImages(opts: { delete?: boolean; graceHours?: number } = {}): Promise<OrphanResult> {
+  const cutoff = Date.now() - (opts.graceHours ?? 24) * 3600 * 1000;
+
+  const [imgs, users] = await Promise.all([
+    db.listingImage.findMany({ select: { url: true, thumbUrl: true } }),
+    db.user.findMany({ where: { avatarUrl: { not: null } }, select: { avatarUrl: true } }),
+  ]);
+  const referenced = new Set<string>();
+  const add = (u?: string | null) => { const k = u ? r2KeyFromPublicUrl(u) : null; if (k) referenced.add(k); };
+  imgs.forEach((i) => { add(i.url); add(i.thumbUrl); });
+  users.forEach((u) => add(u.avatarUrl));
+
+  // Lista todas as chaves do bucket R2 (ano/uuid.ext). Órfão = não referenciado e
+  // criado ANTES da carência (protege upload recém-migrado cujo banco ainda não casou).
+  const objects = await r2ListAll();
+  let scanned = 0;
+  const orphanKeys: string[] = [];
+  for (const o of objects) {
+    if (!o.Key) continue;
+    scanned++;
+    const createdMs = o.LastModified ? o.LastModified.getTime() : 0;
+    if (!referenced.has(o.Key) && createdMs < cutoff) orphanKeys.push(o.Key);
+  }
+
+  let deleted = 0;
+  if (opts.delete && orphanKeys.length) {
+    deleted = await r2DeleteKeys(orphanKeys);
+  }
+  return { scanned, referenced: referenced.size, orphans: orphanKeys.length, deleted, sample: orphanKeys.slice(0, 10) };
+}
+
+// true só se a URL é https e aponta pra um host oficial NOSSO. Bloqueia o cliente de
+// persistir URL de imagem/avatar apontando pra fora (host externo, tracker, payload de
+// CSS injection). Aceita dois hosts durante a transição:
+//   - R2 (atual): domínio público do bucket — qualquer caminho de objeto (é nosso).
+//   - Supabase (legado): host exato + caminho público de storage.
 export function isOfficialImageUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   // Sem caracteres que quebrem o url("...") do CSS onde a URL é interpolada
@@ -125,9 +96,14 @@ export function isOfficialImageUrl(value: unknown): boolean {
     return false;
   }
   if (url.protocol !== 'https:') return false;
-  const host = officialImageHost();
-  if (!host || url.hostname !== host) return false;
-  return url.pathname.startsWith('/storage/v1/object/public/');
+
+  const r2host = r2PublicHost();
+  if (r2host && url.hostname === r2host) return true;
+
+  const sbHost = legacySupabaseHost();
+  if (sbHost && url.hostname === sbHost && url.pathname.startsWith('/storage/v1/object/public/')) return true;
+
+  return false;
 }
 
 // Valida, REMOVE EXIF/GPS (sharp descarta metadados), resize + thumbnail.

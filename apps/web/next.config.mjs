@@ -15,6 +15,16 @@ const supabaseHost = (() => {
   }
 })();
 
+// Host público do Cloudflare R2 (domínio custom ou r2.dev) — destino atual das fotos
+// (egress zero). Derivado de R2_PUBLIC_BASE_URL; null se ainda não configurado.
+const r2Host = (() => {
+  try {
+    return new URL(process.env.R2_PUBLIC_BASE_URL).hostname;
+  } catch {
+    return null;
+  }
+})();
+
 // A CSP é montada por request no proxy.ts (script-src com nonce, ENFORCED — Fase 2).
 // NÃO declarar Content-Security-Policy aqui: na Vercel um header estático de CSP é injetado
 // no request que o render lê pra extrair o nonce; uma CSP loose aqui sobrescreveria a estrita
@@ -63,7 +73,9 @@ const nextConfig = {
   images: {
     minimumCacheTTL: 86400, // 1 dia: corta re-otimização repetida (mitiga DoS no optimizer)
     remotePatterns: [
-      // storage oficial das fotos — host EXATO + caminho público (não mais `*.supabase.co`)
+      // destino atual das fotos: Cloudflare R2 (egress zero), host público EXATO
+      ...(r2Host ? [{ protocol: 'https', hostname: r2Host }] : []),
+      // storage LEGADO (Supabase) — host EXATO + caminho público (URLs antigas na transição)
       { protocol: 'https', hostname: supabaseHost, pathname: '/storage/v1/object/public/**' },
       // TODO(3.4b): remover junto com a purga dos dados de teste (seed usa estes hosts).
       { protocol: 'https', hostname: 'i.pravatar.cc' }, // avatares de seed
