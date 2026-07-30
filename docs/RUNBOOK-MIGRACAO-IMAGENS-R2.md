@@ -39,40 +39,25 @@ R2_PUBLIC_BASE_URL=https://img.kitetropos.com   # ou o https://pub-xxxx.r2.dev, 
 
 Manter `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (a migração lê deles; podem sair depois).
 
-## Parte 3 — Migrar os dados
+## Parte 3 — As fotos ANTIGAS
 
-> **Quando:** a migração *baixa* as fotos do Supabase uma vez (~<1 GB = também é egress). Se
-> o Supabase estiver bloqueando saída (imagens quebradas no site), rodar **na virada do
-> ciclo do free**, quando a cota reseta. Fazer a migração ANTES de o egress queimar de novo.
+> **Contexto (2026-07-30):** o projeto Supabase está `restricted` por egress e **bloqueia
+> até a API com service_role** — não dá pra baixar as fotos de lá antes do reset do ciclo
+> (20/ago) sem upgrade pago. Storage total = ~55 MB.
 
-### Opção A (recomendada p/ dono não-técnico) — endpoint dentro da Vercel
+Duas formas de recuperar as fotos antigas:
 
-Roda no próprio ambiente da Vercel, que já tem as credenciais. Não precisa de nada local.
-
-1. Na Vercel, adicionar env `MIGRATE_SECRET` = um valor secreto que VOCÊ escolhe (ex.:
-   `troca-isto-123`). Redeploy pra ativar.
-2. Chamar o endpoint (troque `SEU_TOKEN` e o domínio). Dry-run primeiro:
-
-```bash
-# dry-run: só conta (não grava)
-curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=copy&token=SEU_TOKEN"
-# copiar objetos de fato (repetir enquanto "remaining" > 0)
-curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=copy&apply=true&token=SEU_TOKEN"
-# reescrever as URLs no banco (só depois de copiar tudo)
-curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=db&apply=true&token=SEU_TOKEN"
-```
-
-3. Depois de confirmado, **remover `MIGRATE_SECRET`** da Vercel (fecha o endpoint).
-
-### Opção B — script local (precisa das credenciais de prod na máquina)
+- **Re-upload manual (recomendado no nosso caso):** como o volume é pequeno, basta editar
+  cada anúncio no site (já com o código R2 no ar) e **re-subir as fotos** — elas vão direto
+  pro R2. Não depende do Supabase nem de esperar 20/ago.
+- **Migração em massa (só se um dia precisar):** com o Supabase servindo (após 20/ago ou com
+  upgrade), rodar o script local — precisa das credenciais de prod num `.env.migration`:
 
 ```bash
 cd apps/web
 node --env-file=.env.migration scripts/migrate-images-to-r2.mjs            # dry-run
-node --env-file=.env.migration scripts/migrate-images-to-r2.mjs --apply    # executa
+node --env-file=.env.migration scripts/migrate-images-to-r2.mjs --apply    # executa (idempotente)
 ```
-
-Ambas são idempotentes. Ordem: copiar objetos → reescrever o banco.
 
 ## Parte 4 — Deploy e conferência
 
