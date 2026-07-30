@@ -14,7 +14,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
-import { createClient } from '@supabase/supabase-js';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PrismaClient, ListingStatus, Prisma } from '@prisma/client';
 
 const db = new PrismaClient();
@@ -32,18 +32,25 @@ async function loadEnv() {
   } catch {}
 }
 
-let _sb: ReturnType<typeof createClient> | null = null;
-function sb() {
-  if (!_sb) _sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
-  return _sb;
+// Storage = Cloudflare R2 (egress zero), mesmo destino do app. Cliente S3-compatible.
+let _r2: S3Client | null = null;
+function r2() {
+  if (!_r2) _r2 = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID!, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY! },
+  });
+  return _r2;
 }
-const BUCKET = () => process.env.SUPABASE_BUCKET ?? 'listings';
+const R2_BUCKET = () => process.env.R2_BUCKET ?? 'listings';
+const R2_BASE = () => process.env.R2_PUBLIC_BASE_URL!.replace(/\/+$/, '');
 
 async function save(buf: Buffer): Promise<string> {
   const p = `${new Date().getFullYear()}/${randomUUID()}.jpg`;
-  const { error } = await sb().storage.from(BUCKET()).upload(p, buf, { contentType: 'image/jpeg', upsert: false });
-  if (error) throw new Error(`upload: ${error.message}`);
-  return sb().storage.from(BUCKET()).getPublicUrl(p).data.publicUrl;
+  await r2().send(new PutObjectCommand({
+    Bucket: R2_BUCKET(), Key: p, Body: buf, ContentType: 'image/jpeg', CacheControl: '31536000',
+  }));
+  return `${R2_BASE()}/${p}`;
 }
 
 // resize main (1600) + thumb (400), strip EXIF (sharp descarta metadados).
