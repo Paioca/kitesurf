@@ -12,7 +12,7 @@ import { SPOT_LOCATIONS, STATE_OPTIONS } from '../lib/locations';
 type Img = { url: string; thumbUrl?: string | null; component?: 'kite' | 'barra' | null };
 type Spec = { type: string; enum?: (string | number)[]; label?: string };
 type Schema = { required?: string[]; properties?: Record<string, Spec> };
-const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos' };
+const CONDITION_LABEL: Record<string, string> = { novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos', nova: 'Nova', seminova: 'Seminova', usada: 'Usada' };
 const MIN_PRICE = 100; // R$100 (MIN_LISTING_PRICE_CENTS = 10000) — espelha a criação e o backend
 
 // Ficha completa = todos os campos do schema preenchidos (mesma regra do cadastro,

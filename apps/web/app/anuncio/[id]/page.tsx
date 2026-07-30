@@ -33,16 +33,19 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   // OG/preview só pra anúncio publicado — não vaza título/preço de rascunho/pausado.
   if (!l || !isPubliclyVisible(l.status)) return { title: 'Anúncio não encontrado | Kitetropos' };
   const a = (l.attributes ?? {}) as Record<string, any>;
-  const sizeM2 = a.size_m2 != null ? ` ${a.size_m2} m²` : '';
-  const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${sizeM2}`.trim();
+  // dimensão primária: m² (kite/wing) ou cm (prancha)
+  const dim = a.size_m2 != null ? ` ${a.size_m2} m²` : a.length_cm != null ? ` ${a.length_cm} cm` : '';
+  const name = `${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}${dim}`.trim();
   const price = formatBRL(l.price);
   const title = `${name} | ${price} · Kitetropos`;
   const description = `${l.category?.namePt ?? 'Equipamento de kite'} à venda em ${l.city}${l.spot ? ` (${l.spot})` : ''} por ${price}. Telefone verificado e anúncios estruturados na Kitetropos.`;
-  const img = (l.images ?? [])[0]?.url;
-  const images = img ? [img] : undefined;
+  // Card composto (foto + preço + spot) renderizado em /api/og/anuncio/[id].
+  // Dimensões explícitas ajudam o crawler do WhatsApp a montar o card grande.
+  const images = [{ url: appUrl(`/api/og/anuncio/${params.id}`), width: 1200, height: 630 }];
   return {
     title,
     description,
+    alternates: { canonical: `/anuncio/${params.id}` },
     openGraph: { title, description, type: 'website', images },
     twitter: { card: 'summary_large_image', title, description, images },
   };
@@ -54,6 +57,7 @@ const CONDITION: Record<string, string> = {
   semi_otimo: 'Seminovo, em ótimo estado', semi_desgaste: 'Seminovo, com sinais de uso',
   usado_desgaste: 'Usado, com desgaste visível',
   novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado', com_reparos: 'Com reparos',
+  nova: 'Nova', seminova: 'Seminova', usada: 'Usada', // prancha (feminino)
   zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado', original: 'Originais', ja_trocadas: 'Trocadas',
 };
 const pricePill: React.CSSProperties = { fontSize: 13.5, fontWeight: 700, color: color.ink, background: '#f1ece0', border: '1px solid #e3dcc9', padding: '7px 13px', borderRadius: 999 };
@@ -97,12 +101,14 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   const barraModelName = (l as any).barraModel?.name ?? null;
   const barraName = [barraBrandName, barraModelName].filter(Boolean).join(' ') || 'Barra do kit';
   const sizeM2 = a.size_m2 != null ? `${a.size_m2} m²` : null;
-  const title = `${l.model?.name ?? l.title}${sizeM2 ? ` ${sizeM2}` : ''}`;
+  const lengthCm = a.length_cm != null ? `${a.length_cm} cm` : null; // dimensão de prancha
+  const primaryDim = sizeM2 ?? lengthCm;
+  const title = `${l.model?.name ?? l.title}${primaryDim ? ` ${primaryDim}` : ''}`;
   const memberSince = l.user?.createdAt ? new Date(l.user.createdAt).getFullYear() : null;
   const initials = (l.user?.name ?? '?').slice(0, 2).toUpperCase();
 
   const attrs: { k: string; v: string }[] = [];
-  if (sizeM2) attrs.push({ k: 'Tamanho', v: sizeM2 });
+  if (primaryDim) attrs.push({ k: sizeM2 ? 'Tamanho' : 'Comprimento', v: primaryDim });
   if (a.condition) attrs.push({ k: 'Estado', v: CONDITION[a.condition] ?? a.condition });
   if (l.year) attrs.push({ k: 'Ano', v: String(l.year) });
   if (l.brand?.name) attrs.push({ k: 'Marca', v: l.brand.name });
@@ -158,7 +164,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   if (l.brand?.name) ficha.push({ k: 'Marca', v: l.brand.name });
   if (l.model?.name) ficha.push({ k: 'Modelo', v: l.model.name });
   if (l.year) ficha.push({ k: 'Ano', v: String(l.year) });
-  if (sizeM2) ficha.push({ k: 'Tamanho', v: sizeM2 });
+  if (primaryDim) ficha.push({ k: sizeM2 ? 'Tamanho' : 'Comprimento', v: primaryDim });
   if (a.condition) ficha.push({ k: 'Condição', v: CONDITION[a.condition] ?? a.condition });
   if (a.microfuros != null) ficha.push({ k: 'Microfuros', v: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' });
   if (a.reparos != null) ficha.push({ k: 'Reparos', v: Number(a.reparos) > 0 ? String(a.reparos) : 'Nenhum' });
@@ -171,13 +177,25 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
   // publicamente visível. Carimba o nonce da CSP (o proxy expõe em x-nonce) p/ não ser bloqueado.
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   const ldCond = typeof a.condition === 'string' && /(novo|lacrad)/.test(a.condition) ? 'NewCondition' : 'UsedCondition';
+  const ldProps = [
+    sizeM2 && { '@type': 'PropertyValue', name: 'Tamanho', value: sizeM2 },
+    a.condition && { '@type': 'PropertyValue', name: 'Condição', value: CONDITION[a.condition] ?? a.condition },
+    l.year && { '@type': 'PropertyValue', name: 'Ano', value: String(l.year) },
+    l.spot && { '@type': 'PropertyValue', name: 'Spot', value: `${l.city} (${l.spot})` },
+    a.bladder && { '@type': 'PropertyValue', name: 'Bladder', value: CONDITION[a.bladder] ?? a.bladder },
+    a.microfuros != null && { '@type': 'PropertyValue', name: 'Microfuros', value: Number(a.microfuros) > 0 ? String(a.microfuros) : 'Nenhum' },
+  ].filter(Boolean);
   const productLd = isPubliclyVisible(l.status)
     ? {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: [l.brand?.name, title].filter(Boolean).join(' '),
+        description: visitSummary,
+        ...(l.category?.namePt ? { category: l.category.namePt } : {}),
+        ...(l.model?.name ? { model: l.model.name } : {}),
         ...(photos.length ? { image: photos.slice(0, 5) } : {}),
         ...(l.brand?.name ? { brand: { '@type': 'Brand', name: l.brand.name } } : {}),
+        ...(ldProps.length ? { additionalProperty: ldProps } : {}),
         offers: {
           '@type': 'Offer',
           price: (l.price / 100).toFixed(2),
@@ -246,6 +264,7 @@ export default async function AnuncioPage(props: { params: Promise<{ id: string 
           {isPubliclyVisible(l.status) && (
             <div style={{ marginBottom: 24 }}>
               <ShareButton
+                listingId={l.id}
                 url={appUrl(`/anuncio/${l.id}`)}
                 title={[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')}
                 text={`Olha esse ${l.category?.namePt ?? 'equipamento'} na Kitetropos: ${[l.brand?.name, l.model?.name ?? l.title].filter(Boolean).join(' ')} — ${formatBRL(l.price)}`}

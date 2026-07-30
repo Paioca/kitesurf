@@ -60,7 +60,7 @@ async function main() {
 
   // ---- marcas ----
   const duotone = await brand('Duotone');
-  const core = await brand('Core');
+  const core = await brand('CORE'); // canônica (não recriar a legada "Core")
   const north = await brand('North');
   const cabrinha = await brand('Cabrinha');
   const fone = await brand('F-One');

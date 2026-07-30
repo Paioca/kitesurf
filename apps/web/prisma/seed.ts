@@ -8,6 +8,9 @@ const CONDITION = ['novo', 'seminovo', 'bom', 'usado', 'com_reparos'];
 // Condição do kite — focada no estado do tecido (sem "com reparo"):
 const KITE_CONDITION = ['novo_lacrado', 'novo_10x', 'semi_otimo', 'semi_desgaste', 'usado_desgaste'];
 const BARRA_CONDITION = ['novo', 'seminovo', 'bom', 'usado'];
+// Condição de PRANCHA (feminino, decisão do dono 2026-07-07). "com_reparos" fica — ding
+// reparado é o dia a dia de prancha usada.
+const BOARD_CONDITION = ['nova', 'seminova', 'usada', 'com_reparos'];
 
 const CATEGORIES = [
   {
@@ -43,18 +46,18 @@ const CATEGORIES = [
     },
   },
   {
+    // Prancha bidirecional. Standalone. Ficha enxuta (decisão do dono 2026-07-07, mesmo
+    // precedente do wing): só comprimento + condição — a validação do form exige todos os
+    // campos do schema, então largura/quilhas/straps travavam a publicação; vão na descrição.
     slug: 'twin-tip',
     namePt: 'Twin Tip',
     nameEn: 'Twin Tip',
-    active: false,
+    active: false, // só vale na criação (upsert não toca active); flip é operacional
     attributeSchema: {
       required: ['length_cm', 'condition'],
       properties: {
-        length_cm: { type: 'number', label: 'Comprimento (cm)' },
-        width_cm: { type: 'number', label: 'Largura (cm)' },
-        condition: { type: 'string', enum: CONDITION },
-        with_fins: { type: 'boolean', label: 'Com quilhas' },
-        with_pads: { type: 'boolean', label: 'Com straps/pads' },
+        length_cm: { type: 'number', label: 'Comprimento (cm)', min: 100, max: 200, step: 1 },
+        condition: { type: 'string', label: 'Condição', enum: BOARD_CONDITION },
       },
     },
   },
@@ -112,6 +115,24 @@ const CATEGORIES = [
       properties: {
         subtype: { type: 'string', label: 'Tipo (colete, leash, bomba, gancho...)' },
         condition: { type: 'string', enum: CONDITION },
+      },
+    },
+  },
+  {
+    // Wing (wing foil). Standalone — nunca vira "kit". Dimensão em m² como o kite, então
+    // reusa o filtro de tamanho e o rótulo de condição do kite (KITE_CONDITION = estado do
+    // tecido, que também vale pra wing). Nasce active:false — só liga com âncoras prontas.
+    slug: 'wing',
+    namePt: 'Wing',
+    nameEn: 'Wing',
+    active: false, // só vale na criação; em PROD foi ativada à mão em 2026-07-07 (upsert não toca active)
+    attributeSchema: {
+      // Ficha enxuta por decisão do dono (2026-07-07): só tamanho + condição.
+      // Detalhes (janela, controle/boom) vão na descrição livre do anúncio.
+      required: ['size_m2', 'condition'],
+      properties: {
+        size_m2: { type: 'number', label: 'Tamanho (m²)', min: 2, max: 9, step: 0.1 }, // wings ~2.5–8 m²
+        condition: { type: 'string', label: 'Condição', enum: KITE_CONDITION },
       },
     },
   },
@@ -246,21 +267,115 @@ const BAR_BRANDS: Record<string, string[]> = {
   Harlem: ['Force Control Bar', 'Lead Bar', 'Harlem Bar'],
 };
 
+// Marca -> modelos de WING (amarrados à categoria wing). Catálogo validado pelo dono
+// (2026-07-04). Normalizações de consistência com o catálogo existente:
+//  - "Core" -> "CORE" (marca canônica; senão recria a duplicata fundida em 2026-07-04).
+//  - "North" -> "North Kiteboarding" (é como o catálogo de kite grafa; senão viram 2 marcas
+//    "North" distintas na busca). Reavaliar se o dono quiser padronizar tudo pra "North".
+// Marcas novas (só de wing): Ensis, Armstrong, Takoon, FreeWing, GONG, KT, NeilPryde, PPC.
+const WING_BRANDS: Record<string, string[]> = {
+  Duotone: ['Unit', 'Unit SLS', 'Unit D/Lab', 'Slick', 'Slick SLS', 'Slick D/Lab', 'Ventis', 'Ventis D/Lab', 'Float', 'Echo'],
+  'North Kiteboarding': ['Nova', 'Nova Pro', 'Mode Pro', 'Mode Ultra', 'Loft Pro'],
+  Cabrinha: ['Mantis', 'Mantis Apex', 'Vision', 'Crosswing'],
+  'F-One': ['Strike', 'Strike CWC', 'Strike Aluula', 'Swing', 'Origin'],
+  Slingshot: ['SlingWing', 'SlingWing NXT', 'Javelin', 'Blaster', 'Dart'],
+  Naish: ['ADX', 'ADX Nvision', 'Atom', 'Neutron', 'Matador', 'Wing-Surfer'],
+  Ozone: ['Fly', 'Flow', 'Flux', 'Flux Ultra-X', 'Liteforce', 'Wasp'],
+  CORE: ['Halo', 'Halo Pro', 'Halo Pro LW'],
+  Reedin: ['SuperNatural', 'SuperNatural SSD', 'SuperWing', 'SuperWing X'],
+  Ensis: ['Score', 'Spin', 'Top Spin', 'Drive'],
+  Armstrong: ['A-Wing', 'A-Wing XPS', 'A-Wing XPS Mk II', 'X-Wing'],
+  Takoon: ['Wing', 'Wing Pro', 'Wing Ultra', 'VX', 'VX Pro'],
+  FreeWing: ['Air', 'Air Team', 'Nitro', 'Pro', 'N-Team'],
+  GONG: ['Droid', 'Neutra', 'Pulse', 'SuperPower', 'Plus'],
+  KT: ['Wing Air', 'Wing Air DD'],
+  Eleveight: ['WFS'],
+  Harlem: ['Pace'],
+  NeilPryde: ['Fly', 'Fly Pro', 'Fly SL', 'FireFly', 'FireFly Pro'],
+  RRD: ['Wind Wing', 'Air Wing', 'Air Wing School', 'Evolution Wing', 'Evolution Gold Wing', 'Pocket Wing'],
+  PPC: ['M1', 'M1-X', 'M1-L', 'M2', 'Vortex SDS', 'Sonic FDS'],
+  'Ocean Rodeo': ['Glide', 'Glide A-Series', 'Glide HL-Series', 'Glide Pro Dacron'],
+};
+
+// Marca -> modelos de TWIN TIP (prancha bidirecional; categoria twin-tip). Catálogo
+// VALIDADO PELO DONO (2026-07-08). Normalizações: "Core"->"CORE", "North"->"North
+// Kiteboarding" (consistência com o catálogo). Marcas novas: Lieuwe, Shinn, Carved,
+// Inverter, K-Jump, Blank Force, Navis, Windbra (BR).
+// REGRA: nunca repetir nome de modelo dentro da mesma marca entre categorias (o upsert
+// re-apontaria a categoria do homônimo). Verificado em 2026-07-08: EXCLUÍDOS por já
+// existirem como KITE no catálogo — Flysurfer 'Stoke' e Eleveight 'Commander' (pendente
+// decisão do dono se também são pranchas; se sim, diferenciar o nome).
+const TWIN_TIP_BRANDS: Record<string, string[]> = {
+  Duotone: ['Jaime', 'Jaime SLS', 'Select', 'Select SLS', 'Gonzales', 'Soleil', 'Soleil SLS', 'Spike', 'Spike SLS', 'Teamseries', 'Teamseries SLS', 'Gambler'],
+  'North Kiteboarding': ['Prime', 'Trace', 'Atmos', 'Atmos Pro', 'Atmos Ultra', 'Astra', 'Focus', 'Flare'],
+  Cabrinha: ['Spectrum', 'Stylus', 'Ace', 'Ace Apex', 'XCal', 'XCal Carbon', 'CBL'],
+  'F-One': ['Spark', 'Spark Carbon', 'TRAX', 'TRAX HRD Lite Tech', 'TRAX HRD Carbon', 'WTF?!', 'ONE', 'BIG ONE'],
+  CORE: ['Fusion', 'Choice', 'Bolt', 'Era'],
+  Ozone: ['Element', 'Code', 'Torque', 'Infinity', 'Rise', 'The Plank'],
+  Naish: ['Motion', 'Drive', 'Traverse', 'Traverse EJ', 'Monarch', 'Hero', 'Orbit', 'Alana', 'Stomp'],
+  Slingshot: ['Misfit', 'Formula', 'Asylum', 'Crisis', 'Refraction', 'Windsor', 'Vision'],
+  Reedin: ['KevPro', 'Super E', 'Good Day', 'Snackback'],
+  Airush: ['Switch', 'Switch Team', 'Apex', 'Apex Team', 'Livewire', 'Livewire Team', 'Diamond'],
+  Eleveight: ['Process', 'Process C+', 'Master', 'Master C+', 'Stellar', 'Ignition'],
+  Lieuwe: ['Shotgun', 'Shotgun Air', 'Falcon', 'Brute', 'Awesome', 'Oceana', 'Rogue', 'Say No More', 'Carbonara'],
+  CrazyFly: ['Raptor', 'Raptor LTD', 'Raptor Extreme', 'Allround', 'Bulldozer', 'Cruiser', 'Shox', 'Girls'],
+  Nobile: ['NHP', 'NHP Carbon', 'NHP Split', 'T5', '50/Fifty', 'Flying Carpet', 'Flying Carpet Split', 'Infinity Split', 'NBL'],
+  Shinn: ['Monk', 'Monk Mental', 'Bronq', 'ADHD', 'Ronson', 'Pinbot', 'Jackson', 'Superking', 'Ultraking', 'Monkette'],
+  RRD: ['Placebo', 'Bliss', 'Bliss LTE', 'Bliss LTD', 'Poison', 'Poison LTD'],
+  Harlem: ['Ascent', 'Launch', 'Descent', 'Hadlow Descent'],
+  Carved: ['Imperator', 'Imperator Pro'],
+  Flysurfer: ['Radical', 'Radical Carbon', 'Flow', 'Flydoor'],
+  Inverter: ['Edge', 'Vortex', 'Signature', 'Coral', 'Nature', 'Cariri', 'Insane', 'Magma'],
+  'K-Jump': ['Nature', 'Sunset', 'Perfect Carbon'],
+  'Blank Force': ['Logic', 'Enduro'],
+  Navis: ['Pater'],
+  Windbra: ['Prancha Bidirecional'],
+};
+
 async function main() {
   console.log('Seeding taxonomia...');
 
   for (const c of CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: c.slug },
-      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema, active: c.active },
+      // `active` NÃO entra no update: ligar/desligar categoria é decisão operacional (feita
+      // à mão em prod — ex.: wing ativada 2026-07-07). Se entrasse, um re-seed desligaria
+      // categoria ativada depois do deploy. `active` só vale no create (categoria nova).
+      update: { namePt: c.namePt, nameEn: c.nameEn, attributeSchema: c.attributeSchema },
       create: c,
     });
   }
   console.log(`  ${CATEGORIES.length} categorias`);
 
-  // Marca legada "Core" (criada vazia em seeds antigos) -> "CORE" da lista oficial,
-  // evitando duplicata por diferença de caixa (Postgres é case-sensitive).
-  await prisma.brand.updateMany({ where: { name: 'Core' }, data: { name: 'CORE' } });
+  // Marca legada "Core" (criada vazia em seeds antigos) -> "CORE" da lista oficial.
+  // Rename direto colide com o unique Brand.name quando as duas coexistem (P2002) e
+  // travava o seed inteiro. Fusão idempotente: reaponta FKs (Model + Listing) e remove
+  // a legada. Correção completa e reutilizável fora do seed: prisma/merge-brand-core.mjs.
+  const coreLegacy = await prisma.brand.findUnique({ where: { name: 'Core' } });
+  if (coreLegacy) {
+    const coreCanonical = await prisma.brand.findUnique({ where: { name: 'CORE' } });
+    if (!coreCanonical) {
+      await prisma.brand.update({ where: { id: coreLegacy.id }, data: { name: 'CORE' } });
+    } else {
+      await prisma.$transaction(async (tx) => {
+        for (const m of await tx.model.findMany({ where: { brandId: coreLegacy.id } })) {
+          const clash = await tx.model.findUnique({
+            where: { brandId_name: { brandId: coreCanonical.id, name: m.name } },
+          });
+          if (clash) {
+            await tx.listing.updateMany({ where: { modelId: m.id }, data: { modelId: clash.id } });
+            await tx.listing.updateMany({ where: { barraModelId: m.id }, data: { barraModelId: clash.id } });
+            await tx.model.delete({ where: { id: m.id } });
+          } else {
+            await tx.model.update({ where: { id: m.id }, data: { brandId: coreCanonical.id } });
+          }
+        }
+        await tx.listing.updateMany({ where: { brandId: coreLegacy.id }, data: { brandId: coreCanonical.id } });
+        await tx.listing.updateMany({ where: { barraBrandId: coreLegacy.id }, data: { barraBrandId: coreCanonical.id } });
+        await tx.brand.delete({ where: { id: coreLegacy.id } });
+      });
+    }
+  }
 
   const kite = await prisma.category.findUnique({ where: { slug: 'kite' } });
   if (!kite) throw new Error('Categoria "kite" não encontrada — seed de categorias falhou.');
@@ -288,10 +403,17 @@ async function main() {
     return count;
   }
 
+  const wing = await prisma.category.findUnique({ where: { slug: 'wing' } });
+  if (!wing) throw new Error('Categoria "wing" não encontrada — seed de categorias falhou.');
+  const twinTip = await prisma.category.findUnique({ where: { slug: 'twin-tip' } });
+  if (!twinTip) throw new Error('Categoria "twin-tip" não encontrada — seed de categorias falhou.');
+
   const kiteModels = await seedModels(BRANDS, kite.id);
   const barModels = await seedModels(BAR_BRANDS, barra.id);
+  const wingModels = await seedModels(WING_BRANDS, wing.id);
+  const ttModels = await seedModels(TWIN_TIP_BRANDS, twinTip.id);
   const brandCount = await prisma.brand.count();
-  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra`);
+  console.log(`  ${brandCount} marcas, ${kiteModels} modelos de kite, ${barModels} modelos de barra, ${wingModels} modelos de wing, ${ttModels} modelos de twin tip`);
   console.log('Seed concluído.');
 }
 

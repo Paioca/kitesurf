@@ -95,7 +95,8 @@ export default async function Moderacao() {
       <div className="only-desktop"><SiteHeader /></div>
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '36px 24px 80px' }}>
         <h1 style={{ fontFamily: font.serif, fontSize: 30, fontWeight: 600, letterSpacing: '-0.4px', margin: '0 0 6px' }}>Moderação</h1>
-        <p style={{ fontSize: 14.5, color: color.inkMute, margin: '0 0 28px' }}>Duas filas: disputas de venda e denúncias.</p>
+        <p style={{ fontSize: 14.5, color: color.inkMute, margin: '0 0 4px' }}>Duas filas: disputas de venda e denúncias.</p>
+        <p style={{ fontSize: 12.5, color: color.inkFaint, margin: '0 0 28px' }}><a href="/saude" style={{ color: color.primary }}>Saúde do sistema →</a></p>
 
         <h2 style={{ fontFamily: font.serif, fontSize: 21, fontWeight: 600, margin: '0 0 4px' }}>Disputas de venda</h2>
         <p style={{ fontSize: 13.5, color: color.inkMute, margin: '0 0 14px' }}>Correções recusadas pela contraparte. {disputes.length} em análise.</p>

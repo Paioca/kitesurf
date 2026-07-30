@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { color, font } from '../lib/tokens';
 import { downscaleImage } from '../lib/resizeImage';
 import { COUNTRY_NAMES } from '../lib/geo';
-import { SPOTS } from '../lib/filters';
+import { SPOT_LOCATIONS, STATE_OPTIONS } from '../lib/locations';
 import { useConfirm } from './ConfirmDialog';
 
 export function EditProfileForm({ initial }: { initial: { name: string; lastName: string; spot: string; country: string; email: string; emailVerified: boolean; avatarUrl: string; locale: string } }) {
@@ -109,7 +109,13 @@ export function EditProfileForm({ initial }: { initial: { name: string; lastName
       <Field label="Spot de interesse">
         <select className="kl-input" value={spot} onChange={(e) => setSpot(e.target.value)}>
           <option value="">Selecione um spot</option>
-          {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATE_OPTIONS.map((state) => (
+            <optgroup key={state.value} label={state.label}>
+              {SPOT_LOCATIONS.filter((s) => s.uf === state.value).map((s) => (
+                <option key={s.value} value={s.value}>{s.value}</option>
+              ))}
+            </optgroup>
+          ))}
         </select>
       </Field>
       <Field label="Nacionalidade">

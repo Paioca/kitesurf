@@ -1,6 +1,6 @@
-// Layout das páginas legais (Termos / Privacidade) — tratamento visual do
-// handoff Claude Design v2: hero band escuro, índice lateral sticky, selos
-// numerados nas seções e card de contato. O conteúdo vem das páginas.
+// Layout de página de CONTEÚDO estruturado (legal, institucional, guias) — tratamento
+// visual do handoff Claude Design v2: hero band escuro, índice lateral sticky, selos
+// numerados nas seções e card de contato opcional. O conteúdo vem das páginas.
 import { color, font, radius } from '../lib/tokens';
 import Link from 'next/link';
 import { Logo, Diamond } from './ui';
@@ -10,6 +10,7 @@ export type LegalSection = { id: string; title: string; body: React.ReactNode };
 
 export function LegalPage({
   title,
+  eyebrow = 'Documento legal',
   updated,
   intro,
   sections,
@@ -18,31 +19,36 @@ export function LegalPage({
   contact,
 }: {
   title: string;
-  updated: string;
+  eyebrow?: string;
+  updated?: string;
   intro: React.ReactNode;
   sections: LegalSection[];
-  crossLabel: string;
-  crossHref: string;
-  contact: React.ReactNode;
+  crossLabel?: string;
+  crossHref?: string;
+  contact?: React.ReactNode;
 }) {
   return (
     <>
       <header style={{ borderBottom: `1px solid ${color.line}`, background: '#fff', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 24px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo size={20} /></Link>
-          <a href={crossHref} style={{ fontSize: 14, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>{crossLabel} ›</a>
+          {crossLabel && crossHref && (
+            <a href={crossHref} style={{ fontSize: 14, fontWeight: 600, color: color.primary, textDecoration: 'none' }}>{crossLabel} ›</a>
+          )}
         </div>
       </header>
 
       {/* Hero band */}
       <div style={{ background: color.dark, color: '#fff' }}>
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '54px 24px' }}>
-          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 12 }}>Documento legal</div>
+          <div style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 18, color: color.aqua, marginBottom: 12 }}>{eyebrow}</div>
           <h1 style={{ fontFamily: font.sans, fontSize: 'clamp(30px, 7vw, 46px)', fontWeight: 900, letterSpacing: '-1px', textTransform: 'uppercase', margin: '0 0 14px' }}>{title}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: '#9fb6ab' }}>
-            <span style={{ width: 7, height: 7, borderRadius: 999, background: color.accent }} />
-            {updated}
-          </div>
+          {updated && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: '#9fb6ab' }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: color.accent }} />
+              {updated}
+            </div>
+          )}
         </div>
       </div>
 
@@ -71,10 +77,12 @@ export function LegalPage({
             </section>
           ))}
 
-          <div style={{ marginTop: 8, padding: '22px 24px', background: '#ece3d2', borderRadius: radius.card, display: 'flex', gap: 13, alignItems: 'flex-start' }}>
-            <span style={{ marginTop: 4 }}><Diamond size={13} c={color.primary} r={2} /></span>
-            <p style={{ fontSize: 14.5, lineHeight: 1.6, color: '#6b6353', margin: 0 }}>{contact}</p>
-          </div>
+          {contact && (
+            <div style={{ marginTop: 8, padding: '22px 24px', background: '#ece3d2', borderRadius: radius.card, display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+              <span style={{ marginTop: 4 }}><Diamond size={13} c={color.primary} r={2} /></span>
+              <p style={{ fontSize: 14.5, lineHeight: 1.6, color: '#6b6353', margin: 0 }}>{contact}</p>
+            </div>
+          )}
         </article>
       </main>
 

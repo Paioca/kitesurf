@@ -11,6 +11,7 @@ import type { Brand, Category } from '../../lib/api';
 import { MobileAppBar } from '../../components/MobileChrome';
 import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
+import { WhatsappShareButton, trackEvent } from '../../components/ShareButton';
 import { storedLocale } from '../../components/LanguageToggle';
 import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
@@ -23,6 +24,7 @@ const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
     semi_desgaste: 'Seminovo, com sinais de uso',
     usado_desgaste: 'Usado, com desgaste visível',
     novo: 'Novo', seminovo: 'Seminovo', bom: 'Bom estado', usado: 'Usado',
+    nova: 'Nova', seminova: 'Seminova', usada: 'Usada', com_reparos: 'Com reparos', // prancha (feminino)
     zero: 'Sem furo', microfuro_adesivado: 'Microfuro reparado',
     original: 'Originais', ja_trocadas: 'Trocadas',
   },
@@ -33,6 +35,7 @@ const CONDITION_LABELS: Record<Locale, Record<string, string>> = {
     semi_desgaste: 'Used, with signs of wear',
     usado_desgaste: 'Used, visible wear',
     novo: 'New', seminovo: 'Like new', bom: 'Good condition', usado: 'Used',
+    nova: 'New', seminova: 'Like new', usada: 'Used', com_reparos: 'With repairs', // board (pt feminine)
     zero: 'No leak', microfuro_adesivado: 'Repaired micro leak',
     original: 'Original', ja_trocadas: 'Replaced',
   },
@@ -61,7 +64,9 @@ const BARRA_SLOTS: Record<Locale, string[]> = {
 };
 const DRAFT_KEY = 'vaya:anunciar-draft';
 
-type Kind = '' | 'kite' | 'barra' | 'kit';
+// '' | 'kite' | 'barra' | 'kit' | <slug de categoria standalone, ex.: 'wing'>. 'kit' é a
+// sub-variação exclusiva do kite (kite + barra); toda outra categoria é standalone.
+type Kind = string;
 type Img = { url: string; thumbUrl?: string; component: 'kite' | 'barra' };
 type Locale = 'pt' | 'en';
 
@@ -73,6 +78,8 @@ const AD_COPY = {
     confirmPhone: 'Confirme seu telefone para criar o anúncio.',
     createdTitle: 'Seu anúncio está no ar',
     createdBody: 'Quando alguém fizer uma oferta ou pedir uma visita, você acompanha tudo em Minhas negociações.',
+    createdShareHint: 'Compartilhe nos grupos de WhatsApp do seu spot — é onde a maioria vende mais rápido.',
+    shareText: (name: string) => `Olha esse equipamento na Kitetropos: ${name}`,
     viewListing: 'Ver anúncio',
     viewGear: 'Ver outros equipamentos',
     restored: 'Rascunho recuperado. Continue de onde parou.',
@@ -181,6 +188,8 @@ const AD_COPY = {
     confirmPhone: 'Confirm your phone to create the listing.',
     createdTitle: 'Your listing is live',
     createdBody: 'When someone sends an offer or visit request, you follow everything in My deals.',
+    createdShareHint: "Share it in your spot's WhatsApp groups — that's where most gear sells fastest.",
+    shareText: (name: string) => `Check out this gear on Kitetropos: ${name}`,
     viewListing: 'View listing',
     viewGear: 'See more gear',
     restored: 'Draft restored. Continue where you left off.',
@@ -303,7 +312,7 @@ export default function Criar() {
   const [sellBarraAlone, setSellBarraAlone] = useState(false);
   const [kitePrice, setKitePrice] = useState('');
   const [barraPrice, setBarraPrice] = useState('');
-  const [city, setCity] = useState('Cumbuco'); // spot principal (lista)
+  const [city, setCity] = useState(''); // spot principal (lista)
   const [spot, setSpot] = useState(''); // ponto específico opcional
   const [pickup, setPickup] = useState(true); // retirada no local
   const [shippable, setShippable] = useState(false); // envio
@@ -345,7 +354,7 @@ export default function Criar() {
           setAttrs(d.attrs ?? {}); setBarraAttrs(d.barraAttrs ?? {}); setImages(d.images ?? []);
           setPrice(d.price ?? ''); setSellKiteAlone(!!d.sellKiteAlone); setSellBarraAlone(!!d.sellBarraAlone);
           setKitePrice(d.kitePrice ?? ''); setBarraPrice(d.barraPrice ?? '');
-          setCity(d.city ?? 'Cumbuco'); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
+          setCity(d.city ?? ''); setSpot(d.spot ?? ''); setPickup(d.pickup !== false); setShippable(!!d.shippable);
           setStep(typeof d.step === 'number' ? d.step : 0);
           setRestored(true);
         }
@@ -361,7 +370,11 @@ export default function Criar() {
     } catch {}
   }, [kind, brandId, modelId, barraBrandId, barraModelId, year, barraYear, attrs, barraAttrs, images, price, sellKiteAlone, sellBarraAlone, kitePrice, barraPrice, city, spot, pickup, shippable, step]);
 
-  useEffect(() => { if (createdId) { try { localStorage.removeItem(DRAFT_KEY); } catch {} } }, [createdId]);
+  useEffect(() => {
+    if (!createdId) return;
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    trackEvent('listing_published', { listing_id: createdId });
+  }, [createdId]);
 
   function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} window.location.reload(); }
 
@@ -371,7 +384,9 @@ export default function Criar() {
   const barraBrand = useMemo(() => brands.find((b) => b.id === barraBrandId), [brands, barraBrandId]);
 
   const isKit = kind === 'kit';
-  const mainCat = kind === 'barra' ? barraCat : kiteCat; // categoria primária enviada
+  // Categoria primária enviada no POST. Genérico por slug: kite→kite, barra→barra,
+  // wing/futuras→a própria; 'kit' usa a categoria kite (barra vai embutida via hasBarra).
+  const mainCat = kind === 'kit' ? kiteCat : (categories.find((c) => c.slug === kind) ?? kiteCat);
   const visibleBarraSchema = useMemo(() => {
     const condition = barraCat?.attributeSchema?.properties?.condition;
     return { required: ['condition'], properties: condition ? { condition } : {} };
@@ -397,20 +412,25 @@ export default function Criar() {
   const barraKindModels = useMemo(() => (barraBrand?.models ?? []).filter((m) => m.categoryId === barraCat?.id), [barraBrand, barraCat]);
   const barraModelOpts = useMemo(() => barraKindModels.map((m) => ({ value: m.id, label: m.name })), [barraKindModels]);
   const yearOpts = useMemo(() => Array.from({ length: 16 }, (_, i) => String(2027 - i)), []);
-  const showKitePhotos = kind === 'kite' || kind === 'kit';
+  // Seção de fotos principal: kite, kit e QUALQUER categoria standalone (wing...) — só a
+  // barra usa a seção de barra. Sem isto, uma categoria nova não mostraria uploader.
+  const showKitePhotos = kind !== '' && kind !== 'barra';
   const showBarraPhotos = kind === 'barra' || kind === 'kit';
   const kitePhotos = images.filter((i) => i.component === 'kite');
   const barraPhotos = images.filter((i) => i.component === 'barra');
   const t = AD_COPY[lang];
   const conditionLabels = CONDITION_LABELS[lang];
-  const fieldLabels = FIELD_LABELS[lang];
+  // FIELD_LABELS é vocabulário de kite ("Tamanho do kite", "Microfuros no kite") — aplica só
+  // a kite/barra; categoria standalone (wing...) recebe {} e o formulário usa o label do
+  // próprio schema (só alimenta o componente Fields, onde `kind` não está em escopo).
+  const fieldLabels = kind === 'kite' || kind === 'kit' || kind === 'barra' ? FIELD_LABELS[lang] : {};
 
   const autoTitle = useMemo(() => {
     const b = brand?.name;
     const model = brand?.models.find((m) => m.id === modelId)?.name;
     const bmBarra = [barraBrand?.name, barraBrand?.models.find((m) => m.id === barraModelId)?.name, barraYear].filter(Boolean).join(' ');
     if (kind === 'barra') return ['Barra', b, model, year].filter(Boolean).join(' · ');
-    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : '', year, attrs.condition ? conditionLabels[attrs.condition] : ''].filter(Boolean).join(' · ');
+    const base = [b, model, attrs.size_m2 ? `${attrs.size_m2} m²` : attrs.length_cm ? `${attrs.length_cm} cm` : '', year, attrs.condition ? conditionLabels[attrs.condition] : ''].filter(Boolean).join(' · ');
     return kind === 'kit' ? (base ? `${base} + ${bmBarra || 'Barra'}` : '') : base;
   }, [brand, modelId, barraBrand, barraModelId, attrs, year, barraYear, kind, conditionLabels]);
 
@@ -419,7 +439,7 @@ export default function Criar() {
     setKind(k);
     setError('');
     if (k === 'kite') {
-      if (prev === 'barra') {
+      if (prev !== 'kite' && prev !== 'kit') { // trocou de família de categoria (barra, wing...) → invalida marca/modelo/ficha
         setBrandId('');
         setModelId('');
         setAttrs({});
@@ -446,7 +466,7 @@ export default function Criar() {
       setBarraPrice('');
       setImages([]);
     } else if (k === 'kit') {
-      if (prev === 'barra') {
+      if (prev !== 'kite' && prev !== 'kit') { // trocou de família de categoria (barra, wing...) → invalida marca/modelo/ficha
         setBrandId('');
         setModelId('');
         setAttrs({});
@@ -456,6 +476,22 @@ export default function Criar() {
       setBarraModelId('');
       setBarraYear('');
       setBarraAttrs({});
+    } else {
+      // Categoria standalone (wing, etc.): trocar de categoria invalida marca/modelo/ficha
+      // (marcas são filtradas por categoria) e não há barra. Reset completo, como a barra.
+      setBrandId('');
+      setModelId('');
+      setYear('');
+      setAttrs({});
+      setBarraBrandId('');
+      setBarraModelId('');
+      setBarraYear('');
+      setBarraAttrs({});
+      setSellKiteAlone(false);
+      setSellBarraAlone(false);
+      setKitePrice('');
+      setBarraPrice('');
+      setImages([]);
     }
   }
   function pickPhotos(component: 'kite' | 'barra') {
@@ -628,7 +664,16 @@ export default function Criar() {
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: '#e8f1ec', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: color.primary, fontSize: 30 }}>✓</span></div>
           <h1 style={{ fontFamily: font.serif, fontSize: 32, fontWeight: 600, margin: '0 0 10px' }}>{t.createdTitle}</h1>
-          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 26px', maxWidth: 400 }}>{t.createdBody}</p>
+          <p style={{ fontSize: 15.5, color: color.inkMute, margin: '0 auto 12px', maxWidth: 400 }}>{t.createdBody}</p>
+          <p style={{ fontSize: 15.5, color: color.ink, fontWeight: 600, margin: '0 auto 22px', maxWidth: 400 }}>{t.createdShareHint}</p>
+          <div style={{ marginBottom: 18 }}>
+            <WhatsappShareButton
+              listingId={createdId}
+              context="post_publish"
+              url={`${window.location.origin}/anuncio/${createdId}`}
+              text={t.shareText(autoTitle || t.fallbackTitle)}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 11, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href={`/anuncio/${createdId}`} style={primary}>{t.viewListing}</a>
             <Link href="/" style={outline}>{t.viewGear}</Link>
@@ -647,7 +692,7 @@ export default function Criar() {
   const previewSize = kind === 'barra' ? t.bar : (attrs.size_m2 ? `${attrs.size_m2} m²` : (lang === 'en' ? 'No size' : 'Sem tamanho'));
   const previewDelivery = pickup && shippable ? `${t.pickupLabel} · ${t.shippingLabel}` : shippable ? t.shippingLabel : t.pickupLabel;
   const previewPhoto = images[0]?.thumbUrl ?? images[0]?.url ?? null;
-  const tipoLabel = kind === 'barra' ? 'Barra' : kind === 'kit' ? 'Kit' : 'Kite';
+  const tipoLabel = kind === 'kit' ? 'Kit' : (mainCat?.namePt ?? 'Kite'); // kite/barra usam namePt; wing→'Wing'
 
   return (
     <Shell t={t}>
@@ -705,6 +750,13 @@ export default function Criar() {
                 <KindBtn on={kind === 'kite'} onClick={() => selectKind('kite')} title="Kite" desc={t.onlyKite} icon={IconKite} />
                 <KindBtn on={kind === 'barra'} onClick={() => selectKind('barra')} title={t.bar} desc={t.onlyBar} icon={IconBarra} />
                 <KindBtn on={kind === 'kit'} onClick={() => selectKind('kit')} title={`Kite + ${t.bar}`} desc={t.kitDesc} icon={IconKit} />
+                {/* Categorias standalone ativas além de kite/barra (wing, etc.). Com só
+                    kite/barra ativas, este map é vazio → seletor idêntico ao original. */}
+                {categories
+                  .filter((c) => c.slug !== 'kite' && c.slug !== 'barra')
+                  .map((c) => (
+                    <KindBtn key={c.slug} on={kind === c.slug} onClick={() => selectKind(c.slug)} title={c.namePt} desc={lang === 'en' ? 'Single item' : 'Peça única'} icon={IconKite} />
+                  ))}
               </div>
 
               {kind && (
@@ -819,6 +871,7 @@ export default function Criar() {
                 <Cell>
                   <Label>Spot *</Label>
                   <select className="kl-select" value={city} onChange={(e) => setCity(e.target.value)}>
+                    <option value="" disabled>{t.missing.spot}</option>
                     {STATE_OPTIONS.map((state) => (
                       <optgroup key={state.value} label={`${state.label} (${state.value})`}>
                         {SPOT_LOCATIONS.filter((spotOption) => spotOption.uf === state.value).map((spotOption) => (
@@ -946,6 +999,11 @@ function Fields({
                 else if (spec.min != null && n < spec.min) err = `${t.min} ${spec.min}.`;
                 else if (spec.max != null && n > spec.max) err = `${t.max} ${spec.max}.`;
               }
+              // Campo ciente do schema: step>=1 = INTEIRO (ex.: comprimento em cm, até `intDigits`
+              // dígitos); senão DECIMAL de 2 díg + 1 casa (tamanho de kite/barra: 9, 8.1).
+              const isInt = spec.step != null && Number(spec.step) >= 1;
+              const intDigits = Math.max(2, String(Math.floor(Number(spec.max) || 0)).length);
+              const numExample = spec.min != null && spec.max != null ? Math.round((Number(spec.min) + Number(spec.max)) / 2) : null;
               return (
                 <>
                   <input
@@ -953,19 +1011,22 @@ function Fields({
                     type="text"
                     inputMode="decimal"
                     value={values[key] ?? ''}
-                    placeholder={key === 'size_m2' ? t.decimalPlaceholder : spec.min != null && spec.max != null ? `${t.decimalPlaceholder} (${t.between} ${spec.min} - ${spec.max})` : t.decimalPlaceholder}
+                    placeholder={key === 'size_m2' ? t.decimalPlaceholder : isInt && numExample != null ? `Ex.: ${numExample}` : spec.min != null && spec.max != null ? `${t.decimalPlaceholder} (${t.between} ${spec.min} - ${spec.max})` : t.decimalPlaceholder}
                     onChange={(e) => {
-                      // máscara: vírgula→ponto, só dígitos; máx. 2 dígitos inteiros + 1 decimal
-                      // (tamanho de kite/barra nunca passa de 2 dígitos) — impede 3º dígito.
+                      // máscara ciente do schema: vírgula→ponto, só dígitos. Inteiro (cm) aceita
+                      // até `intDigits` (3 p/ prancha); decimal (kite/barra) 2 díg + 1 casa.
+                      // Antes era fixo em 2 dígitos e cortava "140"→"14" na prancha.
                       let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
                       const dot = v.indexOf('.');
-                      if (dot === -1) v = v.slice(0, 2);
-                      else v = v.slice(0, dot).slice(0, 2) + '.' + v.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                      if (isInt || dot === -1) v = v.replace(/\./g, '').slice(0, intDigits);
+                      else v = v.slice(0, dot).slice(0, intDigits) + '.' + v.slice(dot + 1).replace(/\./g, '').slice(0, 1);
                       onChange(key, v);
                     }}
                   />
                   {err ? <ErrorText>{err}</ErrorText> : key === 'size_m2' ? (
                     <Helper>{t.decimalHelper}</Helper>
+                  ) : isInt ? (
+                    spec.min != null && spec.max != null ? <Helper>{`${t.between} ${spec.min}–${spec.max}.`}</Helper> : null
                   ) : spec.min != null && spec.max != null ? (
                     <Helper>{t.decimalRangeHelper(spec.min, spec.max)}</Helper>
                   ) : null}

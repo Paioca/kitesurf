@@ -22,7 +22,7 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const title = `${user.name} | Kitetropos`;
   const description = `Perfil de ${user.name} na Kitetropos. ${rep}. Telefone verificado, reputação real.`;
   const images = user.avatarUrl ? [user.avatarUrl] : ['/hero-beach.jpg'];
-  return { title, description, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
+  return { title, description, alternates: { canonical: `/perfil/${params.id}` }, openGraph: { title, description, type: 'profile', images }, twitter: { card: 'summary', title, description, images } };
 }
 
 function stars(n: number) {
@@ -84,7 +84,7 @@ export default async function PerfilPage(props: { params: Promise<{ id: string }
             <div style={{ fontFamily: font.serif, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>O que é verificado</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
               <VerifiedRow on={user.phoneVerified} title="Telefone verificado" desc="1 número = 1 conta · confirmado por código" />
-              <VerifiedRow on={user.emailVerified} title="E-mail verificado" desc="Para recuperar acesso e avisos" />
+              <VerifiedRow on={user.emailVerified} title="E-mail confirmado" desc="Canal privado, não aparece no perfil público" />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0ebde' }}>
               <span style={{ color: color.inkFaint2, fontSize: 13, flex: 'none' }}>🔒</span>

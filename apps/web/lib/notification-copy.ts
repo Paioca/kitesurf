@@ -24,6 +24,7 @@ export function notificationText(n: NotificationLike): string {
     case 'reversal_requested': return `Pediram a correção da venda de ${t}. Responda nos seus pedidos.`;
     case 'reversal_confirmed': return d.byModerator ? `A moderação reverteu a venda de ${t}.` : `A correção da venda de ${t} foi confirmada.`;
     case 'reversal_rejected': return d.byModerator ? `A moderação manteve a venda de ${t}.` : `A correção da venda de ${t} não foi aceita. Está em análise.`;
+    case 'request_expired': return `Seu pedido em ${t} expirou sem resposta do vendedor.`;
     default: return 'Você tem uma novidade nas suas negociações.';
   }
 }
@@ -44,6 +45,7 @@ export function notificationHref(n: NotificationTarget): string {
     // chega pro COMPRADOR → aba Enviados
     case 'request_accepted':
     case 'request_declined':
+    case 'request_expired':
     case 'sale_marked':
     case 'sale_cancelled':
     case 'sale_closed_unconfirmed':

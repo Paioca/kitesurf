@@ -29,7 +29,6 @@ export async function GET(req: Request) {
       const orphans = await purgeOrphanImages({ delete: purgeOrphans });
       return { ephemeral, orphans };
     });
-    if (outcome.skipped) return NextResponse.json({ ok: true, skipped: true, reason: 'already running' });
     return NextResponse.json({ ok: true, ...outcome.result });
   } catch (e) {
     return errorResponse(e);

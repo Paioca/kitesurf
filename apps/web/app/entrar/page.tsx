@@ -8,7 +8,7 @@ import { downscaleImage } from '../../lib/resizeImage';
 import { Logo } from '../../components/ui';
 import { storedLocale } from '../../components/LanguageToggle';
 import { COUNTRY_NAMES } from '../../lib/geo';
-import { SPOTS } from '../../lib/filters';
+import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
 type Step = 'phone' | 'otp' | 'profile' | 'done';
 type Channel = 'sms' | 'email';
@@ -587,7 +587,13 @@ export default function Entrar() {
               <label style={lbl}>{t.spot}</label>
               <select value={spot} onChange={(e) => setSpot(e.target.value)} aria-label={t.spot} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 14, cursor: 'pointer' }}>
                 <option value="">{t.selectSpot}</option>
-                {SPOTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATE_OPTIONS.map((state) => (
+                  <optgroup key={state.value} label={state.label}>
+                    {SPOT_LOCATIONS.filter((s) => s.uf === state.value).map((s) => (
+                      <option key={s.value} value={s.value}>{s.value}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
 
               <label style={lbl}>{t.nationality}</label>
@@ -675,7 +681,7 @@ const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#48564
 const input: React.CSSProperties = { fontSize: 15, fontWeight: 500, border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '13px 15px', background: '#fff' };
 const ddi: React.CSSProperties = { border: '1.5px solid #e0d9c9', borderRadius: 11, padding: '0 8px', background: '#fff', fontSize: 15, fontWeight: 600, flex: 'none', cursor: 'pointer', fontFamily: "var(--font-archivo),'Archivo',sans-serif" };
 
-// DDI por país — Brasil default no topo; o resto cobre os gringos mais comuns em Cumbuco.
+// DDI por país — Brasil default no topo; o resto cobre visitantes comuns nos spots brasileiros.
 const COUNTRIES = [
   { flag: '🇧🇷', dial: '+55' }, { flag: '🇵🇹', dial: '+351' }, { flag: '🇦🇷', dial: '+54' },
   { flag: '🇺🇸', dial: '+1' }, { flag: '🇨🇱', dial: '+56' }, { flag: '🇺🇾', dial: '+598' },

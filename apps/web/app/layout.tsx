@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Archivo, Spectral } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/GoogleTagManager';
+import { MetaPixel } from '../components/MetaPixel';
 import { ToastProvider } from '../components/Toast';
 import { ConfirmProvider } from '../components/ConfirmDialog';
 import { publicBaseUrl } from '../lib/app-url';
@@ -28,8 +29,8 @@ const spectral = Spectral({
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicBaseUrl()),
-  title: 'Kitetropos | kite e barra com mais confiança',
-  description: 'Marketplace de kite e barra para a comunidade global do kitesurf, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
+  title: 'Kitetropos | equipamentos de kitesurf e wing com mais confiança',
+  description: 'Marketplace brasileiro de equipamentos de kitesurf e wing, com telefone verificado, anúncios estruturados e contato pelo WhatsApp.',
 };
 
 // O teclado virtual do mobile redimensiona o conteúdo (interactive-widget) em vez de
@@ -53,8 +54,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={lang} className={`${archivo.variable} ${spectral.variable}`}>
       <body>
+        <GoogleTagManager />
+        <GoogleTagManagerNoScript />
+        <MetaPixel />
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
-        <Analytics />
         <SpeedInsights />
       </body>
     </html>

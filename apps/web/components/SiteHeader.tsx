@@ -12,8 +12,8 @@ export async function SiteHeader() {
   const navMe = me ? { id: me.id, name: me.name, avatarUrl: me.avatarUrl ?? undefined } : null;
   const locale = (await cookies()).get('kitetropos:locale')?.value === 'en' ? 'en' : 'pt';
   const labels = locale === 'en'
-    ? { signIn: 'Sign in', account: 'My account', announce: 'List my kite', myAds: 'My listings', deals: 'My deals', favorites: 'Favorites' }
-    : { signIn: 'Entrar', account: 'Minha conta', announce: 'Anunciar meu kite', myAds: 'Meus anúncios', deals: 'Minhas negociações', favorites: 'Favoritos' };
+    ? { signIn: 'Sign in', account: 'My account', announce: 'Create my listing', myAds: 'My listings', deals: 'My deals', favorites: 'Favorites' }
+    : { signIn: 'Entrar', account: 'Minha conta', announce: 'Criar meu anúncio', myAds: 'Meus anúncios', deals: 'Minhas negociações', favorites: 'Favoritos' };
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(246,243,236,0.92)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${color.line}` }}>

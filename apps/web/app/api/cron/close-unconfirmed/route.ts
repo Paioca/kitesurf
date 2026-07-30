@@ -19,10 +19,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
   }
   try {
-    // runJob: advisory lock (sem execução concorrente sobreposta) + linha JobRun +
-    // Sentry check-in (alerta se o job parar de rodar) — mesma instrumentação do cleanup.
+    // runJob: linha JobRun + Sentry check-in (alerta se o job parar de rodar).
+    // Sem execução concorrente: Vercel Cron já garante 1 invocação por vez por path.
     const outcome = await runJob('close-unconfirmed', () => closeUnconfirmedExpired());
-    if (outcome.skipped) return NextResponse.json({ ok: true, skipped: true, reason: 'already running' });
     return NextResponse.json({ ok: true, closed: outcome.result });
   } catch (e) {
     return errorResponse(e);

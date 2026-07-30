@@ -62,7 +62,7 @@ export default async function Favoritos() {
       <span aria-hidden="true" style={{ position: 'absolute', top: 16, right: 16, width: 16, height: 16, background: color.accent, transform: 'rotate(45deg)', borderRadius: 3, opacity: 0.6, boxShadow: '0 0 22px rgba(217,168,107,0.5)' }} />
       <div style={{ position: 'absolute', inset: 0, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <span style={{ fontFamily: font.serif, fontStyle: 'italic', fontSize: 16, color: color.aqua }}>Temporada de ventos</span>
-        <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', marginTop: 2 }}>Cumbuco está soprando</div>
+        <div style={{ fontFamily: font.sans, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#fff', marginTop: 2 }}>Os spots estão soprando</div>
       </div>
     </div>
   );
