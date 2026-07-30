@@ -164,6 +164,22 @@ export async function requireUser() {
   return user;
 }
 
+// Exige login + telefone e e-mail verificados — só para as ações de negociação
+// (criar anúncio, solicitar oferta/visita). O gate de E-MAIL fica atrás de
+// VERIFICATION_GATE_EMAIL (default OFF): a base atual do beta tem phoneVerified
+// mas muitos sem e-mail — o dono liga em prod depois de medir o impacto
+// (scripts/diag-verification-gate.mjs) e avisar os usuários. O gate de TELEFONE
+// é sempre ativo (toda conta por SMS já nasce verificada; conta por e-mail
+// precisa adicionar telefone antes de negociar).
+export async function requireVerifiedUser() {
+  const user = await requireUser();
+  const missing: Array<'phone' | 'email'> = [];
+  if (!user.phone || !user.phoneVerified) missing.push('phone');
+  if (process.env.VERIFICATION_GATE_EMAIL === 'on' && (!user.email || !user.emailVerified)) missing.push('email');
+  if (missing.length) throw new VerificationRequiredError(missing);
+  return user;
+}
+
 // Exige admin (moderação). Lança se não logado ou não-admin.
 export async function requireAdmin() {
   const user = await getCurrentUser();
@@ -181,5 +197,11 @@ export class UnauthorizedError extends Error {
 export class ForbiddenError extends Error {
   constructor() {
     super('Sem permissão.');
+  }
+}
+
+export class VerificationRequiredError extends Error {
+  constructor(public missing: Array<'phone' | 'email'>) {
+    super('Verificação pendente.');
   }
 }

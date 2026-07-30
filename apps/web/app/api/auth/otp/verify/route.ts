@@ -17,9 +17,10 @@ export const runtime = 'nodejs';
 // não, criando um oráculo de timing de existência (CWE-208). Computado uma vez no boot.
 const DUMMY_OTP_HASH = bcrypt.hashSync('000000', 8);
 
-// Aceita phone OU email — mesmo schema do request. Onboarding (cadastro novo) só
-// funciona pelo canal SMS, porque conta nova exige telefone obrigatório no schema
-// User; e-mail é canal de fallback pra usuário EXISTENTE com emailVerified.
+// Aceita phone OU email — mesmo schema do request. Onboarding (cadastro novo)
+// funciona pelos DOIS canais: conta nova por e-mail nasce com phone=null e
+// emailVerified=true (digitar o código provou a posse da caixa). O gate de
+// negociação (requireVerifiedUser) é quem exige completar o outro canal depois.
 const schema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
@@ -55,8 +56,9 @@ export async function POST(req: Request) {
   return verifyByPhone(dto);
 }
 
-// Login por E-MAIL: só serve pra usuário EXISTENTE com emailVerified. Não cria
-// conta nova por e-mail (sem telefone, schema não permite).
+// Login/cadastro por E-MAIL — espelha o fluxo de telefone: conta existente loga
+// (e ganha emailVerified, já que o código prova posse da caixa); conta nova passa
+// pelo onboarding inline (nome + foto) e nasce com phone=null.
 async function verifyByEmail(dto: z.infer<typeof schema>) {
   const email = normalizeEmail(dto.email!);
   if (!email) return NextResponse.json({ message: 'E-mail inválido.' }, { status: 400 });
@@ -65,20 +67,62 @@ async function verifyByEmail(dto: z.infer<typeof schema>) {
   // num limite por alvo, sem depender só do cap de 5 tentativas por código. failClosed.
   if (!(await rateLimit(`otp:verify:email:${email}`, 10, 3600, { failClosed: true }))) return tooMany();
 
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user || !user.emailVerified || user.deletedAt || user.status === 'blocked') {
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing && (existing.deletedAt || existing.status === 'blocked')) {
     // Equaliza o custo de CPU com o caminho válido (que faz bcrypt.compare via verifyOtp),
-    // pra não vazar existência de conta por timing. Mesma resposta genérica.
+    // pra não vazar estado da conta por timing. Mesma resposta genérica.
     await bcrypt.compare(dto.code, DUMMY_OTP_HASH);
     return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
   }
 
-  const ok = await verifyOtp({ email }, dto.code, true);
-  if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
-
-  if (dto.locale && dto.locale !== user.locale) {
-    await db.user.update({ where: { id: user.id }, data: { locale: dto.locale } });
+  let user = existing;
+  if (!existing) {
+    // Conta nova sem onboarding completo: só "espia" o código (não queima),
+    // pra ele continuar válido até a criação efetiva — igual ao fluxo phone.
+    if (!dto.name || !dto.avatarUrl) {
+      const ok = await verifyOtp({ email }, dto.code, false);
+      if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
+      return NextResponse.json(
+        { needsOnboarding: true, message: 'Conta nova: nome e foto de perfil são obrigatórios.' },
+        { status: 400 },
+      );
+    }
+    const ok = await verifyOtp({ email }, dto.code, true);
+    if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
+    try {
+      user = await db.user.create({
+        data: {
+          email,
+          emailVerified: true, // código na caixa = posse provada
+          phone: null,
+          phoneVerified: false,
+          name: dto.name,
+          lastName: dto.lastName?.trim() || null,
+          spot: dto.spot && SPOTS.includes(dto.spot) ? dto.spot : null,
+          country: dto.country?.trim() || null,
+          avatarUrl: dto.avatarUrl,
+          locale: dto.locale ?? 'pt',
+        },
+      });
+    } catch (e) {
+      // Corrida: dois cadastros simultâneos com o mesmo e-mail — o segundo cai na unique.
+      if ((e as { code?: string }).code === 'P2002') {
+        return NextResponse.json({ message: 'E-mail já cadastrado.' }, { status: 409 });
+      }
+      throw e;
+    }
+  } else {
+    const ok = await verifyOtp({ email }, dto.code, true);
+    if (!ok) return NextResponse.json({ message: 'Código inválido ou expirado.' }, { status: 401 });
+    if (!existing.emailVerified || (dto.locale && dto.locale !== existing.locale)) {
+      user = await db.user.update({
+        where: { id: existing.id },
+        data: { emailVerified: true, locale: dto.locale ?? existing.locale },
+      });
+    }
   }
+
+  if (!user) return NextResponse.json({ message: 'Erro.' }, { status: 500 });
   await setSession(user.id, user.sessionVersion);
   return NextResponse.json({
     ok: true,

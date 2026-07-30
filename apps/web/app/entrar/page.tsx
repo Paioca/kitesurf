@@ -89,14 +89,13 @@ const LOGIN_COPY = {
     myListingsPerks: ['Crie e gerencie seus anúncios em um só lugar', 'Veja visitas, ofertas e contatos liberados', 'Telefone verificado para vender com mais confiança'],
     phone: 'Telefone',
     country: 'País',
-    accountEmail: 'E-mail da sua conta',
-    emailAlt: 'Acesso alternativo. Pra criar uma conta nova,',
-    usePhone: 'use o telefone',
+    channelSms: 'Telefone',
+    channelEmail: 'E-mail',
+    accountEmail: 'Seu e-mail',
+    emailAlt: 'Enviamos um código de 6 dígitos para o seu e-mail.',
     sending: 'Enviando…',
     receiveCode: 'Receber código',
     receiveAndContinue: 'Receber código e continuar',
-    tryEmail: 'Tentar por e-mail',
-    backToSms: 'Voltar pra entrar por SMS',
     noPhoneAccess: 'Não tenho mais acesso a esse telefone',
     termsPrefix: 'Ao continuar, você concorda com os',
     terms: 'Termos',
@@ -111,6 +110,7 @@ const LOGIN_COPY = {
     verifying: 'Verificando…',
     verify: 'Verificar',
     phoneVerified: 'Telefone verificado',
+    emailVerifiedBadge: 'E-mail verificado',
     sellerProfile: 'Complete seu perfil de vendedor',
     profileTitle: 'Complete seu perfil',
     sellerProfileSub: 'Seu nome e sua foto ajudam compradores a confiar em quem está anunciando.',
@@ -126,6 +126,7 @@ const LOGIN_COPY = {
     selectSpot: 'Selecione um spot',
     nationality: 'Nacionalidade',
     emailLater: 'O e-mail você adiciona depois, no seu perfil.',
+    phoneLater: 'O telefone você confirma depois — ele é obrigatório para anunciar ou fazer ofertas.',
     language: 'Idioma',
     creating: 'Criando…',
     createAndList: 'Criar conta e anunciar',
@@ -207,14 +208,13 @@ const LOGIN_COPY = {
     myListingsPerks: ['Create and manage your listings in one place', 'See visits, offers, and shared contacts', 'Verified phone to sell with more confidence'],
     phone: 'Phone',
     country: 'Country',
-    accountEmail: 'Account email',
-    emailAlt: 'Alternative access. To create a new account,',
-    usePhone: 'use your phone',
+    channelSms: 'Phone',
+    channelEmail: 'Email',
+    accountEmail: 'Your email',
+    emailAlt: 'We send a 6-digit code to your email.',
     sending: 'Sending…',
     receiveCode: 'Receive code',
     receiveAndContinue: 'Receive code and continue',
-    tryEmail: 'Try email',
-    backToSms: 'Back to SMS sign in',
     noPhoneAccess: 'I no longer have access to this phone',
     termsPrefix: 'By continuing, you agree to Kitetropos',
     terms: 'Terms',
@@ -229,6 +229,7 @@ const LOGIN_COPY = {
     verifying: 'Verifying…',
     verify: 'Verify',
     phoneVerified: 'Phone verified',
+    emailVerifiedBadge: 'Email verified',
     sellerProfile: 'Complete your seller profile',
     profileTitle: 'Complete your profile',
     sellerProfileSub: 'Your name and photo help buyers trust the person behind the listing.',
@@ -244,6 +245,7 @@ const LOGIN_COPY = {
     selectSpot: 'Select a spot',
     nationality: 'Nationality',
     emailLater: 'You can add an email later in your profile.',
+    phoneLater: 'You confirm your phone later — it is required to list gear or make offers.',
     language: 'Language',
     creating: 'Creating…',
     createAndList: 'Create account and list',
@@ -256,9 +258,9 @@ const LOGIN_COPY = {
 export default function Entrar() {
   const [step, setStep] = useState<Step>('phone');
   const [intent, setIntent] = useState<Intent>('default');
-  // Canal: SMS é o padrão (todo cadastro novo passa por aqui). E-mail é fallback do
-  // SPOF do Twilio — só funciona pra usuário JÁ EXISTENTE com email verificado, e
-  // nunca cria conta nova (schema exige telefone).
+  // Canal: SMS é o default visual, mas e-mail é primeira classe — cadastra e loga
+  // igual. Motivo: SMS depende do Twilio (SPOF) e parte dos usuários não recebe o
+  // código; e-mail resolve os dois.
   const [channel, setChannel] = useState<Channel>('sms');
   const [rawPhone, setRawPhone] = useState('');
   const [dial, setDial] = useState('+55'); // DDI do país — default Brasil
@@ -277,9 +279,6 @@ export default function Entrar() {
   // este contador o usuário ansioso clica "Reenviar" várias vezes, queima a cota e
   // toma 429 sem nunca ter recebido o SMS (que às vezes só estava atrasado).
   const [cooldown, setCooldown] = useState(0);
-  // E-mail é canal de EXCEÇÃO — só aparece como opção quando o SMS realmente falhou
-  // (502 do provider). Senão fica completamente invisível pro fluxo normal de cadastro/login.
-  const [smsFailed, setSmsFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const submittedRef = useRef('');
 
@@ -329,12 +328,7 @@ export default function Entrar() {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        // 502 do canal SMS = Twilio fora/recusou. SÓ AQUI revelamos o fallback de
-        // e-mail, evitando confundir o fluxo normal de cadastro com uma "opção paralela".
-        if (channel === 'sms' && res.status === 502) setSmsFailed(true);
-        throw new Error(data.message ?? 'Falha ao enviar código.');
-      }
+      if (!res.ok) throw new Error(data.message ?? 'Falha ao enviar código.');
       // No modo mock o código volta aqui e preenche silenciosamente (sem afordância visível).
       if (data.devCode) setCode(String(data.devCode));
       setStep('otp');
@@ -463,10 +457,12 @@ export default function Entrar() {
               <h1 style={h1}>{copy.title}</h1>
               <p style={sub}>{copy.sub}</p>
 
-              {/* Canal SMS é A interface — é por onde TODO cadastro novo passa. E-mail
-                  é canal alternativo só pra quem JÁ TEM conta + email verificado, e
-                  aparece como link discreto abaixo, pra não competir com o caminho
-                  principal e não confundir quem chega novo. */}
+              {/* Escolha de canal — telefone e e-mail são equivalentes (cadastro e
+                  login funcionam pelos dois). Telefone continua o default visual. */}
+              <div style={{ display: 'flex', border: '1px solid #d3ccbd', borderRadius: 999, overflow: 'hidden', fontSize: 13, fontWeight: 600, marginBottom: 18, width: 'fit-content' }}>
+                <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={channel === 'sms' ? segOn : segOff}>{t.channelSms}</button>
+                <button type="button" onClick={() => { setChannel('email'); setError(''); }} style={channel === 'email' ? segOn : segOff}>{t.channelEmail}</button>
+              </div>
               {channel === 'sms' ? (
                 <>
                   <label style={lbl}>{t.phone}</label>
@@ -482,7 +478,7 @@ export default function Entrar() {
                   <label style={lbl}>{t.accountEmail}</label>
                   <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="seu@email.com" style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 8 }} />
                   <div style={{ fontSize: 12.5, color: '#8a948d', margin: '0 0 18px', lineHeight: 1.4 }}>
-                    {t.emailAlt} <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={linkInline}>{t.usePhone}</button>.
+                    {t.emailAlt}
                   </div>
                 </>
               )}
@@ -500,21 +496,7 @@ export default function Entrar() {
                 {loading ? t.sending : (intent === 'default' ? t.receiveCode : t.receiveAndContinue)}
               </button>
 
-              {/* Links secundários. "Entrar por e-mail" só aparece DEPOIS de uma falha
-                  real do SMS (smsFailed) — antes disso e-mail é invisível e o fluxo
-                  é só telefone. "Voltar pra SMS" aparece quando user já está no modo
-                  e-mail (porque clicou em "tentar por e-mail" antes). */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', marginTop: 18 }}>
-                {channel === 'sms' && smsFailed && (
-                  <button type="button" onClick={() => { setChannel('email'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
-                    {t.tryEmail}
-                  </button>
-                )}
-                {channel === 'email' && (
-                  <button type="button" onClick={() => { setChannel('sms'); setError(''); }} style={{ ...linkInline, fontSize: 13.5 }}>
-                    {t.backToSms}
-                  </button>
-                )}
                 <Link href="/recuperar" style={{ color: '#1f6b5c', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>{t.noPhoneAccess}</Link>
               </div>
 
@@ -555,7 +537,7 @@ export default function Entrar() {
           {step === 'profile' && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: '#1f6b5c', marginBottom: 14 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />{t.phoneVerified}
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: '#1f6b5c' }} />{channel === 'sms' ? t.phoneVerified : t.emailVerifiedBadge}
               </div>
               <h1 style={h1}>{sellIntent ? t.sellerProfile : t.profileTitle}</h1>
               <p style={sub}>{sellIntent ? t.sellerProfileSub : t.profileSub}</p>
@@ -603,7 +585,7 @@ export default function Entrar() {
 
               <div style={{ fontSize: 12.5, color: '#9aa49d', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{ width: 13, height: 13, background: '#cdd8d1', transform: 'rotate(45deg)', borderRadius: 2, flex: 'none', marginTop: 2 }} />
-                {t.emailLater}
+                {channel === 'sms' ? t.emailLater : t.phoneLater}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 26 }}>
