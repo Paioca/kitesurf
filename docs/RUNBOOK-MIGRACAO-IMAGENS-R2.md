@@ -39,22 +39,40 @@ R2_PUBLIC_BASE_URL=https://img.kitetropos.com   # ou o https://pub-xxxx.r2.dev, 
 
 Manter `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (a migração lê deles; podem sair depois).
 
-## Parte 3 — Migrar os dados (rodar com o env de PROD carregado)
+## Parte 3 — Migrar os dados
 
-> **Quando:** o script *baixa* as fotos do Supabase uma vez (~<1 GB = também é egress). Se
-> o Supabase estiver bloqueando saída agora, rodar **na virada do mês**, quando a cota
-> reseta. Fazer a migração ANTES de o egress queimar de novo.
+> **Quando:** a migração *baixa* as fotos do Supabase uma vez (~<1 GB = também é egress). Se
+> o Supabase estiver bloqueando saída (imagens quebradas no site), rodar **na virada do
+> ciclo do free**, quando a cota reseta. Fazer a migração ANTES de o egress queimar de novo.
 
-Sempre dry-run primeiro (não grava nada):
+### Opção A (recomendada p/ dono não-técnico) — endpoint dentro da Vercel
+
+Roda no próprio ambiente da Vercel, que já tem as credenciais. Não precisa de nada local.
+
+1. Na Vercel, adicionar env `MIGRATE_SECRET` = um valor secreto que VOCÊ escolhe (ex.:
+   `troca-isto-123`). Redeploy pra ativar.
+2. Chamar o endpoint (troque `SEU_TOKEN` e o domínio). Dry-run primeiro:
+
+```bash
+# dry-run: só conta (não grava)
+curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=copy&token=SEU_TOKEN"
+# copiar objetos de fato (repetir enquanto "remaining" > 0)
+curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=copy&apply=true&token=SEU_TOKEN"
+# reescrever as URLs no banco (só depois de copiar tudo)
+curl -X POST "https://kitetropos.com/api/maintenance/migrate-r2?step=db&apply=true&token=SEU_TOKEN"
+```
+
+3. Depois de confirmado, **remover `MIGRATE_SECRET`** da Vercel (fecha o endpoint).
+
+### Opção B — script local (precisa das credenciais de prod na máquina)
 
 ```bash
 cd apps/web
-node --env-file=.env.prod scripts/migrate-images-to-r2.mjs            # dry-run: mostra contagens
-node --env-file=.env.prod scripts/migrate-images-to-r2.mjs --apply    # copia objetos + reescreve URLs no banco
+node --env-file=.env.migration scripts/migrate-images-to-r2.mjs            # dry-run
+node --env-file=.env.migration scripts/migrate-images-to-r2.mjs --apply    # executa
 ```
 
-O script é idempotente (pode repetir sem duplicar). Ordem interna: copia objetos → reescreve
-o banco. Flags: `--copy-only`, `--db-only`.
+Ambas são idempotentes. Ordem: copiar objetos → reescrever o banco.
 
 ## Parte 4 — Deploy e conferência
 
