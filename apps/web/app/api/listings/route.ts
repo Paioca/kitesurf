@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { searchListings } from '../../../lib/queries';
 import { isKnownSpot } from '../../../lib/locations';
-import { requireUser, UnauthorizedError } from '../../../lib/session';
+import { requireVerifiedUser, UnauthorizedError, VerificationRequiredError } from '../../../lib/session';
 import { validateAttributes } from '../../../lib/attributes';
 import { isOfficialImageUrl } from '../../../lib/storage';
 import { rateLimit, tooMany } from '../../../lib/ratelimit';
@@ -84,10 +84,10 @@ async function validateCatalogPair(args: {
   return null;
 }
 
-// POST /api/listings — criar anúncio (exige login)
+// POST /api/listings — criar anúncio (exige login + telefone/e-mail verificados)
 export async function POST(req: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireVerifiedUser();
     if (!(await rateLimit(`listing:${user.id}`, 20, 3600))) return tooMany();
     const parsed = createSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }, { status: 400 });
@@ -167,6 +167,7 @@ export async function POST(req: Request) {
     return NextResponse.json(listing, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if (e instanceof VerificationRequiredError) return NextResponse.json({ code: 'verification_required', missing: e.missing, message: 'Confirme seus dados para continuar.' }, { status: 403 });
     return errorResponse(e);
   }
 }

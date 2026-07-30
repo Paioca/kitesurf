@@ -13,6 +13,7 @@ import { Logo, Diamond } from '../../components/ui';
 import { SearchSelect } from '../../components/SearchSelect';
 import { WhatsappShareButton, trackEvent } from '../../components/ShareButton';
 import { storedLocale } from '../../components/LanguageToggle';
+import { VerifyContact, type MissingVerification } from '../../components/VerifyContact';
 import { SPOT_LOCATIONS, STATE_OPTIONS } from '../../lib/locations';
 
 // Rótulos das opções de enum da ficha (condição do kite/barra, bladder, mangueiras).
@@ -321,6 +322,8 @@ export default function Criar() {
   const [uploadPct, setUploadPct] = useState(0); // % média de bytes do lote em voo
   const [uploadTarget, setUploadTarget] = useState<'kite' | 'barra'>('kite');
   const [error, setError] = useState('');
+  // 403 verification_required do POST /api/listings — painel inline de verificação.
+  const [needVerify, setNeedVerify] = useState<MissingVerification | null>(null);
   const [createdId, setCreatedId] = useState('');
   const [publishing, setPublishing] = useState(false); // trava anti duplo-clique no Publicar
   const [step, setStep] = useState(0); // wizard: 0 tipo&ficha · 1 fotos · 2 preço&entrega · 3 revisão
@@ -631,7 +634,12 @@ export default function Criar() {
         }),
       });
       const data = await res.json();
+      if (res.status === 403 && data.code === 'verification_required') {
+        setNeedVerify(data.missing ?? ['phone']);
+        return;
+      }
       if (!res.ok) throw new Error(data.message ?? (lang === 'en' ? 'Error publishing listing.' : 'Erro ao publicar.'));
+      setNeedVerify(null);
       setCreatedId(data.id);
     } catch (e: any) { setError(e.message); } finally { setPublishing(false); }
   }
@@ -916,6 +924,7 @@ export default function Criar() {
             </>
           )}
 
+          {needVerify && <div style={{ marginTop: 24 }}><VerifyContact missing={needVerify} onDone={() => setNeedVerify(null)} /></div>}
           {error && <div style={{ background: '#fdecea', color: '#b3261e', padding: 12, borderRadius: 10, fontSize: 13, marginTop: 24 }}>{error}</div>}
 
           {/* NAV — fixa no rodapé no mobile (auditoria #05); inline no desktop */}

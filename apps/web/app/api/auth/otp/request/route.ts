@@ -12,11 +12,11 @@ const log = childLogger('route:otp/request');
 
 export const runtime = 'nodejs';
 
-// Aceita TELEFONE (canal padrão, SMS via Twilio) OU E-MAIL (canal fallback, Resend).
-// Por que dois canais: SMS depende de Twilio, que é SPOF — uma queda de Twilio/SMS
-// = lockout total. Com e-mail como alternativa, usuário com email verificado tem
-// outra rota. Cadastro novo continua só por telefone (não tem como associar email
-// a um usuário inexistente sem cair em enumeração de contas).
+// Aceita TELEFONE (SMS via Twilio) OU E-MAIL (Resend). Dois canais de primeira
+// classe: SMS é SPOF (Twilio fora = lockout) e parte dos usuários não recebe o
+// código. Cadastro novo funciona pelos DOIS canais — no e-mail, o OTP é enviado
+// mesmo sem conta (é o fluxo de cadastro); a resposta continua genérica para não
+// diferenciar conta existente de inexistente (anti-enumeração).
 const schema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
@@ -71,18 +71,19 @@ async function handleEmail(req: Request, raw: string) {
   const okIp = await rateLimit(`otp:reqemailip:${clientIp(req)}`, 20, 3600, { failClosed: true });
   if (!okEmail || !okIp) return tooMany();
 
-  // Verifica que existe um usuário com esse e-mail verificado E ativo.
-  // RESPOSTA GENÉRICA: sempre devolve "se houver uma conta" pra NÃO vazar
-  // existência de e-mail (enumeração de contas).
+  // E-mail SEM conta = cadastro novo → envia código. Conta ativa (mesmo sem
+  // emailVerified — digitar o código prova a posse da caixa) → envia código.
+  // Conta bloqueada/excluída → NÃO envia, mas a RESPOSTA É SEMPRE GENÉRICA
+  // ("se houver uma conta…") pra não vazar existência/estado da conta.
   const user = await db.user.findUnique({ where: { email } });
-  if (!user || !user.emailVerified || user.deletedAt || user.status !== 'active') {
+  if (user && (user.deletedAt || user.status !== 'active')) {
     return genericEmailOk;
   }
 
   try {
     await generateOtp({ email });
   } catch (e) {
-    log.error({ event: 'send_failed', channel: 'email', userId: user.id, err: e }, 'OTP email send failed');
+    log.error({ event: 'send_failed', channel: 'email', userId: user?.id ?? null, err: e }, 'OTP email send failed');
     // Mesmo em falha, resposta genérica pra não vazar existência. Sentry/log já registram.
     return genericEmailOk;
   }

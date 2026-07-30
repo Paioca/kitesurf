@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { errorResponse } from '../../../../../lib/http';
 import { z } from 'zod';
 import { createRequest, RequestError } from '../../../../../lib/requests';
-import { requireUser, UnauthorizedError } from '../../../../../lib/session';
+import { requireVerifiedUser, UnauthorizedError, VerificationRequiredError } from '../../../../../lib/session';
 import { rateLimit, tooMany } from '../../../../../lib/ratelimit';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ const schema = z.object({ type: z.enum(['offer', 'visit']), amount: z.number().i
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const user = await requireUser();
+    const user = await requireVerifiedUser(); // negociação exige phone (+ e-mail, se gate on) verificados
     // Burst guard (30/h) + cap de SEGURANÇA diário (20/dia) anti-abuso — cobre oferta+visita.
     // Janela 23h (< retenção de 24h do purge) pra não ler hits na borda da limpeza.
     if (!(await rateLimit(`request:${user.id}`, 30, 3600))) return tooMany();
@@ -24,6 +24,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     return NextResponse.json({ ok: true, id: r.id, status: r.status }, { status: 201 });
   } catch (e) {
     if (e instanceof UnauthorizedError) return NextResponse.json({ message: 'Faça login.' }, { status: 401 });
+    if (e instanceof VerificationRequiredError) return NextResponse.json({ code: 'verification_required', missing: e.missing, message: 'Confirme seus dados para continuar.' }, { status: 403 });
     if (e instanceof RequestError) return NextResponse.json({ message: e.message }, { status: e.status });
     return errorResponse(e);
   }

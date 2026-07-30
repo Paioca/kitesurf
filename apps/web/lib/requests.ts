@@ -89,7 +89,8 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   const buyer = await db.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
   // §12 — defesa adicional contra negociar consigo (o owner-check acima já cobre o caso
   // normal; telefone único torna isto redundante, mas fica como cinto de segurança).
-  if (buyer && buyer.phone === listing.user.phone) throw new RequestError('Você não pode negociar com a própria conta.', 400);
+  // Guard de não-nulo: com phone opcional, null === null casaria duas contas distintas.
+  if (buyer?.phone && buyer.phone === listing.user.phone) throw new RequestError('Você não pode negociar com a própria conta.', 400);
   const title = component === 'conjunto' ? listing.title : `${listing.title} · ${COMPONENT_LABEL[component]}`;
   const r = await db.$transaction(async (tx) => {
     const key = { listingId, buyerId: userId, type, component };
@@ -130,7 +131,7 @@ export async function createRequest(userId: string, listingId: string, type: 'of
   // avisa o vendedor que há um novo pedido — SEM o contato do comprador. O telefone só
   // é liberado quando o vendedor ACEITA (regra de negócio: solicita → aceita → libera
   // WhatsApp). no-op se Twilio off.
-  await notifyNewRequest({ sellerPhone: listing.user.phone, type, listingTitle: title, buyerName: buyer?.name ?? 'Um comprador' });
+  await notifyNewRequest({ sellerPhone: listing.user.phone ?? '', type, listingTitle: title, buyerName: buyer?.name ?? 'Um comprador' });
   return r;
 }
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { color, font } from '../lib/tokens';
 import type { Component } from '../lib/components';
 import { CancelRequestButton } from './CancelRequestButton';
+import { VerifyContact, type MissingVerification } from './VerifyContact';
 
 const PENDING_KEY = (id: string) => `vaya:pending-request:${id}`;
 
@@ -28,6 +29,9 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
+  // 403 verification_required do backend: guarda o que falta pra renderizar o
+  // painel de verificação inline (telefone/e-mail) sem perder o formulário.
+  const [needVerify, setNeedVerify] = useState<MissingVerification | null>(null);
 
   const target = targets[sel];
   const component = target.component;
@@ -74,7 +78,12 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
         return;
       }
       const data = await res.json().catch(() => ({}));
+      if (res.status === 403 && data.code === 'verification_required') {
+        setNeedVerify(data.missing ?? ['phone']);
+        return;
+      }
       if (!res.ok) throw new Error(data.message ?? 'Erro.');
+      setNeedVerify(null);
       setStateMap((m) => ({
         ...m,
         [component]: type === 'offer'
@@ -119,6 +128,7 @@ export function ContactActions({ listingId, targets, stateByComponent }: { listi
     <div style={{ marginBottom: 24 }}>
       {selector}
       <JourneyStepper step={journeyStep} />
+      {needVerify && <VerifyContact missing={needVerify} onDone={() => setNeedVerify(null)} />}
       {!activeKind && (!confirmVisit ? (
         // §14 — "Quero ver pessoalmente" (não "Agendar visita": não há calendário; não
         // "Compartilhar WhatsApp": descreve a intenção, não o mecanismo).

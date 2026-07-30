@@ -51,7 +51,7 @@ model User {
   email           String?    @unique // opcional no cadastro; pedido depois
   emailVerified   Boolean    @default(false)
   sessionVersion  Int        @default(0) // incrementa em recuperação; invalida sessões antigas
-  phone           String     @unique
+  phone           String?    @unique // opcional: conta pode nascer por e-mail; exigido pelo gate p/ anunciar/negociar
   phoneCountry    String     @default("BR")
   phoneVerified   Boolean    @default(false) // nível 1 — antifake (OTP)
   locale          String     @default("pt")
@@ -96,8 +96,8 @@ model User {
 
 // Código OTP — DOIS canais: SMS (phone) ou e-mail. Mata o SPOF do Twilio (queda
 // total = todo login bloqueado). Exatamente UM dos dois (phone/email) deve estar
-// preenchido por linha. Cadastro novo ainda exige telefone — email só serve pra
-// login/recuperação de quem JÁ tem e-mail verificado na conta.
+// preenchido por linha. Cadastro novo funciona pelos dois canais; digitar o código
+// prova posse do canal (phoneVerified/emailVerified).
 model OtpCode {
   id        String   @id @default(uuid())
   phone     String?  // SMS via Twilio

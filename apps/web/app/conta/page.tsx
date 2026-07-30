@@ -84,7 +84,7 @@ export default async function Conta() {
 
   // Conta = administrativo. Marketplace (Negociações, Anúncios, Favoritos) fica no header/abas.
   const contact: { k: string; v: string; verified?: boolean; muted?: boolean }[] = [
-    { k: t.phone, v: user.phone, verified: user.phoneVerified },
+    { k: t.phone, v: user.phone || t.notInformed, verified: user.phoneVerified, muted: !user.phone },
     { k: t.spot, v: user.spot || t.notInformed, muted: !user.spot },
     { k: t.nationality, v: user.country || t.notInformed, muted: !user.country },
     { k: t.email, v: user.email || t.notInformed, verified: user.emailVerified, muted: !user.email },
